@@ -13,6 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+// Command git-review manages code reviews stored as git-notes in the source repo.
+//
+// To install, run:
+//
+//    $ go get source.developers.google.com/id/0tH0wAQFren.git/src
+//
+// And for usage information, run:
+//
+//    $ git-review help
 package main
 
 import (
