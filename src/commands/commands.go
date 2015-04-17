@@ -50,7 +50,6 @@ func notImplemented(subcommand string) *Command {
 var (
 	acceptCmd  = notImplemented("accept")
 	commentCmd = notImplemented("comment")
-	listCmd    = notImplemented("list")
 	pullCmd    = notImplemented("pull")
 	pushCmd    = notImplemented("push")
 	showCmd    = notImplemented("show")

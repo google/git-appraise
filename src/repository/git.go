@@ -90,6 +90,19 @@ func GetCommitMessage(ref string) string {
 	return runGitCommandOrDie("show", "-s", "--format=%B", ref)
 }
 
+// IsAncestor determins if the first argument points to a commit that is an ancestor of the second.
+func IsAncestor(ancestor, descendant string) bool {
+	_, err := runGitCommand("merge-base", "--is-ancestor", ancestor, descendant)
+	if err == nil {
+		return true
+	}
+	if _, ok := err.(*exec.ExitError); ok {
+		return false
+	}
+	log.Fatal(err)
+	return false
+}
+
 // ListCommitsBetween returns the list of commits between the two given revisions.
 //
 // The "from" parameter is the starting point (exclusive), and the "to" parameter
@@ -109,7 +122,11 @@ func ListCommitsBetween(from, to string) []string {
 // GetNotes uses the "git" command-line tool to read the notes from the given ref for a given revision.
 func GetNotes(notesRef, revision string) []Note {
 	var notes []Note
-	rawNotes := runGitCommandOrDie("notes", "--ref", notesRef, "show", revision)
+	rawNotes, err := runGitCommand("notes", "--ref", notesRef, "show", revision)
+	if err != nil {
+		// We just assume that this means there are no notes
+		return nil
+	}
 	for _, line := range strings.Split(rawNotes, "\n") {
 		notes = append(notes, Note([]byte(line)))
 	}
