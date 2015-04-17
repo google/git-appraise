@@ -29,8 +29,9 @@ import (
 	"commands"
 	"fmt"
 	"os"
+	"repository"
 	"sort"
-  "strings"
+	"strings"
 )
 
 const usageMessageTemplate = `Usage: %s <command>
@@ -61,25 +62,29 @@ func help() {
 	if !ok {
 		fmt.Printf("Unknown command \"%s\"\n", os.Args[2])
 		usage()
-    return
+		return
 	}
-  fmt.Println(subcommand.HelpMessage)
+	subcommand.Usage(os.Args[0])
 }
 
 func main() {
 	if len(os.Args) < 2 {
 		usage()
-    return
+		return
 	}
-  if os.Args[1] == "help" {
-    help()
-    return
-  }
+	if os.Args[1] == "help" {
+		help()
+		return
+	}
+	if !repository.IsGitRepo() {
+		fmt.Printf("%s must be run from within a git repo.", os.Args[0])
+		return
+	}
 	subcommand, ok := commands.CommandMap[os.Args[1]]
 	if !ok {
 		fmt.Printf("Unknown command \"%s\"", os.Args[1])
 		usage()
-    return
+		return
 	}
 	subcommand.Run(os.Args[2:])
 }

@@ -24,8 +24,8 @@ import (
 
 // Command represents the definition of a single command.
 type Command struct {
-	HelpMessage string
-	RunMethod   func([]string)
+	Usage     func(string)
+	RunMethod func([]string)
 }
 
 // Run executes a command, given its arguments.
@@ -38,7 +38,9 @@ func (cmd *Command) Run(args []string) {
 
 func notImplemented(subcommand string) *Command {
 	return &Command{
-		HelpMessage: fmt.Sprintf("Subcommand \"%s\" is not yet implemented.", subcommand),
+		Usage: func(arg0 string) {
+			fmt.Printf("Subcommand \"%s\" is not yet implemented.\n", subcommand)
+		},
 		RunMethod: func(args []string) {
 			log.Fatal("Not Implemented")
 		},
@@ -51,7 +53,6 @@ var (
 	listCmd    = notImplemented("list")
 	pullCmd    = notImplemented("pull")
 	pushCmd    = notImplemented("push")
-	requestCmd = notImplemented("request")
 	showCmd    = notImplemented("show")
 	submitCmd  = notImplemented("submit")
 	syncCmd    = notImplemented("sync")
