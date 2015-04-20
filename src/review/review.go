@@ -24,12 +24,14 @@ import (
 	"sort"
 )
 
+// CommentThread represents the tree-based hierarchy of comments.
 type CommentThread struct {
 	Comment  comment.Comment
 	Children []CommentThread
 	Resolved *bool
 }
 
+// Review represents the entire state of a code review.
 type Review struct {
 	Revision string
 	Request  request.Request
@@ -92,6 +94,7 @@ func (review *Review) loadComments() []CommentThread {
 	return threads
 }
 
+// ListAll returns all reviews stored in the git-notes.
 func ListAll() []Review {
 	var reviews []Review
 	for _, revision := range repository.ListNotedRevisions(request.Ref) {

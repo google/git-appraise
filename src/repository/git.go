@@ -25,6 +25,7 @@ import (
 	"strings"
 )
 
+// Note represents the contents of a git-note
 type Note []byte
 
 func runGitCommand(args ...string) (string, error) {

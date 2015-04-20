@@ -28,13 +28,16 @@ import (
 // Ref defines the git-notes ref that we expect to contain review comments.
 const Ref = "refs/notes/devtools/discuss"
 
+// CommentRange represents the range of text that is under discussion.
 type CommentRange struct {
 	StartLine uint32 `json:"startLine"`
 }
 
+// CommentLocation represents the location of a comment within a commit.
 type CommentLocation struct {
 	Commit string `json:"commit,omitempty"`
-	Path   string `json:"path,omitempty"`
+	// If the path is omitted, then the comment applies to the entire commit.
+	Path string `json:"path,omitempty"`
 	// If the range is omitted, then the location represents an entire file.
 	Range *CommentRange `json:"range,omitempty"`
 }
