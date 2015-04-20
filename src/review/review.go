@@ -21,6 +21,7 @@ import (
 	"repository"
 	"review/comment"
 	"review/request"
+	"sort"
 )
 
 type CommentThread struct {
@@ -36,51 +37,35 @@ type Review struct {
 	Resolved *bool
 }
 
-func updateResolvedStatus(thread CommentThread) {
-	resolved := false
-	anyResolved := false
-	for _, child := range thread.Children {
-		updateResolvedStatus(child)
-		if child.Resolved != nil {
-			if *child.Resolved == false {
-				thread.Resolved = &resolved
-				return
-			} else {
-				anyResolved = true
-			}
-		}
-	}
-	if anyResolved {
-		resolved = true
-		thread.Resolved = &resolved
-	} else {
-		thread.Resolved = nil
-	}
+type byTimestamp []CommentThread
+
+// Interface methods for sorting comment threads by timestamp
+func (threads byTimestamp) Len() int      { return len(threads) }
+func (threads byTimestamp) Swap(i, j int) { threads[i], threads[j] = threads[j], threads[i] }
+func (threads byTimestamp) Less(i, j int) bool {
+	return threads[i].Comment.Timestamp < threads[j].Comment.Timestamp
 }
 
-func updateReviewStatus(review Review) {
-	resolved := false
-	anyResolved := false
-	for _, thread := range review.Comments {
-		updateResolvedStatus(thread)
+func updateThreadsStatus(threads []CommentThread) *bool {
+	sort.Sort(sort.Reverse(byTimestamp(threads)))
+	for _, thread := range threads {
+		thread.updateResolvedStatus()
 		if thread.Resolved != nil {
-			if *thread.Resolved == false {
-				review.Resolved = &resolved
-				return
-			} else {
-				anyResolved = true
-			}
+			return thread.Resolved
 		}
 	}
-	if anyResolved {
-		resolved = true
-		review.Resolved = &resolved
-	} else {
-		review.Resolved = nil
-	}
+	return nil
 }
 
-func loadComments(review Review) []CommentThread {
+func (thread *CommentThread) updateResolvedStatus() {
+	resolved := updateThreadsStatus(thread.Children)
+	if resolved == nil {
+		resolved = thread.Comment.Resolved
+	}
+	thread.Resolved = resolved
+}
+
+func (review *Review) loadComments() []CommentThread {
 	commentNotes := repository.GetNotes(comment.Ref, review.Revision)
 	commentsByHash := comment.ParseAllValid(commentNotes)
 	threadsByHash := make(map[string]CommentThread)
@@ -104,9 +89,6 @@ func loadComments(review Review) []CommentThread {
 			}
 		}
 	}
-	for _, thread := range threads {
-		updateResolvedStatus(thread)
-	}
 	return threads
 }
 
@@ -115,15 +97,14 @@ func ListAll() []Review {
 	for _, revision := range repository.ListNotedRevisions(request.Ref) {
 		requestNotes := repository.GetNotes(request.Ref, revision)
 		for _, req := range request.ParseAllValid(requestNotes) {
-			reviews = append(reviews, Review{
+			review := Review{
 				Revision: revision,
 				Request:  req,
-			})
+			}
+			review.Comments = review.loadComments()
+			review.Resolved = updateThreadsStatus(review.Comments)
+			reviews = append(reviews, review)
 		}
-	}
-	for _, review := range reviews {
-		review.Comments = loadComments(review)
-		updateReviewStatus(review)
 	}
 	return reviews
 }
