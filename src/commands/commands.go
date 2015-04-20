@@ -57,6 +57,7 @@ var (
 	syncCmd    = notImplemented("sync")
 )
 
+// CommandMap defines all of the available (sub)commands.
 var CommandMap = map[string]*Command{
 	"accept":  acceptCmd,
 	"comment": commentCmd,
