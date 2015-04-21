@@ -7,3 +7,5 @@
 {"timestamp":"1429639143","author":"amshali@google.com","resolved":true}
 
 {"timestamp":"1429639143","author":"amshali@google.com","description":"I'll go through this code review again later but if you want to merge it, please go ahead."}
+
+{"timestamp":"1429640966","author":"bstanley@google.com","description":"My only feedback is:  a few more comments would be helpful.  \\nNote: I am not familiar with the Go programming language.  Thanks for the intro!\\n\\nBarbara"}
