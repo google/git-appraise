@@ -13,3 +13,5 @@
 {"timestamp":"1429640966","author":"bstanley@google.com","location":{"commit":"b1ba6587e1f439ebb856d936720165860cf5cf72","path":"src/repository/git.go","range":{"startLine":46}},"description":"I like these one-liner, concise comments describing the function.  I wish most of the function had this -- especially in the 1st files."}
 
 {"timestamp":"1429640966","author":"bstanley@google.com","location":{"commit":"b1ba6587e1f439ebb856d936720165860cf5cf72","path":"src/git-review.go","range":{"startLine":17}},"description":"I like this summary at the top of the file.  How about for the other files as well?"}
+
+{"timestamp":"1429649701","author":"ojarjur@google.com","location":{"commit":"b1ba6587e1f439ebb856d936720165860cf5cf72","path":"src/git-review.go","range":{"startLine":17}},"description":"Those are package godoc, and are essentially the documentation for the containing directory.\\n\\nThe golang idiom seems to be to only have such a doc in exactly one file (since it describes the directory rather than the file), and then to document the contents of the other files, rather than the files themselves."}
