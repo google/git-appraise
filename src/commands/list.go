@@ -21,27 +21,13 @@ import (
 	"review"
 )
 
-// Template for the text output of a review's summary.
-const listTemplate = `
-  [%s] %s
-    "%s"
-`
-
 // listReviews lists all extant reviews.
 // TODO(ojarjur): Add flags for filtering the output (e.g. to just open reviews).
 func listReviews(args []string) {
 	reviews := review.ListAll()
 	fmt.Printf("Loaded %d reviews:\n", len(reviews))
 	for _, review := range review.ListAll() {
-		statusString := "pending"
-		if review.Resolved != nil {
-			if *review.Resolved {
-				statusString = "accepted"
-			} else {
-				statusString = "rejected"
-			}
-		}
-		fmt.Printf(listTemplate, statusString, review.Revision, review.Request.Description)
+		review.PrintSummary()
 	}
 }
 

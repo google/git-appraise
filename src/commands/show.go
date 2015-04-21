@@ -19,45 +19,11 @@ package commands
 import (
 	"fmt"
 	"review"
-	"strconv"
-	"time"
 )
 
-const (
-	showTemplate = `[%s] %s
-  "%s"
-`
-	threadTemplate = `  [%s] %s %s "%s"
-`
-)
-
-func reformatTimestamp(timestamp string) string {
-	parsedTimestamp, err := strconv.ParseInt(timestamp, 10, 64)
-	if err != nil {
-		// The timestamp is an unexpected format, so leave it alone
-		return timestamp
-	}
-	t := time.Unix(parsedTimestamp, 0)
-	return t.Format(time.UnixDate)
-}
-
-func showThread(thread review.CommentThread, indent string) {
-	comment := thread.Comment
-	timestamp := reformatTimestamp(comment.Timestamp)
-	statusString := "fyi"
-	if comment.Resolved != nil {
-		if *comment.Resolved {
-			statusString = "lgtm"
-		} else {
-			statusString = "needs work"
-		}
-	}
-	fmt.Printf(threadTemplate, timestamp, comment.Author, statusString, comment.Description)
-	for _, child := range thread.Children {
-		showThread(child, indent+"  ")
-	}
-}
-
+// showReview prints the current code review.
+//
+// The "args" parameter contains all of the command line arguments that followed the subcommand.
 func showReview(args []string) {
 	r, err := review.GetCurrent()
 	if err != nil {
@@ -68,20 +34,10 @@ func showReview(args []string) {
 		fmt.Println("There is no current review.")
 		return
 	}
-	statusString := "pending"
-	if r.Resolved != nil {
-		if *r.Resolved {
-			statusString = "accepted"
-		} else {
-			statusString = "rejected"
-		}
-	}
-	fmt.Printf(showTemplate, statusString, r.Revision, r.Request.Description)
-	for _, thread := range r.Comments {
-		showThread(thread, "")
-	}
+	r.PrintDetails()
 }
 
+// showCmd defines the "show" subcommand.
 var showCmd = &Command{
 	Usage: func(arg0 string) {
 		fmt.Printf("Usage: %s show\n", arg0)

@@ -23,6 +23,18 @@ import (
 	"review/comment"
 	"review/request"
 	"sort"
+	"strconv"
+	"time"
+)
+
+const (
+	// Template for printing the summary of a code review.
+	reviewTemplate = `[%s] %s
+  "%s"
+`
+	// Template for printing a single comment.
+	commentTemplate = `  [%s] %s %s "%s"
+`
 )
 
 // CommentThread represents the tree-based hierarchy of comments.
@@ -155,4 +167,57 @@ func GetCurrent() (*Review, error) {
 		return nil, fmt.Errorf("There are %d open reviews for the ref \"%s\"", len(matchingReviews), reviewRef)
 	}
 	return &matchingReviews[0], nil
+}
+
+// PrintSummary prints a single-line summary of a review.
+func (r *Review) PrintSummary() {
+	statusString := "pending"
+	if r.Resolved != nil {
+		if *r.Resolved {
+			statusString = "accepted"
+		} else {
+			statusString = "rejected"
+		}
+	}
+	fmt.Printf(reviewTemplate, statusString, r.Revision, r.Request.Description)
+}
+
+// reformatTimestamp takes a timestamp string of the form "0123456789" and changes it
+// to the form "Mon Jan _2 13:04:05 UTC 2006".
+//
+// Timestamps that are not in the format we expect are left alone.
+func reformatTimestamp(timestamp string) string {
+	parsedTimestamp, err := strconv.ParseInt(timestamp, 10, 64)
+	if err != nil {
+		// The timestamp is an unexpected format, so leave it alone
+		return timestamp
+	}
+	t := time.Unix(parsedTimestamp, 0)
+	return t.Format(time.UnixDate)
+}
+
+// showThread prints the given comment thread, indented by the given prefix string.
+func showThread(thread CommentThread, indent string) {
+	comment := thread.Comment
+	timestamp := reformatTimestamp(comment.Timestamp)
+	statusString := "fyi"
+	if comment.Resolved != nil {
+		if *comment.Resolved {
+			statusString = "lgtm"
+		} else {
+			statusString = "needs work"
+		}
+	}
+	fmt.Printf(commentTemplate, timestamp, comment.Author, statusString, comment.Description)
+	for _, child := range thread.Children {
+		showThread(child, indent+"  ")
+	}
+}
+
+// PrintDetails prints a multi-line overview of a review, including all comments.
+func (r *Review) PrintDetails() {
+	r.PrintSummary()
+	for _, thread := range r.Comments {
+		showThread(thread, "")
+	}
 }
