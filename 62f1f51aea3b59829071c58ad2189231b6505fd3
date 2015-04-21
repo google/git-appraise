@@ -1,1 +1,3 @@
 {"timestamp":"1429637048","author":"amshali@google.com","description":"Please add a makefile for building this. "}
+
+{"timestamp":"1429637625","author":"ojarjur@google.com","description":"The lack of a Makefile is intentional.\\n\\nFirst off, the idiomatic way of building go code is with \"go build ...\", so requiring make in addition to that is not idiomatic. Secondly, requiring \"go build\" keeps us honest, and prevents us from adding something that breaks the ability to install the tool using \"go get\"."}
