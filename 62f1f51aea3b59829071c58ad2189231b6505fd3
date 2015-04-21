@@ -3,3 +3,5 @@
 {"timestamp":"1429637625","author":"ojarjur@google.com","description":"The lack of a Makefile is intentional.\\n\\nFirst off, the idiomatic way of building go code is with \"go build ...\", so requiring make in addition to that is not idiomatic. Secondly, requiring \"go build\" keeps us honest, and prevents us from adding something that breaks the ability to install the tool using \"go get\"."}
 
 {"timestamp":"1429638321","author":"amshali@google.com","description":"Please add some comments to commands list request and review. Otherwise lgtm."}
+
+{"timestamp":"1429639143","author":"amshali@google.com","resolved":true}
