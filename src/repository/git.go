@@ -21,9 +21,12 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 )
+
+const branchRefPrefix = "refs/heads/"
 
 // Note represents the contents of a git-note
 type Note []byte
@@ -32,6 +35,18 @@ func runGitCommand(args ...string) (string, error) {
 	cmd := exec.Command("git", args...)
 	out, err := cmd.Output()
 	return strings.Trim(string(out), "\n"), err
+}
+
+func runGitCommandInlineOrDie(args ...string) {
+	cmd := exec.Command("git", args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Print("git", args)
+		log.Fatal(err)
+	}
 }
 
 func runGitCommandOrDie(args ...string) string {
@@ -102,6 +117,36 @@ func IsAncestor(ancestor, descendant string) bool {
 	}
 	log.Fatal(err)
 	return false
+}
+
+// SwitchToRef changes the currently-checked-out ref.
+func SwitchToRef(ref string) {
+	// If the ref starts with "refs/heads/", then we have to trim that prefix,
+	// or else we will wind up in a detached HEAD state.
+	if strings.HasPrefix(ref, branchRefPrefix) {
+		ref = ref[len(branchRefPrefix):]
+	}
+	runGitCommandOrDie("checkout", ref)
+}
+
+// MergeRef merges the given ref into the current one.
+//
+// The ref argument is the ref to merge, and fastForward indicates that the
+// current ref should only move forward, as opposed to creating a bubble merge.
+func MergeRef(ref string, fastForward bool) {
+	args := []string{"merge"}
+	if fastForward {
+		args = append(args, "--ff", "--ff-only")
+	} else {
+		args = append(args, "--no-ff")
+	}
+	args = append(args, ref)
+	runGitCommandInlineOrDie(args...)
+}
+
+// RebaseRef rebases the given ref into the current one.
+func RebaseRef(ref string) {
+	runGitCommandInlineOrDie("rebase", "-i", ref)
 }
 
 // ListCommitsBetween returns the list of commits between the two given revisions.

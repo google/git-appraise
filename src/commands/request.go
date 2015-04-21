@@ -70,7 +70,8 @@ func requestReview(args []string) {
 
 	reviewCommits := repository.ListCommitsBetween(target, source)
 	if reviewCommits == nil {
-		log.Fatal("There are no commits included in the review request")
+		fmt.Println("There are no commits included in the review request")
+		return
 	}
 
 	description := *requestMessage

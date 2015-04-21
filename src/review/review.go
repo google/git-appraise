@@ -18,6 +18,7 @@ limitations under the License.
 package review
 
 import (
+	"fmt"
 	"repository"
 	"review/comment"
 	"review/request"
@@ -32,11 +33,16 @@ type CommentThread struct {
 }
 
 // Review represents the entire state of a code review.
+//
+// Reviews have two status fields which are orthogonal:
+// 1. Resolved indicates if a reviewer has accepted or rejected the change.
+// 2. Submitted indicates if the change has been incorporated into the target.
 type Review struct {
-	Revision string
-	Request  request.Request
-	Comments []CommentThread
-	Resolved *bool
+	Revision  string
+	Request   request.Request
+	Comments  []CommentThread
+	Resolved  *bool
+	Submitted bool
 }
 
 type byTimestamp []CommentThread
@@ -113,8 +119,40 @@ func ListAll() []Review {
 			}
 			review.Comments = review.loadComments()
 			review.Resolved = updateThreadsStatus(review.Comments)
+			review.Submitted = repository.IsAncestor(revision, req.TargetRef)
 			reviews = append(reviews, review)
 		}
 	}
 	return reviews
+}
+
+// ListOpen returns all reviews that are not yet incorporated into their target refs.
+func ListOpen() []Review {
+	var openReviews []Review
+	for _, review := range ListAll() {
+		if !review.Submitted {
+			openReviews = append(openReviews, review)
+		}
+	}
+	return openReviews
+}
+
+// GetCurrent returns the current, open code review.
+//
+// If there are multiple matching reviews, then an error is returned.
+func GetCurrent() (*Review, error) {
+	reviewRef := repository.GetHeadRef()
+	var matchingReviews []Review
+	for _, review := range ListOpen() {
+		if review.Request.ReviewRef == reviewRef {
+			matchingReviews = append(matchingReviews, review)
+		}
+	}
+	if matchingReviews == nil {
+		return nil, nil
+	}
+	if len(matchingReviews) != 1 {
+		return nil, fmt.Errorf("There are %d open reviews for the ref \"%s\"", len(matchingReviews), reviewRef)
+	}
+	return &matchingReviews[0], nil
 }

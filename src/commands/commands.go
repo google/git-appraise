@@ -53,8 +53,6 @@ var (
 	commentCmd = notImplemented("comment")
 	pullCmd    = notImplemented("pull")
 	pushCmd    = notImplemented("push")
-	showCmd    = notImplemented("show")
-	submitCmd  = notImplemented("submit")
 	syncCmd    = notImplemented("sync")
 )
 
