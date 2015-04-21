@@ -9,3 +9,5 @@
 {"timestamp":"1429639143","author":"amshali@google.com","description":"I'll go through this code review again later but if you want to merge it, please go ahead."}
 
 {"timestamp":"1429640966","author":"bstanley@google.com","description":"My only feedback is:  a few more comments would be helpful.  \\nNote: I am not familiar with the Go programming language.  Thanks for the intro!\\n\\nBarbara"}
+
+{"timestamp":"1429640966","author":"bstanley@google.com","location":{"commit":"b1ba6587e1f439ebb856d936720165860cf5cf72","path":"src/repository/git.go","range":{"startLine":46}},"description":"I like these one-liner, concise comments describing the function.  I wish most of the function had this -- especially in the 1st files."}
