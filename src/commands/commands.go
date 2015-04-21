@@ -36,6 +36,7 @@ func (cmd *Command) Run(args []string) {
 	cmd.RunMethod(args)
 }
 
+// notImplemented returns an implementation for subcommands that are not yet implemented.
 func notImplemented(subcommand string) *Command {
 	return &Command{
 		Usage: func(arg0 string) {

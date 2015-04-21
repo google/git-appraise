@@ -48,6 +48,9 @@ func (threads byTimestamp) Less(i, j int) bool {
 	return threads[i].Comment.Timestamp < threads[j].Comment.Timestamp
 }
 
+// updateThreadsStatus calculates the aggregate status of a sequence of comment threads.
+//
+// This has the side-effect of setting the "Resolved" field of all descendant comment threads.
 func updateThreadsStatus(threads []CommentThread) *bool {
 	sort.Sort(sort.Reverse(byTimestamp(threads)))
 	for _, thread := range threads {
@@ -59,6 +62,8 @@ func updateThreadsStatus(threads []CommentThread) *bool {
 	return nil
 }
 
+// updateResolvedStatus calculates the aggregate status of a single comment thread,
+// and updates the "Resolved" field of that thread accordingly.
 func (thread *CommentThread) updateResolvedStatus() {
 	resolved := updateThreadsStatus(thread.Children)
 	if resolved == nil {
@@ -67,6 +72,8 @@ func (thread *CommentThread) updateResolvedStatus() {
 	thread.Resolved = resolved
 }
 
+// loadComments reads in the log-structured sequence of comments for a review,
+// and then builds the corresponding tree-structured comment threads.
 func (review *Review) loadComments() []CommentThread {
 	commentNotes := repository.GetNotes(comment.Ref, review.Revision)
 	commentsByHash := comment.ParseAllValid(commentNotes)

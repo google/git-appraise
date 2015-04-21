@@ -25,6 +25,7 @@ import (
 	"strings"
 )
 
+// Template for the "request" subcommand's output.
 const requestSummaryTemplate = `Review requested:
 Commit: %s
 Target Ref: %s
@@ -43,6 +44,9 @@ var (
 	requestAllowUncommitted = requestFlagSet.Bool("allow-uncommitted", false, "Allow uncommitted local changes.")
 )
 
+// Create a new code review request.
+//
+// The "args" parameter is all of the command line arguments that followed the subcommand.
 func requestReview(args []string) {
 	requestFlagSet.Parse(args)
 
@@ -96,6 +100,7 @@ func requestReview(args []string) {
 	}
 }
 
+// requestCmd defines the "request" subcommand.
 var requestCmd = &Command{
 	Usage: func(arg0 string) {
 		fmt.Printf("Usage: %s request <option>...\n\nOptions:\n", arg0)

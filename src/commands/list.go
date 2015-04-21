@@ -21,11 +21,14 @@ import (
 	"review"
 )
 
+// Template for the text output of a review's summary.
 const listTemplate = `
   [%s] %s
     "%s"
 `
 
+// listReviews lists all extant reviews.
+// TODO(ojarjur): Add flags for filtering the output (e.g. to just open reviews).
 func listReviews(args []string) {
 	reviews := review.ListAll()
 	fmt.Printf("Loaded %d reviews:\n", len(reviews))
@@ -42,6 +45,7 @@ func listReviews(args []string) {
 	}
 }
 
+// listCmd defines the "list" subcommand.
 var listCmd = &Command{
 	Usage: func(arg0 string) {
 		fmt.Printf("Usage: %s list\n", arg0)
