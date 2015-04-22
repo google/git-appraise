@@ -31,6 +31,9 @@ var (
 	submitTBR    = submitFlagSet.Bool("tbr", false, "(To be reviewed) Force the submission of a review that has not been accepted.")
 )
 
+// Submit the current code review request.
+//
+// The "args" parameter contains all of the command line arguments that followed the subcommand.
 func submitReview(args []string) {
 	submitFlagSet.Parse(args)
 
@@ -74,6 +77,7 @@ func submitReview(args []string) {
 	}
 }
 
+// submitCmd defines the "submit" subcommand.
 var submitCmd = &Command{
 	Usage: func(arg0 string) {
 		fmt.Printf("Usage: %s submit <option>...\n\nOptions:\n", arg0)
