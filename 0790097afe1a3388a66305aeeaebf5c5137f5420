@@ -3,3 +3,5 @@
 {"timestamp":"1429747816","author":"amshali@google.com","location":{"commit":"9a281046eb9a348fd95c560c7ce588e8035a0b92","path":"src/repository/git.go","range":{"startLine":40}},"description":"Can you comment on what it does? What's the difference between this and runGitCommandOrDie?"}
 
 {"timestamp":"1429747816","author":"amshali@google.com","location":{"commit":"9a281046eb9a348fd95c560c7ce588e8035a0b92","path":"src/commands/show.go","range":{"startLine":26}},"description":"Do we have to pass it if we don't use it?"}
+
+{"timestamp":"1429748184","author":"ojarjur@google.com","location":{"commit":"9a281046eb9a348fd95c560c7ce588e8035a0b92","path":"src/repository/git.go","range":{"startLine":40}},"description":"Done."}
