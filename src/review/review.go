@@ -70,7 +70,7 @@ func (threads byTimestamp) Less(i, j int) bool {
 //
 // This has the side-effect of setting the "Resolved" field of all descendant comment threads.
 func updateThreadsStatus(threads []CommentThread) *bool {
-	sort.Sort(sort.Reverse(byTimestamp(threads)))
+	sort.Sort(byTimestamp(threads))
 	for _, thread := range threads {
 		thread.updateResolvedStatus()
 		if thread.Resolved != nil {
