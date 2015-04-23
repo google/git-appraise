@@ -22,9 +22,7 @@ import (
 )
 
 // showReview prints the current code review.
-//
-// The "args" parameter contains all of the command line arguments that followed the subcommand.
-func showReview(args []string) {
+func showReview() {
 	r, err := review.GetCurrent()
 	if err != nil {
 		fmt.Printf("Failed to load the current review: %v\n", err)
@@ -43,6 +41,6 @@ var showCmd = &Command{
 		fmt.Printf("Usage: %s show\n", arg0)
 	},
 	RunMethod: func(args []string) {
-		showReview(args)
+		showReview()
 	},
 }

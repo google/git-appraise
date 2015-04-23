@@ -31,12 +31,14 @@ const branchRefPrefix = "refs/heads/"
 // Note represents the contents of a git-note
 type Note []byte
 
+// Run the given git command and return its stdout, or an error if the command fails.
 func runGitCommand(args ...string) (string, error) {
 	cmd := exec.Command("git", args...)
 	out, err := cmd.Output()
 	return strings.Trim(string(out), "\n"), err
 }
 
+// Run the given git command using the same stdin, stdout, and stderr as the review tool.
 func runGitCommandInlineOrDie(args ...string) {
 	cmd := exec.Command("git", args...)
 	cmd.Stdin = os.Stdin
@@ -49,6 +51,7 @@ func runGitCommandInlineOrDie(args ...string) {
 	}
 }
 
+// Run the given git command and return its stdout.
 func runGitCommandOrDie(args ...string) string {
 	out, err := runGitCommand(args...)
 	if err != nil {
