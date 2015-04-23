@@ -90,6 +90,9 @@ schema.
           "id": "targetRef",
           "type": "string"
         },
+        "requester": {
+          "type": "string"
+        }
         "reviewers": {
           "type": "array",
           "items": {
