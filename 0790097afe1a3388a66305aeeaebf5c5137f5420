@@ -9,3 +9,5 @@
 {"timestamp":"1429748184","author":"ojarjur@google.com","location":{"commit":"9a281046eb9a348fd95c560c7ce588e8035a0b92","path":"src/commands/show.go","range":{"startLine":26}},"description":"Good point; removed."}
 
 {"timestamp":"1429748184","author":"ojarjur@google.com","location":{"commit":"9a281046eb9a348fd95c560c7ce588e8035a0b92","path":"src/review/review.go","range":{"startLine":186}},"description":"Yep; that's what it does (according to the documentation).\\n\\nThis is just the stock timestamp format that looked the most similar to what git uses."}
+
+{"timestamp":"1429750414","author":"amshali@google.com","resolved":true}
