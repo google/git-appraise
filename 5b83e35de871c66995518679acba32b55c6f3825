@@ -7,3 +7,5 @@
 {"timestamp":"1430950420","author":"amshali@google.com","location":{"commit":"aa26852425727c293a2fe32ec5dee6438ca0da16","path":"src/review/review.go","range":{"startLine":45}},"description":"\"If it is set to true ...\""}
 
 {"timestamp":"1430952470","author":"ojarjur@google.com","location":{"commit":"aa26852425727c293a2fe32ec5dee6438ca0da16","path":"src/review/review_test.go","range":{"startLine":298}},"description":"Done"}
+
+{"timestamp":"1430952470","author":"ojarjur@google.com","location":{"commit":"aa26852425727c293a2fe32ec5dee6438ca0da16","path":"src/review/review.go","range":{"startLine":79}},"description":"Done"}
