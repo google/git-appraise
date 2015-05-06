@@ -42,7 +42,7 @@ const (
 // The Resolved field represents the aggregate status of the entire thread. If
 // it is set to false, then it indicates that there is an unaddressed comment
 // in the thread. If it is unset, then that means that the root comment is an
-// FYI only, and that there are no unaddressed comments. It is set to true,
+// FYI only, and that there are no unaddressed comments. If it is set to true,
 // then that means that there are no unaddressed comments, and that the root
 // comment has its resolved bit set to true.
 type CommentThread struct {
@@ -74,6 +74,8 @@ func (threads byTimestamp) Less(i, j int) bool {
 }
 
 // updateThreadsStatus calculates the aggregate status of a sequence of comment threads.
+//
+// The aggregate status is the conjunction of all of the non-nil child statuses.
 //
 // This has the side-effect of setting the "Resolved" field of all descendant comment threads.
 func updateThreadsStatus(threads []CommentThread) *bool {

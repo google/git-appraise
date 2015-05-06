@@ -59,28 +59,40 @@ func TestCommentSorting(t *testing.T) {
 	}
 }
 
-func (commentThread *CommentThread) validateUnresolved(t *testing.T) {
-	if commentThread.Resolved != nil {
-		t.Fatalf("Expected resolved status to be unset, but instead it was %v", *commentThread.Resolved)
+func validateUnresolved(t *testing.T, resolved *bool) {
+	if resolved != nil {
+		t.Fatalf("Expected resolved status to be unset, but instead it was %v", *resolved)
 	}
 }
 
-func (commentThread *CommentThread) validateAccepted(t *testing.T) {
-	if commentThread.Resolved == nil {
+func validateAccepted(t *testing.T, resolved *bool) {
+	if resolved == nil {
 		t.Fatal("Expected resolved status to be true, but it was unset")
 	}
-	if !*commentThread.Resolved {
+	if !*resolved {
 		t.Fatal("Expected resolved status to be true, but it was false")
 	}
 }
 
-func (commentThread *CommentThread) validateRejected(t *testing.T) {
-	if commentThread.Resolved == nil {
+func validateRejected(t *testing.T, resolved *bool) {
+	if resolved == nil {
 		t.Fatal("Expected resolved status to be false, but it was unset")
 	}
-	if *commentThread.Resolved {
+	if *resolved {
 		t.Fatal("Expected resolved status to be false, but it was true")
 	}
+}
+
+func (commentThread *CommentThread) validateUnresolved(t *testing.T) {
+	validateUnresolved(t, commentThread.Resolved)
+}
+
+func (commentThread *CommentThread) validateAccepted(t *testing.T) {
+	validateAccepted(t, commentThread.Resolved)
+}
+
+func (commentThread *CommentThread) validateRejected(t *testing.T) {
+	validateRejected(t, commentThread.Resolved)
 }
 
 func TestSimpleAcceptedThreadStatus(t *testing.T) {
@@ -295,12 +307,7 @@ func TestRejectedThenAcceptedThreadsStatus(t *testing.T) {
 		},
 	}
 	status := updateThreadsStatus(threads)
-	if status == nil {
-		t.Fatal("Failed to resolve the status of a sequence of comment threads")
-	}
-	if *status {
-		t.Fatal("Expected a resolved status of false, but was true")
-	}
+	validateRejected(t, status)
 }
 
 func TestRejectedThenFYIThreadsStatus(t *testing.T) {
@@ -320,12 +327,7 @@ func TestRejectedThenFYIThreadsStatus(t *testing.T) {
 		},
 	}
 	status := updateThreadsStatus(threads)
-	if status == nil {
-		t.Fatal("Failed to resolve the status of a sequence of comment threads")
-	}
-	if *status {
-		t.Fatal("Expected a resolved status of false, but was true")
-	}
+	validateRejected(t, status)
 }
 
 func TestRejectedThenRejectedThreadsStatus(t *testing.T) {
@@ -345,12 +347,7 @@ func TestRejectedThenRejectedThreadsStatus(t *testing.T) {
 		},
 	}
 	status := updateThreadsStatus(threads)
-	if status == nil {
-		t.Fatal("Failed to resolve the status of a sequence of comment threads")
-	}
-	if *status {
-		t.Fatal("Expected a resolved status of false, but was true")
-	}
+	validateRejected(t, status)
 }
 
 func TestAcceptedThenAcceptedThreadsStatus(t *testing.T) {
@@ -370,12 +367,7 @@ func TestAcceptedThenAcceptedThreadsStatus(t *testing.T) {
 		},
 	}
 	status := updateThreadsStatus(threads)
-	if status == nil {
-		t.Fatal("Failed to resolve the status of a sequence of comment threads")
-	}
-	if !*status {
-		t.Fatal("Expected a resolved status of true, but was false")
-	}
+	validateAccepted(t, status)
 }
 
 func TestAcceptedThenFYIThreadsStatus(t *testing.T) {
@@ -395,12 +387,7 @@ func TestAcceptedThenFYIThreadsStatus(t *testing.T) {
 		},
 	}
 	status := updateThreadsStatus(threads)
-	if status == nil {
-		t.Fatal("Failed to resolve the status of a sequence of comment threads")
-	}
-	if !*status {
-		t.Fatal("Expected a resolved status of true, but was false")
-	}
+	validateAccepted(t, status)
 }
 
 func TestAcceptedThenRejectedThreadsStatus(t *testing.T) {
@@ -421,12 +408,7 @@ func TestAcceptedThenRejectedThreadsStatus(t *testing.T) {
 		},
 	}
 	status := updateThreadsStatus(threads)
-	if status == nil {
-		t.Fatal("Failed to resolve the status of a sequence of comment threads")
-	}
-	if *status {
-		t.Fatal("Expected a resolved status of false, but was true")
-	}
+	validateRejected(t, status)
 }
 
 func TestFYIThenAcceptedThreadsStatus(t *testing.T) {
@@ -446,12 +428,7 @@ func TestFYIThenAcceptedThreadsStatus(t *testing.T) {
 		},
 	}
 	status := updateThreadsStatus(threads)
-	if status == nil {
-		t.Fatal("Failed to resolve the status of a sequence of comment threads")
-	}
-	if !*status {
-		t.Fatal("Expected a resolved status of true, but was false")
-	}
+	validateAccepted(t, status)
 }
 
 func TestFYIThenFYIThreadsStatus(t *testing.T) {
@@ -470,9 +447,7 @@ func TestFYIThenFYIThreadsStatus(t *testing.T) {
 		},
 	}
 	status := updateThreadsStatus(threads)
-	if status != nil {
-		t.Fatalf("Expected the status to be unresolved, but was %v", *status)
-	}
+	validateUnresolved(t, status)
 }
 
 func TestFYIThenRejectedThreadsStatus(t *testing.T) {
@@ -492,10 +467,5 @@ func TestFYIThenRejectedThreadsStatus(t *testing.T) {
 		},
 	}
 	status := updateThreadsStatus(threads)
-	if status == nil {
-		t.Fatal("Failed to resolve the status of a sequence of comment threads")
-	}
-	if *status {
-		t.Fatal("Expected a resolved status of false, but was true")
-	}
+	validateRejected(t, status)
 }
