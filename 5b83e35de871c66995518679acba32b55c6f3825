@@ -3,3 +3,5 @@
 {"timestamp":"1430950420","author":"amshali@google.com","location":{"commit":"aa26852425727c293a2fe32ec5dee6438ca0da16","path":"src/review/review_test.go","range":{"startLine":298}},"description":"Convert this into a helper method since it is repeated more than a few times."}
 
 {"timestamp":"1430950420","author":"amshali@google.com","location":{"commit":"aa26852425727c293a2fe32ec5dee6438ca0da16","path":"src/review/review.go","range":{"startLine":79}},"description":"Can you comment on what's the meaning of nil return value here? What is the meaning of different values of return result here?"}
+
+{"timestamp":"1430950420","author":"amshali@google.com","location":{"commit":"aa26852425727c293a2fe32ec5dee6438ca0da16","path":"src/review/review.go","range":{"startLine":45}},"description":"\"If it is set to true ...\""}
