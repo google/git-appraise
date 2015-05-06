@@ -58,7 +58,7 @@ type Comment struct {
 	// If location is provided, then the comment is specific to that given location.
 	Location    *CommentLocation `json:"location,omitempty"`
 	Description string           `json:"description,omitempty"`
-	// The resolved bit indicates whether further action is needed.
+	// The resolved bit indicates that no further action is needed.
 	//
 	// When the parent of the comment is another comment, this means that comment
 	// has been addressed. Otherwise, the parent is the commit, and this means that the
