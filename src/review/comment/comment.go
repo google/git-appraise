@@ -58,8 +58,11 @@ type Comment struct {
 	// If location is provided, then the comment is specific to that given location.
 	Location    *CommentLocation `json:"location,omitempty"`
 	Description string           `json:"description,omitempty"`
-	// The resolved bit indicates whether to accept or reject the review. If unset,
-	// it indicates that the comment is only an FYI.
+	// The resolved bit indicates whether further action is needed.
+	//
+	// When the parent of the comment is another comment, this means that comment
+	// has been addressed. Otherwise, the parent is the commit, and this means that the
+	// change has been accepted. If the resolved bit is unset, then the comment is only an FYI.
 	Resolved *bool `json:"resolved,omitempty"`
 }
 

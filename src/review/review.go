@@ -38,6 +38,13 @@ const (
 )
 
 // CommentThread represents the tree-based hierarchy of comments.
+//
+// The Resolved field represents the aggregate status of the entire thread. If
+// it is set to false, then it indicates that there is an unaddressed comment
+// in the thread. If it is unset, then that means that the root comment is an
+// FYI only, and that there are no unaddressed comments. It is set to true,
+// then that means that there are no unaddressed comments, and that the root
+// comment has its resolved bit set to true.
 type CommentThread struct {
 	Comment  comment.Comment
 	Children []CommentThread
@@ -71,13 +78,16 @@ func (threads byTimestamp) Less(i, j int) bool {
 // This has the side-effect of setting the "Resolved" field of all descendant comment threads.
 func updateThreadsStatus(threads []CommentThread) *bool {
 	sort.Sort(byTimestamp(threads))
+	noUnresolved := true
+	var result *bool
 	for _, thread := range threads {
 		thread.updateResolvedStatus()
 		if thread.Resolved != nil {
-			return thread.Resolved
+			noUnresolved = noUnresolved && *thread.Resolved
+			result = &noUnresolved
 		}
 	}
-	return nil
+	return result
 }
 
 // updateResolvedStatus calculates the aggregate status of a single comment thread,
@@ -85,8 +95,20 @@ func updateThreadsStatus(threads []CommentThread) *bool {
 func (thread *CommentThread) updateResolvedStatus() {
 	resolved := updateThreadsStatus(thread.Children)
 	if resolved == nil {
-		resolved = thread.Comment.Resolved
+		thread.Resolved = thread.Comment.Resolved
+		return
 	}
+
+	if !*resolved {
+		thread.Resolved = resolved
+		return
+	}
+
+	if thread.Comment.Resolved == nil || !*thread.Comment.Resolved {
+		thread.Resolved = nil
+		return
+	}
+
 	thread.Resolved = resolved
 }
 
