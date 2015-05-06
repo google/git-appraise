@@ -1,1 +1,3 @@
 {"timestamp":"1430943647","author":"bstanley@google.com","description":"LGTM."}
+
+{"timestamp":"1430950420","author":"amshali@google.com","location":{"commit":"aa26852425727c293a2fe32ec5dee6438ca0da16","path":"src/review/review_test.go","range":{"startLine":298}},"description":"Convert this into a helper method since it is repeated more than a few times."}
