@@ -1,0 +1,1 @@
+{"reviewRef":"refs/heads/ojarjur/trim-spaces-from-reviewers","targetRef":"refs/heads/master","requester":"ojarjur@google.com","reviewers":["amshali@google.com","bstanley@google.com"],"description":"Fix the bug with handling spaces in the reviewers list. This was also verified by using spaces in the command for requesting this review."}
