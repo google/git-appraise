@@ -17,8 +17,8 @@ limitations under the License.
 package review
 
 import (
-	"review/comment"
 	"sort"
+	"source.developers.google.com/id/0tH0wAQFren.git/review/comment"
 	"testing"
 )
 

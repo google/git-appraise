@@ -20,8 +20,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"repository"
-	"review/request"
+	"source.developers.google.com/id/0tH0wAQFren.git/repository"
+	"source.developers.google.com/id/0tH0wAQFren.git/review/request"
 	"strings"
 )
 

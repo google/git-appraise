@@ -19,8 +19,8 @@ package commands
 import (
 	"flag"
 	"fmt"
-	"repository"
-	"review"
+	"source.developers.google.com/id/0tH0wAQFren.git/repository"
+	"source.developers.google.com/id/0tH0wAQFren.git/review"
 )
 
 var submitFlagSet = flag.NewFlagSet("submit", flag.ExitOnError)

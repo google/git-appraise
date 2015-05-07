@@ -26,11 +26,11 @@ limitations under the License.
 package main
 
 import (
-	"commands"
 	"fmt"
 	"os"
-	"repository"
 	"sort"
+	"source.developers.google.com/id/0tH0wAQFren.git/commands"
+	"source.developers.google.com/id/0tH0wAQFren.git/repository"
 	"strings"
 )
 

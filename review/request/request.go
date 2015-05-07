@@ -19,7 +19,7 @@ package request
 
 import (
 	"encoding/json"
-	"repository"
+	"source.developers.google.com/id/0tH0wAQFren.git/repository"
 )
 
 // Ref defines the git-notes ref that we expect to contain review requests.

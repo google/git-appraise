@@ -18,25 +18,29 @@ package commands
 
 import (
 	"fmt"
-	"review"
+	"source.developers.google.com/id/0tH0wAQFren.git/review"
 )
 
-// listReviews lists all extant reviews.
-// TODO(ojarjur): Add flags for filtering the output (e.g. to just open reviews).
-func listReviews(args []string) {
-	reviews := review.ListAll()
-	fmt.Printf("Loaded %d reviews:\n", len(reviews))
-	for _, review := range review.ListAll() {
-		review.PrintSummary()
+// showReview prints the current code review.
+func showReview() {
+	r, err := review.GetCurrent()
+	if err != nil {
+		fmt.Printf("Failed to load the current review: %v\n", err)
+		return
 	}
+	if r == nil {
+		fmt.Println("There is no current review.")
+		return
+	}
+	r.PrintDetails()
 }
 
-// listCmd defines the "list" subcommand.
-var listCmd = &Command{
+// showCmd defines the "show" subcommand.
+var showCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s list\n", arg0)
+		fmt.Printf("Usage: %s show\n", arg0)
 	},
 	RunMethod: func(args []string) {
-		listReviews(args)
+		showReview()
 	},
 }

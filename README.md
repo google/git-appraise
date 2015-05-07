@@ -8,7 +8,7 @@ repositories.
 Assuming you have the [Go tools installed](https://golang.org/doc/install), run
 the following command:
 
-    go get source.developers.google.com/id/0tH0wAQFren.git/src
+    go get source.developers.google.com/id/0tH0wAQFren.git/git-review
 
 Then, to add "review" git alias, run the following command.
 

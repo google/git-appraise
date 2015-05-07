@@ -19,10 +19,10 @@ package review
 
 import (
 	"fmt"
-	"repository"
-	"review/comment"
-	"review/request"
 	"sort"
+	"source.developers.google.com/id/0tH0wAQFren.git/repository"
+	"source.developers.google.com/id/0tH0wAQFren.git/review/comment"
+	"source.developers.google.com/id/0tH0wAQFren.git/review/request"
 	"strconv"
 	"time"
 )
