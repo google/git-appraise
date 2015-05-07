@@ -18,22 +18,22 @@ limitations under the License.
 package commands
 
 import (
+	"errors"
 	"fmt"
-	"log"
 )
 
 // Command represents the definition of a single command.
 type Command struct {
 	Usage     func(string)
-	RunMethod func([]string)
+	RunMethod func([]string) error
 }
 
 // Run executes a command, given its arguments.
 //
 // The args parameter is all of the command line args that followed the
 // subcommand.
-func (cmd *Command) Run(args []string) {
-	cmd.RunMethod(args)
+func (cmd *Command) Run(args []string) error {
+	return cmd.RunMethod(args)
 }
 
 // notImplemented returns an implementation for subcommands that are not yet implemented.
@@ -42,8 +42,8 @@ func notImplemented(subcommand string) *Command {
 		Usage: func(arg0 string) {
 			fmt.Printf("Subcommand \"%s\" is not yet implemented.\n", subcommand)
 		},
-		RunMethod: func(args []string) {
-			log.Fatal("Not Implemented")
+		RunMethod: func(args []string) error {
+			return errors.New("Not Implemented")
 		},
 	}
 }

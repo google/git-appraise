@@ -86,5 +86,8 @@ func main() {
 		usage()
 		return
 	}
-	subcommand.Run(os.Args[2:])
+	if err := subcommand.Run(os.Args[2:]); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 }

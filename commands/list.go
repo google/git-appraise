@@ -36,7 +36,8 @@ var listCmd = &Command{
 	Usage: func(arg0 string) {
 		fmt.Printf("Usage: %s list\n", arg0)
 	},
-	RunMethod: func(args []string) {
+	RunMethod: func(args []string) error {
 		listReviews(args)
+		return nil
 	},
 }

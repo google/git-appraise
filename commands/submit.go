@@ -17,6 +17,7 @@ limitations under the License.
 package commands
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"source.developers.google.com/id/0tH0wAQFren.git/repository"
@@ -34,27 +35,23 @@ var (
 // Submit the current code review request.
 //
 // The "args" parameter contains all of the command line arguments that followed the subcommand.
-func submitReview(args []string) {
+func submitReview(args []string) error {
 	submitFlagSet.Parse(args)
 
 	if *submitMerge && *submitRebase {
-		fmt.Println("Only one of --merge or --rebase is allowed.")
-		return
+		return errors.New("Only one of --merge or --rebase is allowed.")
 	}
 
 	r, err := review.GetCurrent()
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 	if r == nil {
-		fmt.Println("There is nothing to submit")
-		return
+		return errors.New("There is nothing to submit")
 	}
 
 	if !*submitTBR && (r.Resolved == nil || !*r.Resolved) {
-		fmt.Println("Not submitting as the review has not yet been accepted.")
-		return
+		return errors.New("Not submitting as the review has not yet been accepted.")
 	}
 
 	target := r.Request.TargetRef
@@ -63,8 +60,7 @@ func submitReview(args []string) {
 	repository.VerifyGitRefOrDie(source)
 
 	if !repository.IsAncestor(target, source) {
-		fmt.Println("Refusing to submit a non-fast-forward review. First merge the target ref.")
-		return
+		return errors.New("Refusing to submit a non-fast-forward review. First merge the target ref.")
 	}
 
 	repository.SwitchToRef(target)
@@ -75,6 +71,7 @@ func submitReview(args []string) {
 	} else {
 		repository.MergeRef(source, true)
 	}
+	return nil
 }
 
 // submitCmd defines the "submit" subcommand.
@@ -83,7 +80,7 @@ var submitCmd = &Command{
 		fmt.Printf("Usage: %s submit <option>...\n\nOptions:\n", arg0)
 		submitFlagSet.PrintDefaults()
 	},
-	RunMethod: func(args []string) {
-		submitReview(args)
+	RunMethod: func(args []string) error {
+		return submitReview(args)
 	},
 }

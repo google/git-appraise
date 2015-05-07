@@ -17,9 +17,9 @@ limitations under the License.
 package commands
 
 import (
+	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"source.developers.google.com/id/0tH0wAQFren.git/repository"
 	"source.developers.google.com/id/0tH0wAQFren.git/review/request"
 	"strings"
@@ -64,15 +64,14 @@ func buildRequestFromFlags() request.Request {
 // Create a new code review request.
 //
 // The "args" parameter is all of the command line arguments that followed the subcommand.
-func requestReview(args []string) {
+func requestReview(args []string) error {
 	requestFlagSet.Parse(args)
 
 	if !*requestAllowUncommitted {
 		// Requesting a code review with uncommited local changes is usually a mistake, so
 		// we want to report that to the user instead of creating the request.
 		if repository.HasUncommittedChanges() {
-			fmt.Println("You have uncommitted or untracked files. Use --allow-uncommitted to ignore those.")
-			return
+			return errors.New("You have uncommitted or untracked files. Use --allow-uncommitted to ignore those.")
 		}
 	}
 
@@ -85,8 +84,7 @@ func requestReview(args []string) {
 
 	reviewCommits := repository.ListCommitsBetween(r.TargetRef, r.ReviewRef)
 	if reviewCommits == nil {
-		fmt.Println("There are no commits included in the review request")
-		return
+		return errors.New("There are no commits included in the review request")
 	}
 
 	if r.Description == "" {
@@ -96,12 +94,13 @@ func requestReview(args []string) {
 	r.Requester = repository.GetUserEmail()
 	note, err := r.Write()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	repository.AppendNote(request.Ref, reviewCommits[0], note)
 	if !*requestQuiet {
 		fmt.Printf(requestSummaryTemplate, reviewCommits[0], r.TargetRef, r.ReviewRef, r.Description)
 	}
+	return nil
 }
 
 // requestCmd defines the "request" subcommand.
@@ -110,7 +109,7 @@ var requestCmd = &Command{
 		fmt.Printf("Usage: %s request <option>...\n\nOptions:\n", arg0)
 		requestFlagSet.PrintDefaults()
 	},
-	RunMethod: func(args []string) {
-		requestReview(args)
+	RunMethod: func(args []string) error {
+		return requestReview(args)
 	},
 }

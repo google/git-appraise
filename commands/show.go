@@ -17,22 +17,22 @@ limitations under the License.
 package commands
 
 import (
+	"errors"
 	"fmt"
 	"source.developers.google.com/id/0tH0wAQFren.git/review"
 )
 
 // showReview prints the current code review.
-func showReview() {
+func showReview() error {
 	r, err := review.GetCurrent()
 	if err != nil {
-		fmt.Printf("Failed to load the current review: %v\n", err)
-		return
+		return fmt.Errorf("Failed to load the current review: %v\n", err)
 	}
 	if r == nil {
-		fmt.Println("There is no current review.")
-		return
+		return errors.New("There is no current review.")
 	}
 	r.PrintDetails()
+	return nil
 }
 
 // showCmd defines the "show" subcommand.
@@ -40,7 +40,7 @@ var showCmd = &Command{
 	Usage: func(arg0 string) {
 		fmt.Printf("Usage: %s show\n", arg0)
 	},
-	RunMethod: func(args []string) {
-		showReview()
+	RunMethod: func(args []string) error {
+		return showReview()
 	},
 }
