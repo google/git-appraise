@@ -44,6 +44,23 @@ var (
 	requestAllowUncommitted = requestFlagSet.Bool("allow-uncommitted", false, "Allow uncommitted local changes.")
 )
 
+// Build the template review request based solely on the parsed flag values.
+func buildRequestFromFlags() request.Request {
+	var reviewers []string
+	if len(*requestReviewers) > 0 {
+		for _, reviewer := range strings.Split(*requestReviewers, ",") {
+			reviewers = append(reviewers, strings.TrimSpace(reviewer))
+		}
+	}
+
+	return request.Request{
+		Reviewers:   reviewers,
+		ReviewRef:   *requestSource,
+		TargetRef:   *requestTarget,
+		Description: *requestMessage,
+	}
+}
+
 // Create a new code review request.
 //
 // The "args" parameter is all of the command line arguments that followed the subcommand.
@@ -59,45 +76,31 @@ func requestReview(args []string) {
 		}
 	}
 
-	target := *requestTarget
-	source := *requestSource
-	if source == "HEAD" {
-		source = repository.GetHeadRef()
+	r := buildRequestFromFlags()
+	if r.ReviewRef == "HEAD" {
+		r.ReviewRef = repository.GetHeadRef()
 	}
+	repository.VerifyGitRefOrDie(r.TargetRef)
+	repository.VerifyGitRefOrDie(r.ReviewRef)
 
-	repository.VerifyGitRefOrDie(target)
-	repository.VerifyGitRefOrDie(source)
-
-	reviewCommits := repository.ListCommitsBetween(target, source)
+	reviewCommits := repository.ListCommitsBetween(r.TargetRef, r.ReviewRef)
 	if reviewCommits == nil {
 		fmt.Println("There are no commits included in the review request")
 		return
 	}
 
-	description := *requestMessage
-	if description == "" {
-		description = repository.GetCommitMessage(reviewCommits[0])
+	if r.Description == "" {
+		r.Description = repository.GetCommitMessage(reviewCommits[0])
 	}
 
-	reviewers := make([]string, 0)
-	if len(*requestReviewers) > 0 {
-		reviewers = strings.Split(*requestReviewers, ",")
-	}
-
-	r := request.Request{
-		Requester:   repository.GetUserEmail(),
-		Reviewers:   reviewers,
-		ReviewRef:   source,
-		TargetRef:   target,
-		Description: description,
-	}
+	r.Requester = repository.GetUserEmail()
 	note, err := r.Write()
 	if err != nil {
 		log.Fatal(err)
 	}
 	repository.AppendNote(request.Ref, reviewCommits[0], note)
 	if !*requestQuiet {
-		fmt.Printf(requestSummaryTemplate, reviewCommits[0], target, source, description)
+		fmt.Printf(requestSummaryTemplate, reviewCommits[0], r.TargetRef, r.ReviewRef, r.Description)
 	}
 }
 
