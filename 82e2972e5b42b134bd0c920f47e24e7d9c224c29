@@ -1,3 +1,5 @@
 {"timestamp":"1431060170","author":"amshali@google.com","location":{"commit":"82e2972e5b42b134bd0c920f47e24e7d9c224c29","path":"commands/list.go","range":{"startLine":40}},"description":"Are we sure listReviews is always successful?"}
 
 {"timestamp":"1431101393","author":"ojarjur@google.com","location":{"commit":"82e2972e5b42b134bd0c920f47e24e7d9c224c29","path":"commands/list.go","range":{"startLine":40}},"description":"Yes, it takes no arguments, and if there are no reviews then an empty list is still a valid thing to display."}
+
+{"timestamp":"1431104008","author":"amshali@google.com","resolved":true}
