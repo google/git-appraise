@@ -116,8 +116,8 @@ func (thread *CommentThread) updateResolvedStatus() {
 
 // loadComments reads in the log-structured sequence of comments for a review,
 // and then builds the corresponding tree-structured comment threads.
-func (review *Review) loadComments() []CommentThread {
-	commentNotes := repository.GetNotes(comment.Ref, review.Revision)
+func (r *Review) loadComments() []CommentThread {
+	commentNotes := repository.GetNotes(comment.Ref, r.Revision)
 	commentsByHash := comment.ParseAllValid(commentNotes)
 	threadsByHash := make(map[string]CommentThread)
 	for hash, comment := range commentsByHash {

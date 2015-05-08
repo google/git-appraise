@@ -28,18 +28,18 @@ import (
 // Ref defines the git-notes ref that we expect to contain review comments.
 const Ref = "refs/notes/devtools/discuss"
 
-// CommentRange represents the range of text that is under discussion.
-type CommentRange struct {
+// Range represents the range of text that is under discussion.
+type Range struct {
 	StartLine uint32 `json:"startLine"`
 }
 
-// CommentLocation represents the location of a comment within a commit.
-type CommentLocation struct {
+// Location represents the location of a comment within a commit.
+type Location struct {
 	Commit string `json:"commit,omitempty"`
 	// If the path is omitted, then the comment applies to the entire commit.
 	Path string `json:"path,omitempty"`
 	// If the range is omitted, then the location represents an entire file.
-	Range *CommentRange `json:"range,omitempty"`
+	Range *Range `json:"range,omitempty"`
 }
 
 // Comment represents a review comment, and can occur in any of the following contexts:
@@ -56,8 +56,8 @@ type Comment struct {
 	// If parent is provided, then the comment is a response to another comment.
 	Parent string `json:"parent,omitempty"`
 	// If location is provided, then the comment is specific to that given location.
-	Location    *CommentLocation `json:"location,omitempty"`
-	Description string           `json:"description,omitempty"`
+	Location    *Location `json:"location,omitempty"`
+	Description string    `json:"description,omitempty"`
 	// The resolved bit indicates that no further action is needed.
 	//
 	// When the parent of the comment is another comment, this means that comment
