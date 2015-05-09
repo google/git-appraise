@@ -31,7 +31,7 @@ func push(args []string) error {
 	}
 
 	remote := "origin"
-	if args != nil {
+	if len(args) == 1 {
 		remote = args[0]
 	}
 
