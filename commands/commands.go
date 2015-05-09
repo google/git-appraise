@@ -51,9 +51,6 @@ func notImplemented(subcommand string) *Command {
 var (
 	acceptCmd  = notImplemented("accept")
 	commentCmd = notImplemented("comment")
-	pullCmd    = notImplemented("pull")
-	pushCmd    = notImplemented("push")
-	syncCmd    = notImplemented("sync")
 )
 
 // CommandMap defines all of the available (sub)commands.
@@ -66,5 +63,4 @@ var CommandMap = map[string]*Command{
 	"request": requestCmd,
 	"show":    showCmd,
 	"submit":  submitCmd,
-	"sync":    syncCmd,
 }

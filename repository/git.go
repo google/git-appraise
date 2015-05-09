@@ -205,3 +205,39 @@ func ListNotedRevisions(notesRef string) []string {
 	}
 	return revisions
 }
+
+// PushNotes pushes git notes to a remote repo.
+func PushNotes(remote, notesRef string) error {
+	// Normalize the notes ref to be relative to the "refs/notes/" prefix.
+	// This makes it easier to build the refspec later on.
+	notesRef = strings.TrimPrefix(notesRef, "refs/notes/")
+	refspec := fmt.Sprintf("refs/notes/%s:refs/notes/%s", notesRef, notesRef)
+
+	// The push is liable to fail if the user forgot to do a pull first, so
+	// we treat errors as user errors rather than fatal errors.
+	out, err := runGitCommand("push", remote, refspec)
+	if err != nil {
+		return fmt.Errorf("Failed to push to the remote '%s': %s", remote, out)
+	}
+	return nil
+}
+
+// PullNotes fetches the contents of the given notes ref from a remote repo,
+// and then merges them with the corresponding local notes using the
+// "cat_sort_uniq" strategy.
+func PullNotes(remote, notesRef string) {
+	// Normalize the notes ref to be relative to the "refs/notes/" prefix.
+	// This makes it easier to build the refspec later on.
+	notesRef = strings.TrimPrefix(notesRef, "refs/notes/")
+	localNotesRef := "refs/notes/" + notesRef
+	remoteNotesRef := "refs/notes/" + remote + "/" + notesRef
+
+	if runGitCommandOrDie("ls-remote", remote, localNotesRef) == "" {
+		// There is nothing to pull from the remote.
+		return
+	}
+
+	fetchRefSpec := fmt.Sprintf("+%s:%s", localNotesRef, remoteNotesRef)
+	runGitCommandOrDie("fetch", remote, fetchRefSpec)
+	runGitCommandOrDie("notes", "--ref", localNotesRef, "merge", remoteNotesRef, "-s", "cat_sort_uniq")
+}

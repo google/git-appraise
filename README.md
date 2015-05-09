@@ -57,10 +57,6 @@ Submitting a review:
 
     git review submit [--merge | --rebase]
 
-Continuously push and pull reviews to/from a remote:
-
-    git review sync [<remote>]
-
 ## Metadata
 
 The code review data is stored in git-notes, using the formats described below.
