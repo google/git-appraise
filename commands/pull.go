@@ -20,8 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"source.developers.google.com/id/0tH0wAQFren.git/repository"
-	"source.developers.google.com/id/0tH0wAQFren.git/review/comment"
-	"source.developers.google.com/id/0tH0wAQFren.git/review/request"
 )
 
 // pull updates the local git-notes used for reviews with those from a remote repo.
@@ -35,8 +33,7 @@ func pull(args []string) error {
 		remote = args[0]
 	}
 
-	repository.PullNotes(remote, request.Ref)
-	repository.PullNotes(remote, comment.Ref)
+	repository.PullNotes(remote, notesRefPattern)
 	return nil
 }
 

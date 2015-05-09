@@ -20,8 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"source.developers.google.com/id/0tH0wAQFren.git/repository"
-	"source.developers.google.com/id/0tH0wAQFren.git/review/comment"
-	"source.developers.google.com/id/0tH0wAQFren.git/review/request"
 )
 
 // push pushes the local git-notes used for reviews to a remote repo.
@@ -35,11 +33,7 @@ func push(args []string) error {
 		remote = args[0]
 	}
 
-	err := repository.PushNotes(remote, request.Ref)
-	if err != nil {
-		return err
-	}
-	return repository.PushNotes(remote, comment.Ref)
+	return repository.PushNotes(remote, notesRefPattern)
 }
 
 var pushCmd = &Command{

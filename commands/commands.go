@@ -22,6 +22,8 @@ import (
 	"fmt"
 )
 
+const notesRefPattern = "refs/notes/devtools/*"
+
 // Command represents the definition of a single command.
 type Command struct {
 	Usage     func(string)

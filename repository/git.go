@@ -39,12 +39,17 @@ func runGitCommand(args ...string) (string, error) {
 }
 
 // Run the given git command using the same stdin, stdout, and stderr as the review tool.
-func runGitCommandInlineOrDie(args ...string) {
+func runGitCommandInline(args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	return cmd.Run()
+}
+
+// Run the given git command using the same stdin, stdout, and stderr as the review tool.
+func runGitCommandInlineOrDie(args ...string) {
+	err := runGitCommandInline(args...)
 	if err != nil {
 		log.Print("git", args)
 		log.Fatal(err)
@@ -207,37 +212,38 @@ func ListNotedRevisions(notesRef string) []string {
 }
 
 // PushNotes pushes git notes to a remote repo.
-func PushNotes(remote, notesRef string) error {
-	// Normalize the notes ref to be relative to the "refs/notes/" prefix.
-	// This makes it easier to build the refspec later on.
-	notesRef = strings.TrimPrefix(notesRef, "refs/notes/")
-	refspec := fmt.Sprintf("refs/notes/%s:refs/notes/%s", notesRef, notesRef)
+func PushNotes(remote, notesRefPattern string) error {
+	refspec := fmt.Sprintf("%s:%s", notesRefPattern, notesRefPattern)
 
 	// The push is liable to fail if the user forgot to do a pull first, so
 	// we treat errors as user errors rather than fatal errors.
-	out, err := runGitCommand("push", remote, refspec)
+	err := runGitCommandInline("push", remote, refspec)
 	if err != nil {
-		return fmt.Errorf("Failed to push to the remote '%s': %s", remote, out)
+		return fmt.Errorf("Failed to push to the remote '%s': %v", remote, err)
 	}
 	return nil
+}
+
+func getRemoteNotesRef(remote, localNotesRef string) string {
+	relativeNotesRef := strings.TrimPrefix(localNotesRef, "refs/notes/")
+	return "refs/notes/" + remote + "/" + relativeNotesRef
 }
 
 // PullNotes fetches the contents of the given notes ref from a remote repo,
 // and then merges them with the corresponding local notes using the
 // "cat_sort_uniq" strategy.
-func PullNotes(remote, notesRef string) {
-	// Normalize the notes ref to be relative to the "refs/notes/" prefix.
-	// This makes it easier to build the refspec later on.
-	notesRef = strings.TrimPrefix(notesRef, "refs/notes/")
-	localNotesRef := "refs/notes/" + notesRef
-	remoteNotesRef := "refs/notes/" + remote + "/" + notesRef
+func PullNotes(remote, notesRefPattern string) {
+	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
+	fetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
+	runGitCommandInlineOrDie("fetch", remote, fetchRefSpec)
 
-	if runGitCommandOrDie("ls-remote", remote, localNotesRef) == "" {
-		// There is nothing to pull from the remote.
-		return
+	remoteRefs := runGitCommandOrDie("ls-remote", remote, notesRefPattern)
+	for _, line := range strings.Split(remoteRefs, "\n") {
+		lineParts := strings.Split(line, "\t")
+		if len(lineParts) == 2 {
+			ref := lineParts[1]
+			remoteRef := getRemoteNotesRef(remote, ref)
+			runGitCommandOrDie("notes", "--ref", ref, "merge", remoteRef, "-s", "cat_sort_uniq")
+		}
 	}
-
-	fetchRefSpec := fmt.Sprintf("+%s:%s", localNotesRef, remoteNotesRef)
-	runGitCommandOrDie("fetch", remote, fetchRefSpec)
-	runGitCommandOrDie("notes", "--ref", localNotesRef, "merge", remoteNotesRef, "-s", "cat_sort_uniq")
 }
