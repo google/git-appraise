@@ -7,3 +7,5 @@
 {"timestamp":"1431386279","author":"amshali@google.com","location":{"commit":"7d3b2f2157e7c1125b354fd5f786e37dafcdc889","path":"repository/git.go","range":{"startLine":229}},"description":"return \"refs/notes/\" + remote + \"/\" + strings.TrimPrefix(localNotesRef, \"refs/notes/\")\n?\n"}
 
 {"timestamp":"1431386602","author":"ojarjur@google.com","location":{"commit":"7d3b2f2157e7c1125b354fd5f786e37dafcdc889","path":"repository/git.go","range":{"startLine":229}},"description":"I actually prefer the intermediate value, as it documents what is going on and makes an otherwise quite unwieldy statement easier to understand."}
+
+{"timestamp":"1431386602","author":"ojarjur@google.com","location":{"commit":"7d3b2f2157e7c1125b354fd5f786e37dafcdc889","path":"commands/pull.go","range":{"startLine":45}},"description":"No, the return type is error, so nil means there was no error (everything worked as expected)."}
