@@ -1,3 +1,5 @@
 {"timestamp":"1431134560","author":"bstanley@google.com","description":"My only question that applies throughout:  What if an error occurs?\n\nBarbara"}
 
 {"timestamp":"1431134560","author":"bstanley@google.com","location":{"commit":"7d3b2f2157e7c1125b354fd5f786e37dafcdc889","path":"commands/pull.go","range":{"startLine":45}},"description":"What is returned if there's an error?  nil?"}
+
+{"timestamp":"1431134560","author":"bstanley@google.com","location":{"commit":"7d3b2f2157e7c1125b354fd5f786e37dafcdc889","path":"commands/pull.go","range":{"startLine":36}},"description":"Can PullNotes return an error?  or be unsuccessful?"}
