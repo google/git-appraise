@@ -11,3 +11,5 @@
 {"timestamp":"1431386602","author":"ojarjur@google.com","location":{"commit":"7d3b2f2157e7c1125b354fd5f786e37dafcdc889","path":"commands/pull.go","range":{"startLine":45}},"description":"No, the return type is error, so nil means there was no error (everything worked as expected)."}
 
 {"timestamp":"1431386602","author":"ojarjur@google.com","location":{"commit":"7d3b2f2157e7c1125b354fd5f786e37dafcdc889","path":"commands/pull.go","range":{"startLine":36}},"description":"It can fail, but any such failures are treated as fatal and cause the tool to exit with a non-zero status. They would require either an inability to communicate with a remote repo or an internal error in wrapping a call to the git command line tool.\n\nThe error return value here is reserved for user errors; something where the right response is to print a usage string."}
+
+{"timestamp":"1431387250","author":"amshali@google.com","resolved":true}
