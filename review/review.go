@@ -173,6 +173,25 @@ func ListOpen() []Review {
 	return openReviews
 }
 
+// Get returns the specified code review.
+//
+// If there are multiple matching reviews, then an error is returned.
+func Get(revision string) (*Review, error) {
+	var matchingReviews []Review
+	for _, review := range ListAll() {
+		if review.Revision == revision {
+			matchingReviews = append(matchingReviews, review)
+		}
+	}
+	if matchingReviews == nil {
+		return nil, nil
+	}
+	if len(matchingReviews) != 1 {
+		return nil, fmt.Errorf("There are %d reviews for the revision \"%s\"", len(matchingReviews), revision)
+	}
+	return &matchingReviews[0], nil
+}
+
 // GetCurrent returns the current, open code review.
 //
 // If there are multiple matching reviews, then an error is returned.

@@ -23,13 +23,24 @@ import (
 )
 
 // showReview prints the current code review.
-func showReview() error {
-	r, err := review.GetCurrent()
+func showReview(args []string) error {
+	var r *review.Review
+	var err error
+	if len(args) > 1 {
+		return errors.New("Only showing a single review is supported.")
+	}
+
+	if len(args) == 1 {
+		r, err = review.Get(args[0])
+	} else {
+		r, err = review.GetCurrent()
+	}
+
 	if err != nil {
-		return fmt.Errorf("Failed to load the current review: %v\n", err)
+		return fmt.Errorf("Failed to load the review: %v\n", err)
 	}
 	if r == nil {
-		return errors.New("There is no current review.")
+		return errors.New("There is no matching review.")
 	}
 	r.PrintDetails()
 	return nil
@@ -38,9 +49,9 @@ func showReview() error {
 // showCmd defines the "show" subcommand.
 var showCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s show\n", arg0)
+		fmt.Printf("Usage: %s show (<commit>)\n", arg0)
 	},
 	RunMethod: func(args []string) error {
-		return showReview()
+		return showReview(args)
 	},
 }
