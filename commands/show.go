@@ -42,8 +42,7 @@ func showReview(args []string) error {
 	if r == nil {
 		return errors.New("There is no matching review.")
 	}
-	r.PrintDetails()
-	return nil
+	return r.PrintDetails()
 }
 
 // showCmd defines the "show" subcommand.

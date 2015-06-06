@@ -109,6 +109,11 @@ func GetHeadRef() string {
 	return runGitCommandOrDie("symbolic-ref", "HEAD")
 }
 
+// GetCommitHash returns the hash of the commit pointed to by the given ref.
+func GetCommitHash(ref string) string {
+	return runGitCommandOrDie("show", "-s", "--format=%H", ref)
+}
+
 // GetCommitMessage returns the message stored in the commit pointed to by the given ref.
 func GetCommitMessage(ref string) string {
 	return runGitCommandOrDie("show", "-s", "--format=%B", ref)

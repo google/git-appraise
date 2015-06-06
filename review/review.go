@@ -24,6 +24,7 @@ import (
 	"source.developers.google.com/id/0tH0wAQFren.git/review/comment"
 	"source.developers.google.com/id/0tH0wAQFren.git/review/request"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -33,7 +34,8 @@ const (
   "%s"
 `
 	// Template for printing a single comment.
-	commentTemplate = `  [%s] %s %s "%s"
+	commentTemplate = `[%s] %s
+  %s %s "%s"
 `
 )
 
@@ -114,25 +116,41 @@ func (thread *CommentThread) updateResolvedStatus() {
 	thread.Resolved = resolved
 }
 
-// loadComments reads in the log-structured sequence of comments for a review,
-// and then builds the corresponding tree-structured comment threads.
-func (r *Review) loadComments() []CommentThread {
-	commentNotes := repository.GetNotes(comment.Ref, r.Revision)
-	commentsByHash := comment.ParseAllValid(commentNotes)
-	threadsByHash := make(map[string]CommentThread)
+type mutableThread struct {
+	Comment  comment.Comment
+	Children []*mutableThread
+}
+
+func fixMutableThread(mutableThread *mutableThread) CommentThread {
+	var children []CommentThread
+	for _, mutableChild := range mutableThread.Children {
+		children = append(children, fixMutableThread(mutableChild))
+	}
+	return CommentThread{
+		Comment:  mutableThread.Comment,
+		Children: children,
+	}
+}
+
+// This function builds the comment thread tree from the log-based list of comments.
+//
+// Since the comments can be processed in any order, this uses an internal mutable
+// data structure, and then converts it to the proper CommentThread structure at the end.
+func buildCommentThreads(commentsByHash map[string]comment.Comment) []CommentThread {
+	threadsByHash := make(map[string]*mutableThread)
 	for hash, comment := range commentsByHash {
 		thread, ok := threadsByHash[hash]
 		if !ok {
-			thread = CommentThread{
+			thread = &mutableThread{
 				Comment: comment,
 			}
 			threadsByHash[hash] = thread
 		}
 	}
-	var threads []CommentThread
-	for _, thread := range threadsByHash {
+	var rootHashes []string
+	for hash, thread := range threadsByHash {
 		if thread.Comment.Parent == "" {
-			threads = append(threads, thread)
+			rootHashes = append(rootHashes, hash)
 		} else {
 			parent, ok := threadsByHash[thread.Comment.Parent]
 			if ok {
@@ -140,7 +158,19 @@ func (r *Review) loadComments() []CommentThread {
 			}
 		}
 	}
+	var threads []CommentThread
+	for _, hash := range rootHashes {
+		threads = append(threads, fixMutableThread(threadsByHash[hash]))
+	}
 	return threads
+}
+
+// loadComments reads in the log-structured sequence of comments for a review,
+// and then builds the corresponding tree-structured comment threads.
+func (r *Review) loadComments() []CommentThread {
+	commentNotes := repository.GetNotes(comment.Ref, r.Revision)
+	commentsByHash := comment.ParseAllValid(commentNotes)
+	return buildCommentThreads(commentsByHash)
 }
 
 // ListAll returns all reviews stored in the git-notes.
@@ -240,8 +270,13 @@ func reformatTimestamp(timestamp string) string {
 }
 
 // showThread prints the given comment thread, indented by the given prefix string.
-func showThread(thread CommentThread, indent string) {
+func showThread(thread CommentThread, indent string) error {
 	comment := thread.Comment
+	threadHash, err := comment.Hash()
+	if err != nil {
+		return err
+	}
+
 	timestamp := reformatTimestamp(comment.Timestamp)
 	statusString := "fyi"
 	if comment.Resolved != nil {
@@ -251,16 +286,37 @@ func showThread(thread CommentThread, indent string) {
 			statusString = "needs work"
 		}
 	}
-	fmt.Printf(commentTemplate, timestamp, comment.Author, statusString, comment.Description)
+
+	threadDetails := fmt.Sprintf(commentTemplate, timestamp, threadHash, comment.Author, statusString, comment.Description)
+	fmt.Print(indent + strings.Replace(threadDetails, "\n", "\n"+indent, 1))
 	for _, child := range thread.Children {
-		showThread(child, indent+"  ")
+		err := showThread(child, indent+"  ")
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // PrintDetails prints a multi-line overview of a review, including all comments.
-func (r *Review) PrintDetails() {
+func (r *Review) PrintDetails() error {
 	r.PrintSummary()
 	for _, thread := range r.Comments {
-		showThread(thread, "")
+		err := showThread(thread, "  ")
+		if err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+// AddComment adds the given comment to the review.
+func (r *Review) AddComment(c comment.Comment) error {
+	commentNote, err := c.Write()
+	if err != nil {
+		return err
+	}
+
+	repository.AppendNote(comment.Ref, r.Revision, commentNote)
+	return nil
 }

@@ -469,3 +469,67 @@ func TestFYIThenRejectedThreadsStatus(t *testing.T) {
 	status := updateThreadsStatus(threads)
 	validateRejected(t, status)
 }
+
+func TestBuildCommentThreads(t *testing.T) {
+	rejected := false
+	accepted := true
+	root := comment.Comment{
+		Timestamp:   "012345",
+		Resolved:    nil,
+		Description: "root",
+	}
+	rootHash, err := root.Hash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	child := comment.Comment{
+		Timestamp:   "012346",
+		Resolved:    &rejected,
+		Parent:      rootHash,
+		Description: "child",
+	}
+	childHash, err := child.Hash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	leaf := comment.Comment{
+		Timestamp:   "012347",
+		Resolved:    &accepted,
+		Parent:      childHash,
+		Description: "leaf",
+	}
+	leafHash, err := leaf.Hash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	commentsByHash := map[string]comment.Comment{
+		rootHash:  root,
+		childHash: child,
+		leafHash:  leaf,
+	}
+	threads := buildCommentThreads(commentsByHash)
+	if len(threads) != 1 {
+		t.Fatal("Unexpected threads: %v", threads)
+	}
+	rootThread := threads[0]
+	if rootThread.Comment.Description != "root" {
+		t.Fatal("Unexpected root thread: %v", rootThread)
+	}
+	if len(rootThread.Children) != 1 {
+		t.Fatal("Unexpected root children: %v", rootThread.Children)
+	}
+	rootChild := rootThread.Children[0]
+	if rootChild.Comment.Description != "child" {
+		t.Fatal("Unexpected child: %v", rootChild)
+	}
+	if len(rootChild.Children) != 1 {
+		t.Fatal("Unexpected leaves: %v", rootChild.Children)
+	}
+	threadLeaf := rootChild.Children[0]
+	if threadLeaf.Comment.Description != "leaf" {
+		t.Fatal("Unexpected leaf: %v", threadLeaf)
+	}
+	if len(threadLeaf.Children) != 0 {
+		t.Fatal("Unexpected leaf children: %v", threadLeaf.Children)
+	}
+}

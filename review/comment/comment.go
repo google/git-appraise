@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"source.developers.google.com/id/0tH0wAQFren.git/repository"
 	"strconv"
+	"time"
 )
 
 // Ref defines the git-notes ref that we expect to contain review comments.
@@ -64,6 +65,17 @@ type Comment struct {
 	// has been addressed. Otherwise, the parent is the commit, and this means that the
 	// change has been accepted. If the resolved bit is unset, then the comment is only an FYI.
 	Resolved *bool `json:"resolved,omitempty"`
+}
+
+// New returns a new comment with the given description message.
+//
+// The Timestamp and Author fields are automatically filled in with the current time and user.
+func New(description string) Comment {
+	return Comment{
+		Timestamp:   strconv.FormatInt(time.Now().Unix(), 10),
+		Author:      repository.GetUserEmail(),
+		Description: description,
+	}
 }
 
 // Parse parses a review comment from a git note.

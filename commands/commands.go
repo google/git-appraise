@@ -17,11 +17,6 @@ limitations under the License.
 // Package commands contains the assorted sub commands supported by the git-review tool.
 package commands
 
-import (
-	"errors"
-	"fmt"
-)
-
 const notesRefPattern = "refs/notes/devtools/*"
 
 // Command represents the definition of a single command.
@@ -37,23 +32,6 @@ type Command struct {
 func (cmd *Command) Run(args []string) error {
 	return cmd.RunMethod(args)
 }
-
-// notImplemented returns an implementation for subcommands that are not yet implemented.
-func notImplemented(subcommand string) *Command {
-	return &Command{
-		Usage: func(arg0 string) {
-			fmt.Printf("Subcommand \"%s\" is not yet implemented.\n", subcommand)
-		},
-		RunMethod: func(args []string) error {
-			return errors.New("Not Implemented")
-		},
-	}
-}
-
-var (
-	acceptCmd  = notImplemented("accept")
-	commentCmd = notImplemented("comment")
-)
 
 // CommandMap defines all of the available (sub)commands.
 var CommandMap = map[string]*Command{
