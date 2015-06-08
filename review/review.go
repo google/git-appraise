@@ -116,11 +116,15 @@ func (thread *CommentThread) updateResolvedStatus() {
 	thread.Resolved = resolved
 }
 
+// mutableThread is an internal-only data structure used to store partially constructed comment threads.
 type mutableThread struct {
 	Comment  comment.Comment
 	Children []*mutableThread
 }
 
+// fixMutableThread is a helper method to finalize a mutableThread struct
+// (partially constructed comment thread) as a CommentThread struct
+// (fully constructed comment thread).
 func fixMutableThread(mutableThread *mutableThread) CommentThread {
 	var children []CommentThread
 	for _, mutableChild := range mutableThread.Children {
