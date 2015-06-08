@@ -1,1 +1,3 @@
 {"timestamp":"1433794004","author":"amshali@google.com","location":{"commit":"8733faa58ad1d0cb4b5d0c3212cb0472afec51a0","path":"review/review.go","range":{"startLine":119}},"description":"Please comment on this type and the next func."}
+
+{"timestamp":"1433800486","author":"ojarjur@google.com","location":{"commit":"8733faa58ad1d0cb4b5d0c3212cb0472afec51a0","path":"review/review.go","range":{"startLine":119}},"description":"Done."}
