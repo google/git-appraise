@@ -18,12 +18,19 @@ package commands
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"source.developers.google.com/id/0tH0wAQFren.git/review"
 )
 
+var showFlagSet = flag.NewFlagSet("show", flag.ExitOnError)
+var showJsonOutput = showFlagSet.Bool("json", false, "Format the output as JSON")
+
 // showReview prints the current code review.
 func showReview(args []string) error {
+	showFlagSet.Parse(args)
+	args = showFlagSet.Args()
+
 	var r *review.Review
 	var err error
 	if len(args) > 1 {
@@ -41,6 +48,9 @@ func showReview(args []string) error {
 	}
 	if r == nil {
 		return errors.New("There is no matching review.")
+	}
+	if *showJsonOutput {
+		return r.PrintJson()
 	}
 	return r.PrintDetails()
 }

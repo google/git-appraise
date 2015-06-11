@@ -18,6 +18,8 @@ limitations under the License.
 package review
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"source.developers.google.com/id/0tH0wAQFren.git/repository"
@@ -48,9 +50,10 @@ const (
 // then that means that there are no unaddressed comments, and that the root
 // comment has its resolved bit set to true.
 type CommentThread struct {
-	Comment  comment.Comment
-	Children []CommentThread
-	Resolved *bool
+	Hash     string          `json:"hash,omitempty"`
+	Comment  comment.Comment `json:"comment"`
+	Children []CommentThread `json:"children,omitempty"`
+	Resolved *bool           `json:"resolved,omitempty"`
 }
 
 // Review represents the entire state of a code review.
@@ -59,11 +62,11 @@ type CommentThread struct {
 // 1. Resolved indicates if a reviewer has accepted or rejected the change.
 // 2. Submitted indicates if the change has been incorporated into the target.
 type Review struct {
-	Revision  string
-	Request   request.Request
-	Comments  []CommentThread
-	Resolved  *bool
-	Submitted bool
+	Revision  string          `json:"revision"`
+	Request   request.Request `json:"request"`
+	Comments  []CommentThread `json:"comments,omitempty"`
+	Resolved  *bool           `json:"resolved,omitempty"`
+	Submitted bool            `json:"submitted"`
 }
 
 type byTimestamp []CommentThread
@@ -118,6 +121,7 @@ func (thread *CommentThread) updateResolvedStatus() {
 
 // mutableThread is an internal-only data structure used to store partially constructed comment threads.
 type mutableThread struct {
+	Hash     string
 	Comment  comment.Comment
 	Children []*mutableThread
 }
@@ -131,6 +135,7 @@ func fixMutableThread(mutableThread *mutableThread) CommentThread {
 		children = append(children, fixMutableThread(mutableChild))
 	}
 	return CommentThread{
+		Hash:     mutableThread.Hash,
 		Comment:  mutableThread.Comment,
 		Children: children,
 	}
@@ -146,6 +151,7 @@ func buildCommentThreads(commentsByHash map[string]comment.Comment) []CommentThr
 		thread, ok := threadsByHash[hash]
 		if !ok {
 			thread = &mutableThread{
+				Hash:    hash,
 				Comment: comment,
 			}
 			threadsByHash[hash] = thread
@@ -311,6 +317,21 @@ func (r *Review) PrintDetails() error {
 			return err
 		}
 	}
+	return nil
+}
+
+// PrintJson pretty prints a review (including comments) formatted as JSON.
+func (r *Review) PrintJson() error {
+	jsonBytes, err := json.Marshal(*r)
+	if err != nil {
+		return err
+	}
+	var prettyBytes bytes.Buffer
+	err = json.Indent(&prettyBytes, jsonBytes, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(prettyBytes.String())
 	return nil
 }
 
