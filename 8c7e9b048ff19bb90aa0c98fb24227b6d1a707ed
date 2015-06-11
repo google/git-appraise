@@ -1,0 +1,1 @@
+{"reviewRef":"refs/heads/ojarjur/json-output","targetRef":"refs/heads/master","requester":"ojarjur@google.com","reviewers":["amshali@google.com"],"description":"Added a --json flag to the show command for printing a JSON encoding of a review"}
