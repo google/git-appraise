@@ -9,3 +9,5 @@
 {"timestamp":"1434754921","author":"bstanley","location":{"commit":"9430e12613ad3e72a738a7fe6eb783b30a8b984a","path":"CONTRIBUTING.md","range":{"startLine":11}},"description":"I would modify the wording of lines 8+ through 10 to something like:\nThe CLA also covers other miscellaneous details -- e.g., you will notify us if you know if you are aware of patent infringements in your code.  You are not required to sign the CLA until after you've submitted...."}
 
 {"timestamp":"1434755678","author":"ojarjur@google.com","parent":"f227d49330cb43cb04219d256387a58bfda43824","location":{"commit":"9430e12613ad3e72a738a7fe6eb783b30a8b984a"},"resolved":true}
+
+{"timestamp":"1434755712","author":"ojarjur@google.com","parent":"77d0d4f0c93eff7f97f06bae8c2ac6927e5ca381","location":{"commit":"9430e12613ad3e72a738a7fe6eb783b30a8b984a"},"resolved":true}
