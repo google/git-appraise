@@ -13,3 +13,5 @@
 {"timestamp":"1434755712","author":"ojarjur@google.com","parent":"77d0d4f0c93eff7f97f06bae8c2ac6927e5ca381","location":{"commit":"9430e12613ad3e72a738a7fe6eb783b30a8b984a"},"resolved":true}
 
 {"timestamp":"1434755763","author":"ojarjur@google.com","parent":"4dc6e0ceb27b4d523b9c91431a100aad1aed702a","location":{"commit":"9430e12613ad3e72a738a7fe6eb783b30a8b984a"},"description":"I incorporated most of your suggestions"}
+
+{"timestamp":"1434755892","author":"ojarjur@google.com","parent":"50847c065b6a9553ed1e75096713005c9a4aaf1d","location":{"commit":"9430e12613ad3e72a738a7fe6eb783b30a8b984a"},"description":"In this case I think I prefer the original wording."}
