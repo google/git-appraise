@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package commands contains the assorted sub commands supported by the git-review tool.
+// Package commands contains the assorted sub commands supported by the git-appraise tool.
 package commands
 
 const notesRefPattern = "refs/notes/devtools/*"

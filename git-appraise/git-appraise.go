@@ -14,15 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Command git-review manages code reviews stored as git-notes in the source repo.
+// Command git-appraise manages code reviews stored as git-notes in the source repo.
 //
 // To install, run:
 //
-//    $ go get source.developers.google.com/id/0tH0wAQFren.git/src
+//    $ go get source.developers.google.com/id/0tH0wAQFren.git/git-appraise
 //
 // And for usage information, run:
 //
-//    $ git-review help
+//    $ git-appraise help
 package main
 
 import (

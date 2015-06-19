@@ -1,4 +1,4 @@
-# Git Code Review Tool
+# Code Review Tool For Git
 
 This repo contains a command line tool for performing code reviews on git
 repositories.
@@ -8,11 +8,12 @@ repositories.
 Assuming you have the [Go tools installed](https://golang.org/doc/install), run
 the following command:
 
-    go get source.developers.google.com/id/0tH0wAQFren.git/git-review
+    go get source.developers.google.com/id/0tH0wAQFren.git/git-appraise
 
-Then, to add "review" git alias, run the following command.
+Then, either make sure that ${GOPATH}/bin is in your PATH, or explicitly add the
+"appraise" git alias by running the following command.
 
-    git config --global alias.review "!git-review"
+    git config --global alias.appraise "!${GOPATH}/bin/git-appraise"
 
 ## Requirements
 
@@ -27,35 +28,35 @@ This tool expects to run in an environment with the following attributes:
 
 Requesting a code review:
 
-    git review request
+    git appraise request
 
 Pushing code reviews to a remote:
 
-    git review push [<remote>]
+    git appraise push [<remote>]
 
 Pulling code reviews from a remote:
 
-    git review pull [<remote>]
+    git appraise pull [<remote>]
 
 Listing open code reviews:
 
-    git review list
+    git appraise list
 
 Showing the status of the current review, including comments:
 
-    git review show
+    git appraise show
 
 Commenting on a review:
 
-    git review comment -m "<message>" [<file> [<line>]]
+    git appraise comment -m "<message>" [<file> [<line>]]
 
 Accepting the changes in a review:
 
-    git review accept [-m "<message>"]
+    git appraise accept [-m "<message>"]
 
 Submitting a review:
 
-    git review submit [--merge | --rebase]
+    git appraise submit [--merge | --rebase]
 
 ## Metadata
 
