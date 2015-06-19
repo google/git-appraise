@@ -1,3 +1,5 @@
 {"timestamp":"1434754921","author":"bstanley","resolved":true}
 
 {"timestamp":"1434754921","author":"bstanley","description":"I made some recommendations for wording changes.  But feel free to ignore them if you don't like them.  My comments are not intended to be submit-blockers."}
+
+{"timestamp":"1434754921","author":"bstanley","location":{"commit":"9430e12613ad3e72a738a7fe6eb783b30a8b984a","path":"CONTRIBUTING.md","range":{"startLine":15}},"description":"How about:  Coordinating up front avoids frustrations later."}
