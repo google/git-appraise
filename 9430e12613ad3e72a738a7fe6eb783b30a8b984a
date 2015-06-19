@@ -5,3 +5,5 @@
 {"timestamp":"1434754921","author":"bstanley","location":{"commit":"9430e12613ad3e72a738a7fe6eb783b30a8b984a","path":"CONTRIBUTING.md","range":{"startLine":15}},"description":"How about:  Coordinating up front avoids frustrations later."}
 
 {"timestamp":"1434754921","author":"bstanley","location":{"commit":"9430e12613ad3e72a738a7fe6eb783b30a8b984a","path":"CONTRIBUTING.md","range":{"startLine":8}},"description":"A bit of a run-on sentence.  Recommendation:  The CLA is necessary mainly because you own the copyright to your changes, even after your contribution becomes part of our codebase.  Therefore, we need your permission..."}
+
+{"timestamp":"1434754921","author":"bstanley","location":{"commit":"9430e12613ad3e72a738a7fe6eb783b30a8b984a","path":"CONTRIBUTING.md","range":{"startLine":11}},"description":"I would modify the wording of lines 8+ through 10 to something like:\nThe CLA also covers other miscellaneous details -- e.g., you will notify us if you know if you are aware of patent infringements in your code.  You are not required to sign the CLA until after you've submitted...."}
