@@ -121,6 +121,9 @@ protocol buffer message defined
       "$schema": "http://json-schema.org/draft-04/schema#",
       "type": "object",
       "properties": {
+        "timestamp": {
+          "type": "string"
+        },
         "location": {
           "type": "object",
           "properties": {

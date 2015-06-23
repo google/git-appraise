@@ -53,12 +53,7 @@ func buildRequestFromFlags() request.Request {
 		}
 	}
 
-	return request.Request{
-		Reviewers:   reviewers,
-		ReviewRef:   *requestSource,
-		TargetRef:   *requestTarget,
-		Description: *requestMessage,
-	}
+	return request.New(reviewers, *requestSource, *requestTarget, *requestMessage)
 }
 
 // Create a new code review request.
@@ -91,7 +86,6 @@ func requestReview(args []string) error {
 		r.Description = repository.GetCommitMessage(reviewCommits[0])
 	}
 
-	r.Requester = repository.GetUserEmail()
 	note, err := r.Write()
 	if err != nil {
 		return err

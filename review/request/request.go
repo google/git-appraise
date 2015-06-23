@@ -20,6 +20,8 @@ package request
 import (
 	"encoding/json"
 	"source.developers.google.com/id/0tH0wAQFren.git/repository"
+	"strconv"
+	"time"
 )
 
 // Ref defines the git-notes ref that we expect to contain review requests.
@@ -29,11 +31,29 @@ const Ref = "refs/notes/devtools/reviews"
 //
 // Every field except for TargetRef is optional.
 type Request struct {
+	// Timestamp and Requester are optimizations that allows us to display reviews
+	// without having to run git-blame over the notes object. This is done because
+	// git-blame will become more and more expensive as the number of reviews grows.
+	Timestamp   string   `json:"timestamp,omitempty"`
 	ReviewRef   string   `json:"reviewRef,omitempty"`
 	TargetRef   string   `json:"targetRef"`
 	Requester   string   `json:"requester,omitempty"`
 	Reviewers   []string `json:"reviewers,omitempty"`
 	Description string   `json:"description,omitempty"`
+}
+
+// New returns a new request.
+//
+// The Timestamp and Requester fields are automatically filled in with the current time and user.
+func New(reviewers []string, reviewRef, targetRef, description string) Request {
+	return Request{
+		Timestamp:   strconv.FormatInt(time.Now().Unix(), 10),
+		Requester:   repository.GetUserEmail(),
+		Reviewers:   reviewers,
+		ReviewRef:   reviewRef,
+		TargetRef:   targetRef,
+		Description: description,
+	}
 }
 
 // Parse parses a review request from a git note.
