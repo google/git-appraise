@@ -79,6 +79,9 @@ schema.
       "$schema": "http://json-schema.org/draft-04/schema#",
       "type": "object",
       "properties": {
+        "timestamp": {
+          "type": "string"
+        },
         "reviewRef": {
           "id": "reviewRef",
           "type": "string"
@@ -98,6 +101,9 @@ schema.
         },
         "description": {
           "type": "string"
+        },
+        "version": {
+          "type": "integer"
         }
       },
       "required": [
@@ -121,9 +127,6 @@ protocol buffer message defined
       "$schema": "http://json-schema.org/draft-04/schema#",
       "type": "object",
       "properties": {
-        "timestamp": {
-          "type": "string"
-        },
         "location": {
           "type": "object",
           "properties": {
@@ -197,6 +200,9 @@ schema.
         },
         "resolved": {
           "type": "boolean"
+        },
+        "version": {
+          "type": "integer"
         }
       }
     }

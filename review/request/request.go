@@ -27,6 +27,9 @@ import (
 // Ref defines the git-notes ref that we expect to contain review requests.
 const Ref = "refs/notes/devtools/reviews"
 
+// FormatVersion defines the latest version of the request format supported by the tool.
+const FormatVersion = 0
+
 // Request represents an initial request for a code review.
 //
 // Every field except for TargetRef is optional.
@@ -40,6 +43,8 @@ type Request struct {
 	Requester   string   `json:"requester,omitempty"`
 	Reviewers   []string `json:"reviewers,omitempty"`
 	Description string   `json:"description,omitempty"`
+	// Version represents the version of the metadata format.
+	Version int `json:"v,omitempty"`
 }
 
 // New returns a new request.
@@ -73,7 +78,7 @@ func ParseAllValid(notes []repository.Note) []Request {
 	var requests []Request
 	for _, note := range notes {
 		request, err := Parse(note)
-		if err == nil && request.TargetRef != "" {
+		if err == nil && request.Version == FormatVersion && request.TargetRef != "" {
 			requests = append(requests, request)
 		}
 	}

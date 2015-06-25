@@ -29,6 +29,9 @@ import (
 // Ref defines the git-notes ref that we expect to contain review comments.
 const Ref = "refs/notes/devtools/discuss"
 
+// FormatVersion defines the latest version of the comment format supported by the tool.
+const FormatVersion = 0
+
 // Range represents the range of text that is under discussion.
 type Range struct {
 	StartLine uint32 `json:"startLine"`
@@ -65,6 +68,8 @@ type Comment struct {
 	// has been addressed. Otherwise, the parent is the commit, and this means that the
 	// change has been accepted. If the resolved bit is unset, then the comment is only an FYI.
 	Resolved *bool `json:"resolved,omitempty"`
+	// Version represents the version of the metadata format.
+	Version int `json:"v,omitempty"`
 }
 
 // New returns a new comment with the given description message.
@@ -94,7 +99,7 @@ func ParseAllValid(notes []repository.Note) map[string]Comment {
 	comments := make(map[string]Comment)
 	for _, note := range notes {
 		comment, err := Parse(note)
-		if err == nil {
+		if err == nil && comment.Version == FormatVersion {
 			hash, err := comment.Hash()
 			if err == nil {
 				comments[hash] = comment
