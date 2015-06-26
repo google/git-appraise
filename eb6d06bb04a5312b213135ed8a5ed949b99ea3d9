@@ -1,1 +1,3 @@
 {"timestamp":"1435265383","author":"amshali","location":{"commit":"eb6d06bb04a5312b213135ed8a5ed949b99ea3d9","path":"README.md","range":{"startLine":124}},"description":"Why removing this?"}
+
+{"timestamp":"1435346041","author":"ojarjur","location":{"commit":"eb6d06bb04a5312b213135ed8a5ed949b99ea3d9","path":"README.md","range":{"startLine":124}},"description":"It was a copy and paste error. The robot comments do not have a timestamp field; that was supposed to go in the request schema."}
