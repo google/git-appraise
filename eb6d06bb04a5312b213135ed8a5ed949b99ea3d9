@@ -7,3 +7,5 @@
 {"timestamp":"1435596311","author":"ojarjur","location":{"commit":"eb6d06bb04a5312b213135ed8a5ed949b99ea3d9","path":"README.md","range":{"startLine":124}},"description":"Probably not. If the same analysis generates the same message multiple times, we don't want to duplicate that message just because of when the analysis was run."}
 
 {"timestamp":"1435596792","author":"amshali","resolved":true}
+
+{"timestamp":"1435596792","author":"amshali","location":{"commit":"eb6d06bb04a5312b213135ed8a5ed949b99ea3d9","path":"README.md","range":{"startLine":124}},"description":"I really think we need a timestamp here. We can always ignore it. It might not work well with the cat_sort_uniq but that shouldn't stop us from having this."}
