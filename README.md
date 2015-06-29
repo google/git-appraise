@@ -92,7 +92,7 @@ schema.
         },
         "requester": {
           "type": "string"
-        }
+        },
         "reviewers": {
           "type": "array",
           "items": {
@@ -114,6 +114,42 @@ schema.
 The "reviewRef" field is used to specify a git ref that tracks the current
 revision under review, and the "targetRef" field is used to specify the git ref
 that should be updated once the review is approved.
+
+### Continuous Integration Status
+
+Continuous integration build and test results are stored in the
+"refs/notes/devtools/ci" ref, and annotate the revision that was built and
+tested. They must conform to the following schema.
+
+    {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "type": "object",
+      "properties": {
+        "timestamp": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            null,
+            "passed",
+            "failed"
+          ]
+        },
+        "agent": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        }
+      },
+    }
+
+The "status" field is for the final status of a build or test. The "agent"
+field is a free-form string that identifies the build and test runner.
 
 ### Robot Comments
 

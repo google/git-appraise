@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"sort"
 	"source.developers.google.com/id/0tH0wAQFren.git/repository"
+	"source.developers.google.com/id/0tH0wAQFren.git/review/ci"
 	"source.developers.google.com/id/0tH0wAQFren.git/review/comment"
 	"source.developers.google.com/id/0tH0wAQFren.git/review/request"
 	"strconv"
@@ -67,6 +68,7 @@ type Review struct {
 	Comments  []CommentThread `json:"comments,omitempty"`
 	Resolved  *bool           `json:"resolved,omitempty"`
 	Submitted bool            `json:"submitted"`
+	Reports   []ci.Report     `json:"reports,omitempty"`
 }
 
 type byTimestamp []CommentThread
@@ -196,6 +198,8 @@ func ListAll() []Review {
 			review.Comments = review.loadComments()
 			review.Resolved = updateThreadsStatus(review.Comments)
 			review.Submitted = repository.IsAncestor(revision, req.TargetRef)
+			// TODO(ojarjur): For reviews other than the current one, fetch the CI
+			// status of the last commit in the review for which there are comments.
 			reviews = append(reviews, review)
 		}
 	}
@@ -237,6 +241,7 @@ func Get(revision string) (*Review, error) {
 // If there are multiple matching reviews, then an error is returned.
 func GetCurrent() (*Review, error) {
 	reviewRef := repository.GetHeadRef()
+	currentCommit := repository.GetCommitHash(reviewRef)
 	var matchingReviews []Review
 	for _, review := range ListOpen() {
 		if review.Request.ReviewRef == reviewRef {
@@ -249,7 +254,10 @@ func GetCurrent() (*Review, error) {
 	if len(matchingReviews) != 1 {
 		return nil, fmt.Errorf("There are %d open reviews for the ref \"%s\"", len(matchingReviews), reviewRef)
 	}
-	return &matchingReviews[0], nil
+	r := &matchingReviews[0]
+	reports := ci.ParseAllValid(repository.GetNotes(ci.Ref, currentCommit))
+	r.Reports = reports
+	return r, nil
 }
 
 // PrintSummary prints a single-line summary of a review.
@@ -317,6 +325,7 @@ func (r *Review) PrintDetails() error {
 			return err
 		}
 	}
+	// TODO(ojarjur): If there are CI status reports for the last commit, then show them.
 	return nil
 }
 
