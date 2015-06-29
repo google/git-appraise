@@ -69,6 +69,11 @@ Since these notes are not in a human-friendly form, all of the refs used to
 track them start with the prefix "refs/notes/devtools". This helps make it
 clear that these are meant to be read and written by automated tools.
 
+When a field named "v" appears in one of these notes, it is used to denote
+the version of the metadata format being used. If that field is missing, then
+it defaults to the value 0, which corresponds to this initial verison of the
+formats.
+
 ### Code Review Requests
 
 Code review requests are stored in the "refs/notes/devtools/reviews" ref, and
@@ -102,8 +107,13 @@ schema.
         "description": {
           "type": "string"
         },
-        "version": {
-          "type": "integer"
+        "v": {
+          "type": "integer",
+          "default": 0,
+          "enum": [
+            null,
+            0
+          ]
         }
       },
       "required": [
@@ -142,8 +152,13 @@ tested. They must conform to the following schema.
         "agent": {
           "type": "string"
         },
-        "version": {
-          "type": "integer"
+        "v": {
+          "type": "integer",
+          "default": 0,
+          "enum": [
+            null,
+            0
+          ]
         }
       },
     }
@@ -237,8 +252,13 @@ schema.
         "resolved": {
           "type": "boolean"
         },
-        "version": {
-          "type": "integer"
+        "v": {
+          "type": "integer",
+          "default": 0,
+          "enum": [
+            null,
+            0
+          ]
         }
       }
     }
