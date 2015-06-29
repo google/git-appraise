@@ -9,3 +9,5 @@
 {"timestamp":"1435596792","author":"amshali","resolved":true}
 
 {"timestamp":"1435596792","author":"amshali","location":{"commit":"eb6d06bb04a5312b213135ed8a5ed949b99ea3d9","path":"README.md","range":{"startLine":124}},"description":"I really think we need a timestamp here. We can always ignore it. It might not work well with the cat_sort_uniq but that shouldn't stop us from having this."}
+
+{"timestamp":"1435596996","author":"ojarjur","location":{"commit":"eb6d06bb04a5312b213135ed8a5ed949b99ea3d9","path":"README.md","range":{"startLine":124}},"description":"I disagree, but more importantly, this is not the right place to decide that.\n\nThese messages are just taken from the .proto file defined in the shipshape github repo, so any changes should go as a pull-request to that repo."}
