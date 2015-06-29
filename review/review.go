@@ -62,6 +62,10 @@ type CommentThread struct {
 // Reviews have two status fields which are orthogonal:
 // 1. Resolved indicates if a reviewer has accepted or rejected the change.
 // 2. Submitted indicates if the change has been incorporated into the target.
+//
+// Reviews also include a list of build-and-test status reports. Those
+// correspond to either the current commit in the review ref (for pending
+// reviews), or to the last commented-upon commit (for submitted reviews).
 type Review struct {
 	Revision  string          `json:"revision"`
 	Request   request.Request `json:"request"`
