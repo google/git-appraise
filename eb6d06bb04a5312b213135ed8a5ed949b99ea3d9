@@ -3,3 +3,5 @@
 {"timestamp":"1435346041","author":"ojarjur","location":{"commit":"eb6d06bb04a5312b213135ed8a5ed949b99ea3d9","path":"README.md","range":{"startLine":124}},"description":"It was a copy and paste error. The robot comments do not have a timestamp field; that was supposed to go in the request schema."}
 
 {"timestamp":"1435595776","author":"amshali","location":{"commit":"eb6d06bb04a5312b213135ed8a5ed949b99ea3d9","path":"README.md","range":{"startLine":124}},"description":"Don't you think it's a good idea to have a timestamp though? "}
+
+{"timestamp":"1435596311","author":"ojarjur","location":{"commit":"eb6d06bb04a5312b213135ed8a5ed949b99ea3d9","path":"README.md","range":{"startLine":124}},"description":"Probably not. If the same analysis generates the same message multiple times, we don't want to duplicate that message just because of when the analysis was run."}
