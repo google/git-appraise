@@ -9,3 +9,5 @@
 {"timestamp":"1435707832","author":"astroilov","location":{"commit":"e37f17596dcbea9ad61ae66d70dbd416655c3d71","path":"review/ci/ci.go","range":{"startLine":29}},"description":"Recommend \"build and/or test\".\nMay want to consider \"Succeeded\" rather than \"Passed\"; \"Passed\" is test-centric, and many CI jobs are not actually tests."}
 
 {"timestamp":"1435711407","author":"ojarjur","location":{"commit":"e37f17596dcbea9ad61ae66d70dbd416655c3d71","path":"review/ci/ci.go","range":{"startLine":29}},"description":"Good point. Moreover, \"success\" and \"failure\" are antonyms, whereas \"passed\" and \"failed\" are not (except in the context of tests)."}
+
+{"timestamp":"1435711631","author":"astroilov","resolved":true}
