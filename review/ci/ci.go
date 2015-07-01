@@ -19,6 +19,7 @@ package ci
 
 import (
 	"encoding/json"
+
 	"source.developers.google.com/id/0tH0wAQFren.git/repository"
 )
 
@@ -26,10 +27,10 @@ const (
 	// Ref defines the git-notes ref that we expect to contain CI reports.
 	Ref = "refs/notes/devtools/ci"
 
-	// StatusPassed is the status string representing that a build and test passed.
-	StatusPassed = "passed"
-	// StatusFailed is the status string representing that a build and test failed.
-	StatusFailed = "failed"
+	// StatusSuccess is the status string representing that a build and/or test passed.
+	StatusSuccess = "success"
+	// StatusFailure is the status string representing that a build and/or test failed.
+	StatusFailure = "failure"
 
 	// FormatVersion defines the latest version of the request format supported by the tool.
 	FormatVersion = 0
@@ -64,7 +65,7 @@ func ParseAllValid(notes []repository.Note) []Report {
 	for _, note := range notes {
 		report, err := Parse(note)
 		if err == nil && report.Version == FormatVersion {
-			if report.Status == "" || report.Status == StatusPassed || report.Status == StatusFailed {
+			if report.Status == "" || report.Status == StatusSuccess || report.Status == StatusFailure {
 				reports = append(reports, report)
 			}
 		}

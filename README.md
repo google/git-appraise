@@ -145,8 +145,8 @@ tested. They must conform to the following schema.
           "type": "string",
           "enum": [
             null,
-            "passed",
-            "failed"
+            "success",
+            "failure"
           ]
         },
         "agent": {
