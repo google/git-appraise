@@ -189,22 +189,34 @@ func (r *Review) loadComments() []CommentThread {
 	return buildCommentThreads(commentsByHash)
 }
 
+// Get returns the specified code review.
+//
+// If no review request exists, the returned review is nil.
+func Get(revision string) *Review {
+	requestNotes := repository.GetNotes(request.Ref, revision)
+	requests := request.ParseAllValid(requestNotes)
+	if requests == nil {
+		return nil
+	}
+	review := Review{
+		Revision: revision,
+		Request:  requests[len(requests)-1],
+	}
+	review.Comments = review.loadComments()
+	review.Resolved = updateThreadsStatus(review.Comments)
+	review.Submitted = repository.IsAncestor(revision, review.Request.TargetRef)
+	// TODO(ojarjur): Optionally fetch the CI status of the last commit
+	// in the review for which there are comments.
+	return &review
+}
+
 // ListAll returns all reviews stored in the git-notes.
 func ListAll() []Review {
 	var reviews []Review
 	for _, revision := range repository.ListNotedRevisions(request.Ref) {
-		requestNotes := repository.GetNotes(request.Ref, revision)
-		for _, req := range request.ParseAllValid(requestNotes) {
-			review := Review{
-				Revision: revision,
-				Request:  req,
-			}
-			review.Comments = review.loadComments()
-			review.Resolved = updateThreadsStatus(review.Comments)
-			review.Submitted = repository.IsAncestor(revision, req.TargetRef)
-			// TODO(ojarjur): For reviews other than the current one, fetch the CI
-			// status of the last commit in the review for which there are comments.
-			reviews = append(reviews, review)
+		review := Get(revision)
+		if review != nil {
+			reviews = append(reviews, *review)
 		}
 	}
 	return reviews
@@ -219,25 +231,6 @@ func ListOpen() []Review {
 		}
 	}
 	return openReviews
-}
-
-// Get returns the specified code review.
-//
-// If there are multiple matching reviews, then an error is returned.
-func Get(revision string) (*Review, error) {
-	var matchingReviews []Review
-	for _, review := range ListAll() {
-		if review.Revision == revision {
-			matchingReviews = append(matchingReviews, review)
-		}
-	}
-	if matchingReviews == nil {
-		return nil, nil
-	}
-	if len(matchingReviews) != 1 {
-		return nil, fmt.Errorf("There are %d reviews for the revision \"%s\"", len(matchingReviews), revision)
-	}
-	return &matchingReviews[0], nil
 }
 
 // GetCurrent returns the current, open code review.

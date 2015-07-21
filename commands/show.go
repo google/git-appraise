@@ -38,7 +38,7 @@ func showReview(args []string) error {
 	}
 
 	if len(args) == 1 {
-		r, err = review.Get(args[0])
+		r = review.Get(args[0])
 	} else {
 		r, err = review.GetCurrent()
 	}
