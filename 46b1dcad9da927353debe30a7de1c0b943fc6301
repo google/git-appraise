@@ -1,0 +1,1 @@
+{"timestamp":"1440196410","reviewRef":"refs/heads/ojarjur/analyses-indirection","targetRef":"refs/heads/master","requester":"ojarjur@google.com","reviewers":["ckerur@google.com"],"description":"Changed the \"Robot Comments\" section of the spec to require a level of indirection, where we store a link to the analysis results rather than the results themselves."}
