@@ -18,7 +18,7 @@ package commands
 
 import (
 	"fmt"
-	"source.developers.google.com/id/0tH0wAQFren.git/review"
+	"github.com/google/git-appraise/review"
 )
 
 // listReviews lists all extant reviews.

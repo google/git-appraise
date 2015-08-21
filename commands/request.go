@@ -20,8 +20,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"source.developers.google.com/id/0tH0wAQFren.git/repository"
-	"source.developers.google.com/id/0tH0wAQFren.git/review/request"
+	"github.com/google/git-appraise/repository"
+	"github.com/google/git-appraise/review/request"
 	"strings"
 )
 

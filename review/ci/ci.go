@@ -20,7 +20,7 @@ package ci
 import (
 	"encoding/json"
 
-	"source.developers.google.com/id/0tH0wAQFren.git/repository"
+	"github.com/google/git-appraise/repository"
 )
 
 const (

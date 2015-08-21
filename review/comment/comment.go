@@ -21,7 +21,7 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"source.developers.google.com/id/0tH0wAQFren.git/repository"
+	"github.com/google/git-appraise/repository"
 	"strconv"
 	"time"
 )

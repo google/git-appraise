@@ -18,7 +18,7 @@ package review
 
 import (
 	"sort"
-	"source.developers.google.com/id/0tH0wAQFren.git/review/comment"
+	"github.com/google/git-appraise/review/comment"
 	"testing"
 )
 

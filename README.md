@@ -8,7 +8,7 @@ repositories.
 Assuming you have the [Go tools installed](https://golang.org/doc/install), run
 the following command:
 
-    go get source.developers.google.com/id/0tH0wAQFren.git/git-appraise
+    go get github.com/google/git-appraise/git-appraise
 
 Then, either make sure that ${GOPATH}/bin is in your PATH, or explicitly add the
 "appraise" git alias by running the following command.
