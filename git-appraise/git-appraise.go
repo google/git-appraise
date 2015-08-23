@@ -60,7 +60,7 @@ func help() {
 	}
 	subcommand, ok := commands.CommandMap[os.Args[2]]
 	if !ok {
-		fmt.Printf("Unknown command \"%s\"\n", os.Args[2])
+		fmt.Printf("Unknown command %q\n", os.Args[2])
 		usage()
 		return
 	}
@@ -82,7 +82,7 @@ func main() {
 	}
 	subcommand, ok := commands.CommandMap[os.Args[1]]
 	if !ok {
-		fmt.Printf("Unknown command \"%s\"", os.Args[1])
+		fmt.Printf("Unknown command %q", os.Args[1])
 		usage()
 		return
 	}
