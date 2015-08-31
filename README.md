@@ -13,7 +13,7 @@ the following command:
 Then, either make sure that ${GOPATH}/bin is in your PATH, or explicitly add the
 "appraise" git alias by running the following command.
 
-    git config --global alias.appraise "!${GOPATH}/bin/git-appraise"
+    git config --global alias.appraise '!'"${GOPATH}/bin/git-appraise"
 
 ## Requirements
 
