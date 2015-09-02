@@ -34,16 +34,37 @@ var (
 // acceptReview adds an LGTM comment to the current code review.
 func acceptReview(args []string) error {
 	acceptFlagSet.Parse(args)
+	args = acceptFlagSet.Args()
 
-	r, err := review.GetCurrent()
+	var r *review.Review
+	var err error
+	if len(args) > 1 {
+		return errors.New("Only accepting a single review is supported.")
+	}
+
+	if len(args) == 1 {
+		r = review.Get(args[0])
+	} else {
+		r, err = review.GetCurrent()
+	}
+
 	if err != nil {
-		return fmt.Errorf("Failed to load the current review: %v\n", err)
+		return fmt.Errorf("Failed to load the review: %v\n", err)
 	}
 	if r == nil {
-		return errors.New("There is no current review.")
+		return errors.New("There is no matching review.")
 	}
 
-	acceptedCommit := repository.GetCommitHash(r.Request.ReviewRef)
+	var acceptedCommit string
+	if r.Submitted {
+		acceptedCommit = r.Revision
+	} else {
+		// TODO(ojarjur): This will fail if the user has not fetched the
+		// review ref into their local repo. In that case, we should run
+		// ls-remote on each of the remote repos until we find a maching
+		// ref, and then use that ref's commit.
+		acceptedCommit = repository.GetCommitHash(r.Request.ReviewRef)
+	}
 	location := comment.Location{
 		Commit: acceptedCommit,
 	}
@@ -57,7 +78,7 @@ func acceptReview(args []string) error {
 // acceptCmd defines the "accept" subcommand.
 var acceptCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s accept <option>...\n\nOptions:\n", arg0)
+		fmt.Printf("Usage: %s accept <option>... (<commit>)\n\nOptions:\n", arg0)
 		acceptFlagSet.PrintDefaults()
 	},
 	RunMethod: func(args []string) error {
