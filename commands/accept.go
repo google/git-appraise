@@ -59,10 +59,12 @@ func acceptReview(args []string) error {
 	if r.Submitted {
 		acceptedCommit = r.Revision
 	} else {
-		// TODO(ojarjur): This will fail if the user has not fetched the
-		// review ref into their local repo. In that case, we should run
-		// ls-remote on each of the remote repos until we find a maching
-		// ref, and then use that ref's commit.
+		// TODO(ojarjur): If the user has not fetched the review ref into
+		// their local repo, then the "git show" command will fail and
+		// cause the tool to exit.
+		//
+		// In that case, we should run ls-remote on each of the remote
+		// repos until we find a maching ref, and then use that ref's commit.
 		acceptedCommit = repository.GetCommitHash(r.Request.ReviewRef)
 	}
 	location := comment.Location{
