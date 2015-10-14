@@ -114,6 +114,9 @@ schema.
             null,
             0
           ]
+        },
+        "baseCommit": {
+          "type": "string"
         }
       },
       "required": [

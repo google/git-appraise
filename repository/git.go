@@ -99,6 +99,12 @@ func HasUncommittedChanges() bool {
 	return false
 }
 
+// VerifyGitRef verifies that the supplied ref points to a known commit.
+func VerifyGitRef(ref string) error {
+	_, err := runGitCommand("show-ref", "--verify", ref)
+	return err
+}
+
 // VerifyGitRefOrDie verifies that the supplied ref points to a known commit.
 func VerifyGitRefOrDie(ref string) {
 	runGitCommandOrDie("show-ref", "--verify", ref)
@@ -119,7 +125,16 @@ func GetCommitMessage(ref string) string {
 	return runGitCommandOrDie("show", "-s", "--format=%B", ref)
 }
 
-// IsAncestor determins if the first argument points to a commit that is an ancestor of the second.
+func GetFirstParent(ref string) (string, error) {
+	return runGitCommand("rev-list", "--skip", "1", "-n", "1", ref)
+}
+
+// MergeBase determines if the first commit that is an ancestor of the two arguments.
+func MergeBase(a, b string) string {
+	return runGitCommandOrDie("merge-base", a, b)
+}
+
+// IsAncestor determines if the first argument points to a commit that is an ancestor of the second.
 func IsAncestor(ancestor, descendant string) bool {
 	_, err := runGitCommand("merge-base", "--is-ancestor", ancestor, descendant)
 	if err == nil {
@@ -130,6 +145,11 @@ func IsAncestor(ancestor, descendant string) bool {
 	}
 	log.Fatal(err)
 	return false
+}
+
+// Diff computes the diff between two given commits.
+func Diff(left, right string) string {
+	return runGitCommandOrDie("diff", left, right)
 }
 
 // SwitchToRef changes the currently-checked-out ref.

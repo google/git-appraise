@@ -25,6 +25,7 @@ import (
 
 var showFlagSet = flag.NewFlagSet("show", flag.ExitOnError)
 var showJsonOutput = showFlagSet.Bool("json", false, "Format the output as JSON")
+var showDiffOutput = showFlagSet.Bool("diff", false, "Show the current diff for the review")
 
 // showReview prints the current code review.
 func showReview(args []string) error {
@@ -51,6 +52,9 @@ func showReview(args []string) error {
 	}
 	if *showJsonOutput {
 		return r.PrintJson()
+	}
+	if *showDiffOutput {
+		return r.PrintDiff()
 	}
 	return r.PrintDetails()
 }

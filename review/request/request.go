@@ -45,6 +45,11 @@ type Request struct {
 	Description string   `json:"description,omitempty"`
 	// Version represents the version of the metadata format.
 	Version int `json:"v,omitempty"`
+	// BaseCommit stores the commit ID of the target ref at the time the review was requested.
+	// This is optional, and only used for submitted reviews which were anchored at a merge commit.
+	// This allows someone viewing that submitted review to find the diff against which the
+	// code was reviewed.
+	BaseCommit string `json:"baseCommit,omitempty"`
 }
 
 // New returns a new request.

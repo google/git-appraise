@@ -341,6 +341,69 @@ func (r *Review) PrintJson() error {
 	return nil
 }
 
+// GetHeadCommit returns the latest commit in a review.
+func (r *Review) GetHeadCommit() (string, error) {
+	if r.Request.ReviewRef == "" {
+		return r.Revision, nil
+	}
+
+	if err := repository.VerifyGitRef(r.Request.TargetRef); err != nil {
+		return "", err
+	}
+
+	if repository.IsAncestor(r.Revision, r.Request.TargetRef) {
+		// The review has already been submitted.
+		// TODO(ojarjur): Go through the list of comments and find the last commented upon commit.
+		return r.Revision, nil
+	}
+
+	if err := repository.VerifyGitRef(r.Request.ReviewRef); err != nil {
+		return "", fmt.Errorf("Local copy of the review ref not found; run 'git checkout %s' to create it", r.Request.ReviewRef)
+	}
+
+	return repository.GetCommitHash(r.Request.ReviewRef), nil
+}
+
+// GetBaseCommit returns the commit against which a review should be compared.
+func (r *Review) GetBaseCommit() (string, error) {
+	if r.Request.BaseCommit != "" {
+		return r.Request.BaseCommit, nil
+	}
+
+	if err := repository.VerifyGitRef(r.Request.TargetRef); err != nil {
+		return "", err
+	}
+
+	leftHandSide := repository.GetCommitHash(r.Request.TargetRef)
+	rightHandSide := r.Revision
+	if r.Request.ReviewRef == "" {
+		if err := repository.VerifyGitRef(r.Request.ReviewRef); err == nil {
+			rightHandSide = repository.GetCommitHash(r.Request.ReviewRef)
+		}
+	}
+
+	if repository.IsAncestor(rightHandSide, leftHandSide) {
+		// This means the review has been submitted, but did not specify a base commit.
+		// In this case, we have to treat the first parent commit as the base.
+		return repository.GetFirstParent(rightHandSide)
+	}
+
+	return repository.MergeBase(leftHandSide, rightHandSide), nil
+}
+
+// PrintDiff displays the diff for a review.
+func (r *Review) PrintDiff() error {
+	var baseCommit, headCommit string
+	baseCommit, err := r.GetBaseCommit()
+	if err == nil {
+		headCommit, err = r.GetHeadCommit()
+	}
+	if err == nil {
+		fmt.Println(repository.Diff(baseCommit, headCommit))
+	}
+	return err
+}
+
 // AddComment adds the given comment to the review.
 func (r *Review) AddComment(c comment.Comment) error {
 	commentNote, err := c.Write()
