@@ -1,3 +1,6 @@
 sudo: false
 language: go
-before_install: git config --global user.email "user@example.com" && git fetch origin +refs/notes/devtools/*:refs/notes/devtools/*
+before_install:
+  - git config --global user.email "user@example.com"
+  - git fetch origin +refs/notes/devtools/*:refs/notes/devtools/*
+  - git fetch origin +refs/heads/master:refs/heads/master
