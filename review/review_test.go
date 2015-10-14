@@ -541,7 +541,7 @@ func TestGetHeadCommit(t *testing.T) {
 	submittedMergeReview := Get("fcc9b48925b8a880813275fa29b43426b5f1fccd")
 	submittedMergeReviewBase, err := submittedMergeReview.GetBaseCommit()
 	if err != nil {
-		t.Fatal("Unable to compute the base commit for a known review of a merge commit.")
+		t.Fatal("Unable to compute the base commit for a known review of a merge commit: ", err)
 	}
 	if submittedMergeReviewBase != "5c2b1d1e12eae76a85eb1b586c58d60e8c9ce388" {
 		t.Fatal("Unexpected base commit computed for a known review of a merge commit.")
@@ -550,7 +550,7 @@ func TestGetHeadCommit(t *testing.T) {
 	submittedModifiedReview := Get("62f1f51aea3b59829071c58ad2189231b6505fd3")
 	submittedModifiedReviewBase, err := submittedModifiedReview.GetBaseCommit()
 	if err != nil {
-		t.Fatal("Unable to compute the base commit for a known, multi-commit review.")
+		t.Fatal("Unable to compute the base commit for a known, multi-commit review: ", err)
 	}
 	if submittedModifiedReviewBase != "b346936104f9bb4532d31abd085b531109e0b19c" {
 		t.Fatal("Unexpected base commit for a known, multi-commit review.")
