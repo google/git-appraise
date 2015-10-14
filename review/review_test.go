@@ -17,8 +17,8 @@ limitations under the License.
 package review
 
 import (
-	"sort"
 	"github.com/google/git-appraise/review/comment"
+	"sort"
 	"testing"
 )
 

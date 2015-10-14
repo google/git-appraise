@@ -27,10 +27,10 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"sort"
 	"github.com/google/git-appraise/commands"
 	"github.com/google/git-appraise/repository"
+	"os"
+	"sort"
 	"strings"
 )
 
