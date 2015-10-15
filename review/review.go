@@ -366,10 +366,6 @@ func (r *Review) GetHeadCommit() (string, error) {
 
 // GetBaseCommit returns the commit against which a review should be compared.
 func (r *Review) GetBaseCommit() (string, error) {
-	if r.Request.BaseCommit != "" {
-		return r.Request.BaseCommit, nil
-	}
-
 	if err := repository.VerifyGitRef(r.Request.TargetRef); err != nil {
 		return "", err
 	}
@@ -383,6 +379,10 @@ func (r *Review) GetBaseCommit() (string, error) {
 	}
 
 	if repository.IsAncestor(rightHandSide, leftHandSide) {
+		if r.Request.BaseCommit != "" {
+			return r.Request.BaseCommit, nil
+		}
+
 		// This means the review has been submitted, but did not specify a base commit.
 		// In this case, we have to treat the last parent commit as the base. This is
 		// usually what we want, since merging a target branch into a feature branch
