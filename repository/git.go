@@ -125,7 +125,7 @@ func GetCommitMessage(ref string) string {
 	return runGitCommandOrDie("show", "-s", "--format=%B", ref)
 }
 
-func GetFirstParent(ref string) (string, error) {
+func GetLastParent(ref string) (string, error) {
 	return runGitCommand("rev-list", "--skip", "1", "-n", "1", ref)
 }
 

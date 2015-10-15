@@ -384,8 +384,11 @@ func (r *Review) GetBaseCommit() (string, error) {
 
 	if repository.IsAncestor(rightHandSide, leftHandSide) {
 		// This means the review has been submitted, but did not specify a base commit.
-		// In this case, we have to treat the first parent commit as the base.
-		return repository.GetFirstParent(rightHandSide)
+		// In this case, we have to treat the last parent commit as the base. This is
+		// usually what we want, since merging a target branch into a feature branch
+		// results in the previous commit to the feature branch being the first parent,
+		// and the latest commit to the target branch being the second parent.
+		return repository.GetLastParent(rightHandSide)
 	}
 
 	return repository.MergeBase(leftHandSide, rightHandSide), nil
