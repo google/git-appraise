@@ -341,6 +341,36 @@ func (r *Review) PrintJson() error {
 	return nil
 }
 
+// findLastCommit returns the later (newest) commit from the union of the provided commit
+// and all of the commits that are referenced in the given comment threads.
+func findLastCommit(latestCommit string, commentThreads []CommentThread) string {
+	isLater := func(commit string) bool {
+		if repository.IsAncestor(latestCommit, commit) {
+			return true
+		}
+		if repository.IsAncestor(commit, latestCommit) {
+			return false
+		}
+		return repository.GetCommitTime(commit) > repository.GetCommitTime(latestCommit)
+	}
+	updateLatest := func(commit string) {
+		if commit == "" {
+			return
+		}
+		if isLater(commit) {
+			latestCommit = commit
+		}
+	}
+	for _, commentThread := range commentThreads {
+		comment := commentThread.Comment
+		if comment.Location != nil {
+			updateLatest(comment.Location.Commit)
+		}
+		updateLatest(findLastCommit(latestCommit, commentThread.Children))
+	}
+	return latestCommit
+}
+
 // GetHeadCommit returns the latest commit in a review.
 func (r *Review) GetHeadCommit() (string, error) {
 	if r.Request.ReviewRef == "" {
@@ -353,8 +383,8 @@ func (r *Review) GetHeadCommit() (string, error) {
 
 	if repository.IsAncestor(r.Revision, r.Request.TargetRef) {
 		// The review has already been submitted.
-		// TODO(ojarjur): Go through the list of comments and find the last commented upon commit.
-		return r.Revision, nil
+		// Go through the list of comments and find the last commented upon commit.
+		return findLastCommit(r.Revision, r.Comments), nil
 	}
 
 	if err := repository.VerifyGitRef(r.Request.ReviewRef); err != nil {

@@ -125,6 +125,11 @@ func GetCommitMessage(ref string) string {
 	return runGitCommandOrDie("show", "-s", "--format=%B", ref)
 }
 
+// GetCommitTime returns the commit time of the commit pointed to by the given ref.
+func GetCommitTime(ref string) string {
+	return runGitCommandOrDie("show", "-s", "--format=%ct", ref)
+}
+
 func GetLastParent(ref string) (string, error) {
 	return runGitCommand("rev-list", "--skip", "1", "-n", "1", ref)
 }
