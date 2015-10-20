@@ -377,34 +377,32 @@ func (r *Review) GetHeadCommit() (string, error) {
 		return r.Revision, nil
 	}
 
-	if err := repository.VerifyGitRef(r.Request.TargetRef); err != nil {
+	targetRefHead, err := repository.ResolveRefCommit(r.Request.TargetRef)
+	if err != nil {
 		return "", err
 	}
 
-	if repository.IsAncestor(r.Revision, r.Request.TargetRef) {
+	if repository.IsAncestor(r.Revision, targetRefHead) {
 		// The review has already been submitted.
 		// Go through the list of comments and find the last commented upon commit.
 		return findLastCommit(r.Revision, r.Comments), nil
 	}
 
-	if err := repository.VerifyGitRef(r.Request.ReviewRef); err != nil {
-		return "", fmt.Errorf("Local copy of the review ref not found; run 'git checkout %s' to create it", r.Request.ReviewRef)
-	}
-
-	return repository.GetCommitHash(r.Request.ReviewRef), nil
+	return repository.ResolveRefCommit(r.Request.ReviewRef)
 }
 
 // GetBaseCommit returns the commit against which a review should be compared.
 func (r *Review) GetBaseCommit() (string, error) {
-	if err := repository.VerifyGitRef(r.Request.TargetRef); err != nil {
+	targetRefHead, err := repository.ResolveRefCommit(r.Request.TargetRef)
+	if err != nil {
 		return "", err
 	}
 
-	leftHandSide := repository.GetCommitHash(r.Request.TargetRef)
+	leftHandSide := targetRefHead
 	rightHandSide := r.Revision
 	if r.Request.ReviewRef == "" {
-		if err := repository.VerifyGitRef(r.Request.ReviewRef); err == nil {
-			rightHandSide = repository.GetCommitHash(r.Request.ReviewRef)
+		if reviewRefHead, err := repository.ResolveRefCommit(r.Request.ReviewRef); err == nil {
+			rightHandSide = reviewRefHead
 		}
 	}
 

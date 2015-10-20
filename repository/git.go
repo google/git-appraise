@@ -120,6 +120,33 @@ func GetCommitHash(ref string) string {
 	return runGitCommandOrDie("show", "-s", "--format=%H", ref)
 }
 
+// ResolveRefCommit returns the commit pointed to by the given ref, which may be a remote ref.
+//
+// This differs from GetCommitHash which only works on exact matches, in that it will try to
+// intelligently handle the scenario of a ref not existing locally, but being known to exist
+// in a remote repo.
+//
+// This method should be used when a command may be performed by either the reviewer or the
+// reviewee, while GetCommitHash should be used when the encompassing command should only be
+// performed by the reviewee.
+func ResolveRefCommit(ref string) (string, error) {
+	if err := VerifyGitRef(ref); err == nil {
+		return GetCommitHash(ref), nil
+	}
+	if strings.HasPrefix(ref, "refs/heads/") {
+		// The ref is a branch. Check if it exists in exactly one remote
+		pattern := strings.Replace(ref, "refs/heads", "**", 1)
+		matchingOutput := runGitCommandOrDie("for-each-ref", "--format=%(refname)", pattern)
+		matchingRefs := strings.Split(matchingOutput, "\n")
+		if len(matchingRefs) == 1 && matchingRefs[0] != "" {
+			// There is exactly one match
+			return GetCommitHash(matchingRefs[0]), nil
+		}
+		return "", fmt.Errorf("Unable to find a git ref matching the pattern %q", pattern)
+	}
+	return "", fmt.Errorf("Unknown git ref %q", ref)
+}
+
 // GetCommitMessage returns the message stored in the commit pointed to by the given ref.
 func GetCommitMessage(ref string) string {
 	return runGitCommandOrDie("show", "-s", "--format=%B", ref)
