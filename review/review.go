@@ -21,11 +21,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/ci"
 	"github.com/google/git-appraise/review/comment"
 	"github.com/google/git-appraise/review/request"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -339,6 +339,100 @@ func (r *Review) PrintJson() error {
 	}
 	fmt.Println(prettyBytes.String())
 	return nil
+}
+
+// findLastCommit returns the later (newest) commit from the union of the provided commit
+// and all of the commits that are referenced in the given comment threads.
+func findLastCommit(latestCommit string, commentThreads []CommentThread) string {
+	isLater := func(commit string) bool {
+		if repository.IsAncestor(latestCommit, commit) {
+			return true
+		}
+		if repository.IsAncestor(commit, latestCommit) {
+			return false
+		}
+		return repository.GetCommitTime(commit) > repository.GetCommitTime(latestCommit)
+	}
+	updateLatest := func(commit string) {
+		if commit == "" {
+			return
+		}
+		if isLater(commit) {
+			latestCommit = commit
+		}
+	}
+	for _, commentThread := range commentThreads {
+		comment := commentThread.Comment
+		if comment.Location != nil {
+			updateLatest(comment.Location.Commit)
+		}
+		updateLatest(findLastCommit(latestCommit, commentThread.Children))
+	}
+	return latestCommit
+}
+
+// GetHeadCommit returns the latest commit in a review.
+func (r *Review) GetHeadCommit() (string, error) {
+	if r.Request.ReviewRef == "" {
+		return r.Revision, nil
+	}
+
+	targetRefHead, err := repository.ResolveRefCommit(r.Request.TargetRef)
+	if err != nil {
+		return "", err
+	}
+
+	if repository.IsAncestor(r.Revision, targetRefHead) {
+		// The review has already been submitted.
+		// Go through the list of comments and find the last commented upon commit.
+		return findLastCommit(r.Revision, r.Comments), nil
+	}
+
+	return repository.ResolveRefCommit(r.Request.ReviewRef)
+}
+
+// GetBaseCommit returns the commit against which a review should be compared.
+func (r *Review) GetBaseCommit() (string, error) {
+	targetRefHead, err := repository.ResolveRefCommit(r.Request.TargetRef)
+	if err != nil {
+		return "", err
+	}
+
+	leftHandSide := targetRefHead
+	rightHandSide := r.Revision
+	if r.Request.ReviewRef == "" {
+		if reviewRefHead, err := repository.ResolveRefCommit(r.Request.ReviewRef); err == nil {
+			rightHandSide = reviewRefHead
+		}
+	}
+
+	if repository.IsAncestor(rightHandSide, leftHandSide) {
+		if r.Request.BaseCommit != "" {
+			return r.Request.BaseCommit, nil
+		}
+
+		// This means the review has been submitted, but did not specify a base commit.
+		// In this case, we have to treat the last parent commit as the base. This is
+		// usually what we want, since merging a target branch into a feature branch
+		// results in the previous commit to the feature branch being the first parent,
+		// and the latest commit to the target branch being the second parent.
+		return repository.GetLastParent(rightHandSide)
+	}
+
+	return repository.MergeBase(leftHandSide, rightHandSide), nil
+}
+
+// PrintDiff displays the diff for a review.
+func (r *Review) PrintDiff() error {
+	var baseCommit, headCommit string
+	baseCommit, err := r.GetBaseCommit()
+	if err == nil {
+		headCommit, err = r.GetHeadCommit()
+	}
+	if err == nil {
+		fmt.Println(repository.Diff(baseCommit, headCommit))
+	}
+	return err
 }
 
 // AddComment adds the given comment to the review.

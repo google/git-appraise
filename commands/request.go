@@ -76,6 +76,7 @@ func requestReview(args []string) error {
 	}
 	repository.VerifyGitRefOrDie(r.TargetRef)
 	repository.VerifyGitRefOrDie(r.ReviewRef)
+	r.BaseCommit = repository.GetCommitHash(r.TargetRef)
 
 	reviewCommits := repository.ListCommitsBetween(r.TargetRef, r.ReviewRef)
 	if reviewCommits == nil {
