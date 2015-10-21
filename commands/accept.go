@@ -20,7 +20,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"github.com/google/git-appraise/review/comment"
 )
@@ -55,17 +54,9 @@ func acceptReview(args []string) error {
 		return errors.New("There is no matching review.")
 	}
 
-	var acceptedCommit string
-	if r.Submitted {
-		acceptedCommit = r.Revision
-	} else {
-		// TODO(ojarjur): If the user has not fetched the review ref into
-		// their local repo, then the "git show" command will fail and
-		// cause the tool to exit.
-		//
-		// In that case, we should run ls-remote on each of the remote
-		// repos until we find a maching ref, and then use that ref's commit.
-		acceptedCommit = repository.GetCommitHash(r.Request.ReviewRef)
+	acceptedCommit, err := r.GetHeadCommit()
+	if err != nil {
+		return err
 	}
 	location := comment.Location{
 		Commit: acceptedCommit,
