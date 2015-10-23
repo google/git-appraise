@@ -1,2 +1,4 @@
 {"timestamp":"1441311157","author":"ojarjur","location":{"commit":"4be1ef4ce81487499dca56da37b593dadfcad66d","path":"commands/accept.go","range":{"startLine":33}},"Parent":"","description":"I should add a comment about *how* it fails."}
 {"timestamp":"1441325914","author":"ojarjur","location":{"commit":"4be1ef4ce81487499dca56da37b593dadfcad66d","path":"commands/accept.go","range":{"startLine":63}},"Parent":"","description":"I should add a comment about *how* it fails."}
+
+{"timestamp":"1445621016","author":"smcmaster","resolved":true}
