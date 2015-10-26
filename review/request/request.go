@@ -55,10 +55,10 @@ type Request struct {
 // New returns a new request.
 //
 // The Timestamp and Requester fields are automatically filled in with the current time and user.
-func New(reviewers []string, reviewRef, targetRef, description string) Request {
+func New(requester string, reviewers []string, reviewRef, targetRef, description string) Request {
 	return Request{
 		Timestamp:   strconv.FormatInt(time.Now().Unix(), 10),
-		Requester:   repository.GetUserEmail(),
+		Requester:   requester,
 		Reviewers:   reviewers,
 		ReviewRef:   reviewRef,
 		TargetRef:   targetRef,

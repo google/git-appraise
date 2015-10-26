@@ -28,19 +28,23 @@ import (
 
 const branchRefPrefix = "refs/heads/"
 
-// Note represents the contents of a git-note
-type Note []byte
+// GitRepo represents an instance of a (local) git repository.
+type GitRepo struct {
+	Path string
+}
 
 // Run the given git command and return its stdout, or an error if the command fails.
-func runGitCommand(args ...string) (string, error) {
+func (repo *GitRepo) runGitCommand(args ...string) (string, error) {
 	cmd := exec.Command("git", args...)
+	cmd.Dir = repo.Path
 	out, err := cmd.Output()
 	return strings.Trim(string(out), "\n"), err
 }
 
 // Run the given git command using the same stdin, stdout, and stderr as the review tool.
-func runGitCommandInline(args ...string) error {
+func (repo *GitRepo) runGitCommandInline(args ...string) error {
 	cmd := exec.Command("git", args...)
+	cmd.Dir = repo.Path
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -48,8 +52,8 @@ func runGitCommandInline(args ...string) error {
 }
 
 // Run the given git command using the same stdin, stdout, and stderr as the review tool.
-func runGitCommandInlineOrDie(args ...string) {
-	err := runGitCommandInline(args...)
+func (repo *GitRepo) runGitCommandInlineOrDie(args ...string) {
+	err := repo.runGitCommandInline(args...)
 	if err != nil {
 		log.Print("git", args)
 		log.Fatal(err)
@@ -57,8 +61,8 @@ func runGitCommandInlineOrDie(args ...string) {
 }
 
 // Run the given git command and return its stdout.
-func runGitCommandOrDie(args ...string) string {
-	out, err := runGitCommand(args...)
+func (repo *GitRepo) runGitCommandOrDie(args ...string) string {
+	out, err := repo.runGitCommand(args...)
 	if err != nil {
 		log.Print("git", args)
 		log.Fatal(out)
@@ -66,33 +70,40 @@ func runGitCommandOrDie(args ...string) string {
 	return out
 }
 
-// IsGitRepo determines if the current working directory is inside of a git repository.
-func IsGitRepo() bool {
-	_, err := runGitCommand("rev-parse")
+// NewGitRepo determines if the given working directory is inside of a git repository,
+// and returns the corresponding GitRepo instance if it is.
+func NewGitRepo(path string) (*GitRepo, error) {
+	repo := &GitRepo{Path: path}
+	_, err := repo.runGitCommand("rev-parse")
 	if err == nil {
-		return true
+		return repo, nil
 	}
 	if _, ok := err.(*exec.ExitError); ok {
-		return false
+		return nil, err
 	}
 	log.Fatal(err)
-	return false
+	return nil, err
+}
+
+// GetPath returns the path to the repo.
+func (repo *GitRepo) GetPath() string {
+	return repo.Path
 }
 
 // GetRepoStateHash returns a hash which embodies the entire current state of a repository.
-func GetRepoStateHash() string {
-	stateSummary := runGitCommandOrDie("show-ref")
+func (repo *GitRepo) GetRepoStateHash() string {
+	stateSummary := repo.runGitCommandOrDie("show-ref")
 	return fmt.Sprintf("%x", sha1.Sum([]byte(stateSummary)))
 }
 
 // GetUserEmail returns the email address that the user has used to configure git.
-func GetUserEmail() string {
-	return runGitCommandOrDie("config", "user.email")
+func (repo *GitRepo) GetUserEmail() string {
+	return repo.runGitCommandOrDie("config", "user.email")
 }
 
 // HasUncommittedChanges returns true if there are local, uncommitted changes.
-func HasUncommittedChanges() bool {
-	out := runGitCommandOrDie("status", "--porcelain")
+func (repo *GitRepo) HasUncommittedChanges() bool {
+	out := repo.runGitCommandOrDie("status", "--porcelain")
 	if len(out) > 0 {
 		return true
 	}
@@ -100,24 +111,24 @@ func HasUncommittedChanges() bool {
 }
 
 // VerifyGitRef verifies that the supplied ref points to a known commit.
-func VerifyGitRef(ref string) error {
-	_, err := runGitCommand("show-ref", "--verify", ref)
+func (repo *GitRepo) VerifyGitRef(ref string) error {
+	_, err := repo.runGitCommand("show-ref", "--verify", ref)
 	return err
 }
 
 // VerifyGitRefOrDie verifies that the supplied ref points to a known commit.
-func VerifyGitRefOrDie(ref string) {
-	runGitCommandOrDie("show-ref", "--verify", ref)
+func (repo *GitRepo) VerifyGitRefOrDie(ref string) {
+	repo.runGitCommandOrDie("show-ref", "--verify", ref)
 }
 
 // GetHeadRef returns the ref that is the current HEAD.
-func GetHeadRef() string {
-	return runGitCommandOrDie("symbolic-ref", "HEAD")
+func (repo *GitRepo) GetHeadRef() string {
+	return repo.runGitCommandOrDie("symbolic-ref", "HEAD")
 }
 
 // GetCommitHash returns the hash of the commit pointed to by the given ref.
-func GetCommitHash(ref string) string {
-	return runGitCommandOrDie("show", "-s", "--format=%H", ref)
+func (repo *GitRepo) GetCommitHash(ref string) string {
+	return repo.runGitCommandOrDie("show", "-s", "--format=%H", ref)
 }
 
 // ResolveRefCommit returns the commit pointed to by the given ref, which may be a remote ref.
@@ -129,18 +140,18 @@ func GetCommitHash(ref string) string {
 // This method should be used when a command may be performed by either the reviewer or the
 // reviewee, while GetCommitHash should be used when the encompassing command should only be
 // performed by the reviewee.
-func ResolveRefCommit(ref string) (string, error) {
-	if err := VerifyGitRef(ref); err == nil {
-		return GetCommitHash(ref), nil
+func (repo *GitRepo) ResolveRefCommit(ref string) (string, error) {
+	if err := repo.VerifyGitRef(ref); err == nil {
+		return repo.GetCommitHash(ref), nil
 	}
 	if strings.HasPrefix(ref, "refs/heads/") {
 		// The ref is a branch. Check if it exists in exactly one remote
 		pattern := strings.Replace(ref, "refs/heads", "**", 1)
-		matchingOutput := runGitCommandOrDie("for-each-ref", "--format=%(refname)", pattern)
+		matchingOutput := repo.runGitCommandOrDie("for-each-ref", "--format=%(refname)", pattern)
 		matchingRefs := strings.Split(matchingOutput, "\n")
 		if len(matchingRefs) == 1 && matchingRefs[0] != "" {
 			// There is exactly one match
-			return GetCommitHash(matchingRefs[0]), nil
+			return repo.GetCommitHash(matchingRefs[0]), nil
 		}
 		return "", fmt.Errorf("Unable to find a git ref matching the pattern %q", pattern)
 	}
@@ -148,27 +159,27 @@ func ResolveRefCommit(ref string) (string, error) {
 }
 
 // GetCommitMessage returns the message stored in the commit pointed to by the given ref.
-func GetCommitMessage(ref string) string {
-	return runGitCommandOrDie("show", "-s", "--format=%B", ref)
+func (repo *GitRepo) GetCommitMessage(ref string) string {
+	return repo.runGitCommandOrDie("show", "-s", "--format=%B", ref)
 }
 
 // GetCommitTime returns the commit time of the commit pointed to by the given ref.
-func GetCommitTime(ref string) string {
-	return runGitCommandOrDie("show", "-s", "--format=%ct", ref)
+func (repo *GitRepo) GetCommitTime(ref string) string {
+	return repo.runGitCommandOrDie("show", "-s", "--format=%ct", ref)
 }
 
-func GetLastParent(ref string) (string, error) {
-	return runGitCommand("rev-list", "--skip", "1", "-n", "1", ref)
+func (repo *GitRepo) GetLastParent(ref string) (string, error) {
+	return repo.runGitCommand("rev-list", "--skip", "1", "-n", "1", ref)
 }
 
 // MergeBase determines if the first commit that is an ancestor of the two arguments.
-func MergeBase(a, b string) string {
-	return runGitCommandOrDie("merge-base", a, b)
+func (repo *GitRepo) MergeBase(a, b string) string {
+	return repo.runGitCommandOrDie("merge-base", a, b)
 }
 
 // IsAncestor determines if the first argument points to a commit that is an ancestor of the second.
-func IsAncestor(ancestor, descendant string) bool {
-	_, err := runGitCommand("merge-base", "--is-ancestor", ancestor, descendant)
+func (repo *GitRepo) IsAncestor(ancestor, descendant string) bool {
+	_, err := repo.runGitCommand("merge-base", "--is-ancestor", ancestor, descendant)
 	if err == nil {
 		return true
 	}
@@ -180,25 +191,25 @@ func IsAncestor(ancestor, descendant string) bool {
 }
 
 // Diff computes the diff between two given commits.
-func Diff(left, right string) string {
-	return runGitCommandOrDie("diff", left, right)
+func (repo *GitRepo) Diff(left, right string, diffArgs ...string) string {
+	return repo.runGitCommandOrDie("diff", left, right)
 }
 
 // SwitchToRef changes the currently-checked-out ref.
-func SwitchToRef(ref string) {
+func (repo *GitRepo) SwitchToRef(ref string) {
 	// If the ref starts with "refs/heads/", then we have to trim that prefix,
 	// or else we will wind up in a detached HEAD state.
 	if strings.HasPrefix(ref, branchRefPrefix) {
 		ref = ref[len(branchRefPrefix):]
 	}
-	runGitCommandOrDie("checkout", ref)
+	repo.runGitCommandOrDie("checkout", ref)
 }
 
 // MergeRef merges the given ref into the current one.
 //
 // The ref argument is the ref to merge, and fastForward indicates that the
 // current ref should only move forward, as opposed to creating a bubble merge.
-func MergeRef(ref string, fastForward bool) {
+func (repo *GitRepo) MergeRef(ref string, fastForward bool) {
 	args := []string{"merge"}
 	if fastForward {
 		args = append(args, "--ff", "--ff-only")
@@ -206,12 +217,12 @@ func MergeRef(ref string, fastForward bool) {
 		args = append(args, "--no-ff")
 	}
 	args = append(args, ref)
-	runGitCommandInlineOrDie(args...)
+	repo.runGitCommandInlineOrDie(args...)
 }
 
 // RebaseRef rebases the given ref into the current one.
-func RebaseRef(ref string) {
-	runGitCommandInlineOrDie("rebase", "-i", ref)
+func (repo *GitRepo) RebaseRef(ref string) {
+	repo.runGitCommandInlineOrDie("rebase", "-i", ref)
 }
 
 // ListCommitsBetween returns the list of commits between the two given revisions.
@@ -222,8 +233,8 @@ func RebaseRef(ref string) {
 // merge base of the two is used as the starting point.
 //
 // The generated list is in chronological order (with the oldest commit first).
-func ListCommitsBetween(from, to string) []string {
-	out := runGitCommandOrDie("rev-list", "--reverse", "--ancestry-path", from+".."+to)
+func (repo *GitRepo) ListCommitsBetween(from, to string) []string {
+	out := repo.runGitCommandOrDie("rev-list", "--reverse", "--ancestry-path", from+".."+to)
 	if out == "" {
 		return nil
 	}
@@ -231,9 +242,9 @@ func ListCommitsBetween(from, to string) []string {
 }
 
 // GetNotes uses the "git" command-line tool to read the notes from the given ref for a given revision.
-func GetNotes(notesRef, revision string) []Note {
+func (repo *GitRepo) GetNotes(notesRef, revision string) []Note {
 	var notes []Note
-	rawNotes, err := runGitCommand("notes", "--ref", notesRef, "show", revision)
+	rawNotes, err := repo.runGitCommand("notes", "--ref", notesRef, "show", revision)
 	if err != nil {
 		// We just assume that this means there are no notes
 		return nil
@@ -245,19 +256,19 @@ func GetNotes(notesRef, revision string) []Note {
 }
 
 // AppendNote appends a note to a revision under the given ref.
-func AppendNote(notesRef, revision string, note Note) {
-	runGitCommandOrDie("notes", "--ref", notesRef, "append", "-m", string(note), revision)
+func (repo *GitRepo) AppendNote(notesRef, revision string, note Note) {
+	repo.runGitCommandOrDie("notes", "--ref", notesRef, "append", "-m", string(note), revision)
 }
 
 // ListNotedRevisions returns the collection of revisions that are annotated by notes in the given ref.
-func ListNotedRevisions(notesRef string) []string {
+func (repo *GitRepo) ListNotedRevisions(notesRef string) []string {
 	var revisions []string
-	notesList := strings.Split(runGitCommandOrDie("notes", "--ref", notesRef, "list"), "\n")
+	notesList := strings.Split(repo.runGitCommandOrDie("notes", "--ref", notesRef, "list"), "\n")
 	for _, notePair := range notesList {
 		noteParts := strings.SplitN(notePair, " ", 2)
 		if len(noteParts) == 2 {
 			objHash := noteParts[1]
-			objType, err := runGitCommand("cat-file", "-t", objHash)
+			objType, err := repo.runGitCommand("cat-file", "-t", objHash)
 			// If a note points to an object that we do not know about (yet), then err will not
 			// be nil. We can safely just ignore those notes.
 			if err == nil && objType == "commit" {
@@ -269,12 +280,12 @@ func ListNotedRevisions(notesRef string) []string {
 }
 
 // PushNotes pushes git notes to a remote repo.
-func PushNotes(remote, notesRefPattern string) error {
+func (repo *GitRepo) PushNotes(remote, notesRefPattern string) error {
 	refspec := fmt.Sprintf("%s:%s", notesRefPattern, notesRefPattern)
 
 	// The push is liable to fail if the user forgot to do a pull first, so
 	// we treat errors as user errors rather than fatal errors.
-	err := runGitCommandInline("push", remote, refspec)
+	err := repo.runGitCommandInline("push", remote, refspec)
 	if err != nil {
 		return fmt.Errorf("Failed to push to the remote '%s': %v", remote, err)
 	}
@@ -289,18 +300,18 @@ func getRemoteNotesRef(remote, localNotesRef string) string {
 // PullNotes fetches the contents of the given notes ref from a remote repo,
 // and then merges them with the corresponding local notes using the
 // "cat_sort_uniq" strategy.
-func PullNotes(remote, notesRefPattern string) {
+func (repo *GitRepo) PullNotes(remote, notesRefPattern string) {
 	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
 	fetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
-	runGitCommandInlineOrDie("fetch", remote, fetchRefSpec)
+	repo.runGitCommandInlineOrDie("fetch", remote, fetchRefSpec)
 
-	remoteRefs := runGitCommandOrDie("ls-remote", remote, notesRefPattern)
+	remoteRefs := repo.runGitCommandOrDie("ls-remote", remote, notesRefPattern)
 	for _, line := range strings.Split(remoteRefs, "\n") {
 		lineParts := strings.Split(line, "\t")
 		if len(lineParts) == 2 {
 			ref := lineParts[1]
 			remoteRef := getRemoteNotesRef(remote, ref)
-			runGitCommandOrDie("notes", "--ref", ref, "merge", remoteRef, "-s", "cat_sort_uniq")
+			repo.runGitCommandOrDie("notes", "--ref", ref, "merge", remoteRef, "-s", "cat_sort_uniq")
 		}
 	}
 }

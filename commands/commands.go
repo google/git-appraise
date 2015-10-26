@@ -17,20 +17,24 @@ limitations under the License.
 // Package commands contains the assorted sub commands supported by the git-appraise tool.
 package commands
 
+import (
+	"github.com/google/git-appraise/repository"
+)
+
 const notesRefPattern = "refs/notes/devtools/*"
 
 // Command represents the definition of a single command.
 type Command struct {
 	Usage     func(string)
-	RunMethod func([]string) error
+	RunMethod func(repository.Repo, []string) error
 }
 
 // Run executes a command, given its arguments.
 //
 // The args parameter is all of the command line args that followed the
 // subcommand.
-func (cmd *Command) Run(args []string) error {
-	return cmd.RunMethod(args)
+func (cmd *Command) Run(repo repository.Repo, args []string) error {
+	return cmd.RunMethod(repo, args)
 }
 
 // CommandMap defines all of the available (sub)commands.

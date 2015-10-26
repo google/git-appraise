@@ -23,7 +23,7 @@ import (
 func TestBuildRequestFromFlags(t *testing.T) {
 	args := []string{"-m", "Request message", "-r", "Me, Myself, \nAnd I "}
 	requestFlagSet.Parse(args)
-	r := buildRequestFromFlags()
+	r := buildRequestFromFlags("user@hostname.com")
 	if r.Description != "Request message" {
 		t.Fatalf("Unexpected request description: '%s'", r.Description)
 	}

@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"github.com/google/git-appraise/review/comment"
 )
@@ -31,7 +32,7 @@ var (
 )
 
 // acceptReview adds an LGTM comment to the current code review.
-func acceptReview(args []string) error {
+func acceptReview(repo repository.Repo, args []string) error {
 	acceptFlagSet.Parse(args)
 	args = acceptFlagSet.Args()
 
@@ -42,9 +43,9 @@ func acceptReview(args []string) error {
 	}
 
 	if len(args) == 1 {
-		r = review.Get(args[0])
+		r = review.Get(repo, args[0])
 	} else {
-		r, err = review.GetCurrent()
+		r, err = review.GetCurrent(repo)
 	}
 
 	if err != nil {
@@ -62,7 +63,7 @@ func acceptReview(args []string) error {
 		Commit: acceptedCommit,
 	}
 	resolved := true
-	c := comment.New(*acceptMessage)
+	c := comment.New(repo.GetUserEmail(), *acceptMessage)
 	c.Location = &location
 	c.Resolved = &resolved
 	return r.AddComment(c)
@@ -74,7 +75,7 @@ var acceptCmd = &Command{
 		fmt.Printf("Usage: %s accept <option>... (<commit>)\n\nOptions:\n", arg0)
 		acceptFlagSet.PrintDefaults()
 	},
-	RunMethod: func(args []string) error {
-		return acceptReview(args)
+	RunMethod: func(repo repository.Repo, args []string) error {
+		return acceptReview(repo, args)
 	},
 }

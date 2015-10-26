@@ -23,7 +23,7 @@ import (
 )
 
 // push pushes the local git-notes used for reviews to a remote repo.
-func push(args []string) error {
+func push(repo repository.Repo, args []string) error {
 	if len(args) > 1 {
 		return errors.New("Only pushing to one remote at a time is supported.")
 	}
@@ -33,14 +33,14 @@ func push(args []string) error {
 		remote = args[0]
 	}
 
-	return repository.PushNotes(remote, notesRefPattern)
+	return repo.PushNotes(remote, notesRefPattern)
 }
 
 var pushCmd = &Command{
 	Usage: func(arg0 string) {
 		fmt.Printf("Usage: %s push [<remote>]", arg0)
 	},
-	RunMethod: func(args []string) error {
-		return push(args)
+	RunMethod: func(repo repository.Repo, args []string) error {
+		return push(repo, args)
 	},
 }

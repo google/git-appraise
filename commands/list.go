@@ -18,16 +18,17 @@ package commands
 
 import (
 	"fmt"
+	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 )
 
 // listReviews lists all extant reviews.
 // TODO(ojarjur): Add flags for filtering the output (e.g. to just open reviews).
-func listReviews(args []string) {
-	reviews := review.ListAll()
+func listReviews(repo repository.Repo, args []string) {
+	reviews := review.ListAll(repo)
 	fmt.Printf("Loaded %d reviews:\n", len(reviews))
-	for _, review := range review.ListAll() {
-		review.PrintSummary()
+	for _, r := range reviews {
+		r.PrintSummary()
 	}
 }
 
@@ -36,8 +37,8 @@ var listCmd = &Command{
 	Usage: func(arg0 string) {
 		fmt.Printf("Usage: %s list\n", arg0)
 	},
-	RunMethod: func(args []string) error {
-		listReviews(args)
+	RunMethod: func(repo repository.Repo, args []string) error {
+		listReviews(repo, args)
 		return nil
 	},
 }

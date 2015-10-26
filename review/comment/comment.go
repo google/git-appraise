@@ -75,10 +75,10 @@ type Comment struct {
 // New returns a new comment with the given description message.
 //
 // The Timestamp and Author fields are automatically filled in with the current time and user.
-func New(description string) Comment {
+func New(author string, description string) Comment {
 	return Comment{
 		Timestamp:   strconv.FormatInt(time.Now().Unix(), 10),
-		Author:      repository.GetUserEmail(),
+		Author:      author,
 		Description: description,
 	}
 }

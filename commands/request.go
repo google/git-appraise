@@ -45,7 +45,7 @@ var (
 )
 
 // Build the template review request based solely on the parsed flag values.
-func buildRequestFromFlags() request.Request {
+func buildRequestFromFlags(requester string) request.Request {
 	var reviewers []string
 	if len(*requestReviewers) > 0 {
 		for _, reviewer := range strings.Split(*requestReviewers, ",") {
@@ -53,45 +53,45 @@ func buildRequestFromFlags() request.Request {
 		}
 	}
 
-	return request.New(reviewers, *requestSource, *requestTarget, *requestMessage)
+	return request.New(requester, reviewers, *requestSource, *requestTarget, *requestMessage)
 }
 
 // Create a new code review request.
 //
 // The "args" parameter is all of the command line arguments that followed the subcommand.
-func requestReview(args []string) error {
+func requestReview(repo repository.Repo, args []string) error {
 	requestFlagSet.Parse(args)
 
 	if !*requestAllowUncommitted {
 		// Requesting a code review with uncommited local changes is usually a mistake, so
 		// we want to report that to the user instead of creating the request.
-		if repository.HasUncommittedChanges() {
+		if repo.HasUncommittedChanges() {
 			return errors.New("You have uncommitted or untracked files. Use --allow-uncommitted to ignore those.")
 		}
 	}
 
-	r := buildRequestFromFlags()
+	r := buildRequestFromFlags(repo.GetUserEmail())
 	if r.ReviewRef == "HEAD" {
-		r.ReviewRef = repository.GetHeadRef()
+		r.ReviewRef = repo.GetHeadRef()
 	}
-	repository.VerifyGitRefOrDie(r.TargetRef)
-	repository.VerifyGitRefOrDie(r.ReviewRef)
-	r.BaseCommit = repository.GetCommitHash(r.TargetRef)
+	repo.VerifyGitRefOrDie(r.TargetRef)
+	repo.VerifyGitRefOrDie(r.ReviewRef)
+	r.BaseCommit = repo.GetCommitHash(r.TargetRef)
 
-	reviewCommits := repository.ListCommitsBetween(r.TargetRef, r.ReviewRef)
+	reviewCommits := repo.ListCommitsBetween(r.TargetRef, r.ReviewRef)
 	if reviewCommits == nil {
 		return errors.New("There are no commits included in the review request")
 	}
 
 	if r.Description == "" {
-		r.Description = repository.GetCommitMessage(reviewCommits[0])
+		r.Description = repo.GetCommitMessage(reviewCommits[0])
 	}
 
 	note, err := r.Write()
 	if err != nil {
 		return err
 	}
-	repository.AppendNote(request.Ref, reviewCommits[0], note)
+	repo.AppendNote(request.Ref, reviewCommits[0], note)
 	if !*requestQuiet {
 		fmt.Printf(requestSummaryTemplate, reviewCommits[0], r.TargetRef, r.ReviewRef, r.Description)
 	}
@@ -104,7 +104,7 @@ var requestCmd = &Command{
 		fmt.Printf("Usage: %s request <option>...\n\nOptions:\n", arg0)
 		requestFlagSet.PrintDefaults()
 	},
-	RunMethod: func(args []string) error {
-		return requestReview(args)
+	RunMethod: func(repo repository.Repo, args []string) error {
+		return requestReview(repo, args)
 	},
 }

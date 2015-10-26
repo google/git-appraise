@@ -67,6 +67,7 @@ type CommentThread struct {
 // correspond to either the current commit in the review ref (for pending
 // reviews), or to the last commented-upon commit (for submitted reviews).
 type Review struct {
+	Repo      repository.Repo `json:"-"`
 	Revision  string          `json:"revision"`
 	Request   request.Request `json:"request"`
 	Comments  []CommentThread `json:"comments,omitempty"`
@@ -184,7 +185,7 @@ func buildCommentThreads(commentsByHash map[string]comment.Comment) []CommentThr
 // loadComments reads in the log-structured sequence of comments for a review,
 // and then builds the corresponding tree-structured comment threads.
 func (r *Review) loadComments() []CommentThread {
-	commentNotes := repository.GetNotes(comment.Ref, r.Revision)
+	commentNotes := r.Repo.GetNotes(comment.Ref, r.Revision)
 	commentsByHash := comment.ParseAllValid(commentNotes)
 	return buildCommentThreads(commentsByHash)
 }
@@ -192,29 +193,30 @@ func (r *Review) loadComments() []CommentThread {
 // Get returns the specified code review.
 //
 // If no review request exists, the returned review is nil.
-func Get(revision string) *Review {
-	requestNotes := repository.GetNotes(request.Ref, revision)
+func Get(repo repository.Repo, revision string) *Review {
+	requestNotes := repo.GetNotes(request.Ref, revision)
 	requests := request.ParseAllValid(requestNotes)
 	if requests == nil {
 		return nil
 	}
 	review := Review{
+		Repo:     repo,
 		Revision: revision,
 		Request:  requests[len(requests)-1],
 	}
 	review.Comments = review.loadComments()
 	review.Resolved = updateThreadsStatus(review.Comments)
-	review.Submitted = repository.IsAncestor(revision, review.Request.TargetRef)
+	review.Submitted = repo.IsAncestor(revision, review.Request.TargetRef)
 	// TODO(ojarjur): Optionally fetch the CI status of the last commit
 	// in the review for which there are comments.
 	return &review
 }
 
 // ListAll returns all reviews stored in the git-notes.
-func ListAll() []Review {
+func ListAll(repo repository.Repo) []Review {
 	var reviews []Review
-	for _, revision := range repository.ListNotedRevisions(request.Ref) {
-		review := Get(revision)
+	for _, revision := range repo.ListNotedRevisions(request.Ref) {
+		review := Get(repo, revision)
 		if review != nil {
 			reviews = append(reviews, *review)
 		}
@@ -223,9 +225,9 @@ func ListAll() []Review {
 }
 
 // ListOpen returns all reviews that are not yet incorporated into their target refs.
-func ListOpen() []Review {
+func ListOpen(repo repository.Repo) []Review {
 	var openReviews []Review
-	for _, review := range ListAll() {
+	for _, review := range ListAll(repo) {
 		if !review.Submitted {
 			openReviews = append(openReviews, review)
 		}
@@ -236,11 +238,11 @@ func ListOpen() []Review {
 // GetCurrent returns the current, open code review.
 //
 // If there are multiple matching reviews, then an error is returned.
-func GetCurrent() (*Review, error) {
-	reviewRef := repository.GetHeadRef()
-	currentCommit := repository.GetCommitHash(reviewRef)
+func GetCurrent(repo repository.Repo) (*Review, error) {
+	reviewRef := repo.GetHeadRef()
+	currentCommit := repo.GetCommitHash(reviewRef)
 	var matchingReviews []Review
-	for _, review := range ListOpen() {
+	for _, review := range ListOpen(repo) {
 		if review.Request.ReviewRef == reviewRef {
 			matchingReviews = append(matchingReviews, review)
 		}
@@ -252,7 +254,7 @@ func GetCurrent() (*Review, error) {
 		return nil, fmt.Errorf("There are %d open reviews for the ref \"%s\"", len(matchingReviews), reviewRef)
 	}
 	r := &matchingReviews[0]
-	reports := ci.ParseAllValid(repository.GetNotes(ci.Ref, currentCommit))
+	reports := ci.ParseAllValid(repo.GetNotes(ci.Ref, currentCommit))
 	r.Reports = reports
 	return r, nil
 }
@@ -343,15 +345,15 @@ func (r *Review) PrintJson() error {
 
 // findLastCommit returns the later (newest) commit from the union of the provided commit
 // and all of the commits that are referenced in the given comment threads.
-func findLastCommit(latestCommit string, commentThreads []CommentThread) string {
+func (r *Review) findLastCommit(latestCommit string, commentThreads []CommentThread) string {
 	isLater := func(commit string) bool {
-		if repository.IsAncestor(latestCommit, commit) {
+		if r.Repo.IsAncestor(latestCommit, commit) {
 			return true
 		}
-		if repository.IsAncestor(commit, latestCommit) {
+		if r.Repo.IsAncestor(commit, latestCommit) {
 			return false
 		}
-		return repository.GetCommitTime(commit) > repository.GetCommitTime(latestCommit)
+		return r.Repo.GetCommitTime(commit) > r.Repo.GetCommitTime(latestCommit)
 	}
 	updateLatest := func(commit string) {
 		if commit == "" {
@@ -366,7 +368,7 @@ func findLastCommit(latestCommit string, commentThreads []CommentThread) string 
 		if comment.Location != nil {
 			updateLatest(comment.Location.Commit)
 		}
-		updateLatest(findLastCommit(latestCommit, commentThread.Children))
+		updateLatest(r.findLastCommit(latestCommit, commentThread.Children))
 	}
 	return latestCommit
 }
@@ -377,23 +379,23 @@ func (r *Review) GetHeadCommit() (string, error) {
 		return r.Revision, nil
 	}
 
-	targetRefHead, err := repository.ResolveRefCommit(r.Request.TargetRef)
+	targetRefHead, err := r.Repo.ResolveRefCommit(r.Request.TargetRef)
 	if err != nil {
 		return "", err
 	}
 
-	if repository.IsAncestor(r.Revision, targetRefHead) {
+	if r.Repo.IsAncestor(r.Revision, targetRefHead) {
 		// The review has already been submitted.
 		// Go through the list of comments and find the last commented upon commit.
-		return findLastCommit(r.Revision, r.Comments), nil
+		return r.findLastCommit(r.Revision, r.Comments), nil
 	}
 
-	return repository.ResolveRefCommit(r.Request.ReviewRef)
+	return r.Repo.ResolveRefCommit(r.Request.ReviewRef)
 }
 
 // GetBaseCommit returns the commit against which a review should be compared.
 func (r *Review) GetBaseCommit() (string, error) {
-	targetRefHead, err := repository.ResolveRefCommit(r.Request.TargetRef)
+	targetRefHead, err := r.Repo.ResolveRefCommit(r.Request.TargetRef)
 	if err != nil {
 		return "", err
 	}
@@ -401,12 +403,12 @@ func (r *Review) GetBaseCommit() (string, error) {
 	leftHandSide := targetRefHead
 	rightHandSide := r.Revision
 	if r.Request.ReviewRef == "" {
-		if reviewRefHead, err := repository.ResolveRefCommit(r.Request.ReviewRef); err == nil {
+		if reviewRefHead, err := r.Repo.ResolveRefCommit(r.Request.ReviewRef); err == nil {
 			rightHandSide = reviewRefHead
 		}
 	}
 
-	if repository.IsAncestor(rightHandSide, leftHandSide) {
+	if r.Repo.IsAncestor(rightHandSide, leftHandSide) {
 		if r.Request.BaseCommit != "" {
 			return r.Request.BaseCommit, nil
 		}
@@ -416,10 +418,10 @@ func (r *Review) GetBaseCommit() (string, error) {
 		// usually what we want, since merging a target branch into a feature branch
 		// results in the previous commit to the feature branch being the first parent,
 		// and the latest commit to the target branch being the second parent.
-		return repository.GetLastParent(rightHandSide)
+		return r.Repo.GetLastParent(rightHandSide)
 	}
 
-	return repository.MergeBase(leftHandSide, rightHandSide), nil
+	return r.Repo.MergeBase(leftHandSide, rightHandSide), nil
 }
 
 // PrintDiff displays the diff for a review.
@@ -430,7 +432,7 @@ func (r *Review) PrintDiff() error {
 		headCommit, err = r.GetHeadCommit()
 	}
 	if err == nil {
-		fmt.Println(repository.Diff(baseCommit, headCommit))
+		fmt.Println(r.Repo.Diff(baseCommit, headCommit))
 	}
 	return err
 }
@@ -442,6 +444,6 @@ func (r *Review) AddComment(c comment.Comment) error {
 		return err
 	}
 
-	repository.AppendNote(comment.Ref, r.Revision, commentNote)
+	r.Repo.AppendNote(comment.Ref, r.Revision, commentNote)
 	return nil
 }

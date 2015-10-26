@@ -23,7 +23,7 @@ import (
 )
 
 // pull updates the local git-notes used for reviews with those from a remote repo.
-func pull(args []string) error {
+func pull(repo repository.Repo, args []string) error {
 	if len(args) > 1 {
 		return errors.New("Only pulling from one remote at a time is supported.")
 	}
@@ -33,7 +33,7 @@ func pull(args []string) error {
 		remote = args[0]
 	}
 
-	repository.PullNotes(remote, notesRefPattern)
+	repo.PullNotes(remote, notesRefPattern)
 	return nil
 }
 
@@ -41,7 +41,7 @@ var pullCmd = &Command{
 	Usage: func(arg0 string) {
 		fmt.Printf("Usage: %s pull [<remote>]", arg0)
 	},
-	RunMethod: func(args []string) error {
-		return pull(args)
+	RunMethod: func(repo repository.Repo, args []string) error {
+		return pull(repo, args)
 	},
 }

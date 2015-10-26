@@ -17,7 +17,9 @@ limitations under the License.
 package review
 
 import (
+	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/comment"
+	"os"
 	"sort"
 	"testing"
 )
@@ -538,7 +540,15 @@ func TestGetHeadCommit(t *testing.T) {
 	// TODO(ojarjur): It's pretty terrible that this relies on running within the git repo of
 	// the tool and then using the tool's own review history as test data. We should change this
 	// to use a mock git repo.
-	submittedMergeReview := Get("fcc9b48925b8a880813275fa29b43426b5f1fccd")
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	selfRepo, err := repository.NewGitRepo(cwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	submittedMergeReview := Get(selfRepo, "fcc9b48925b8a880813275fa29b43426b5f1fccd")
 	submittedMergeReviewBase, err := submittedMergeReview.GetBaseCommit()
 	if err != nil {
 		t.Fatal("Unable to compute the base commit for a known review of a merge commit: ", err)
@@ -547,7 +557,7 @@ func TestGetHeadCommit(t *testing.T) {
 		t.Fatal("Unexpected base commit computed for a known review of a merge commit.")
 	}
 
-	submittedModifiedReview := Get("62f1f51aea3b59829071c58ad2189231b6505fd3")
+	submittedModifiedReview := Get(selfRepo, "62f1f51aea3b59829071c58ad2189231b6505fd3")
 	submittedModifiedReviewBase, err := submittedModifiedReview.GetBaseCommit()
 	if err != nil {
 		t.Fatal("Unable to compute the base commit for a known, multi-commit review: ", err)

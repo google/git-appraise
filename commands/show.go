@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 )
 
@@ -28,7 +29,7 @@ var showJsonOutput = showFlagSet.Bool("json", false, "Format the output as JSON"
 var showDiffOutput = showFlagSet.Bool("diff", false, "Show the current diff for the review")
 
 // showReview prints the current code review.
-func showReview(args []string) error {
+func showReview(repo repository.Repo, args []string) error {
 	showFlagSet.Parse(args)
 	args = showFlagSet.Args()
 
@@ -39,9 +40,9 @@ func showReview(args []string) error {
 	}
 
 	if len(args) == 1 {
-		r = review.Get(args[0])
+		r = review.Get(repo, args[0])
 	} else {
-		r, err = review.GetCurrent()
+		r, err = review.GetCurrent(repo)
 	}
 
 	if err != nil {
@@ -64,7 +65,7 @@ var showCmd = &Command{
 	Usage: func(arg0 string) {
 		fmt.Printf("Usage: %s show (<commit>)\n", arg0)
 	},
-	RunMethod: func(args []string) error {
-		return showReview(args)
+	RunMethod: func(repo repository.Repo, args []string) error {
+		return showReview(repo, args)
 	},
 }

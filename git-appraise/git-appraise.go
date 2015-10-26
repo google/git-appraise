@@ -76,17 +76,23 @@ func main() {
 		help()
 		return
 	}
-	if !repository.IsGitRepo() {
-		fmt.Printf("%s must be run from within a git repo.", os.Args[0])
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Unable to get the current working directory: %q\n", err)
+		return
+	}
+	repo, err := repository.NewGitRepo(cwd)
+	if err != nil {
+		fmt.Printf("%s must be run from within a git repo.\n", os.Args[0])
 		return
 	}
 	subcommand, ok := commands.CommandMap[os.Args[1]]
 	if !ok {
-		fmt.Printf("Unknown command %q", os.Args[1])
+		fmt.Printf("Unknown command: %q\n", os.Args[1])
 		usage()
 		return
 	}
-	if err := subcommand.Run(os.Args[2:]); err != nil {
+	if err := subcommand.Run(repo, os.Args[2:]); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}

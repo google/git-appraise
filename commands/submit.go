@@ -35,14 +35,14 @@ var (
 // Submit the current code review request.
 //
 // The "args" parameter contains all of the command line arguments that followed the subcommand.
-func submitReview(args []string) error {
+func submitReview(repo repository.Repo, args []string) error {
 	submitFlagSet.Parse(args)
 
 	if *submitMerge && *submitRebase {
 		return errors.New("Only one of --merge or --rebase is allowed.")
 	}
 
-	r, err := review.GetCurrent()
+	r, err := review.GetCurrent(repo)
 	if err != nil {
 		return err
 	}
@@ -56,20 +56,20 @@ func submitReview(args []string) error {
 
 	target := r.Request.TargetRef
 	source := r.Request.ReviewRef
-	repository.VerifyGitRefOrDie(target)
-	repository.VerifyGitRefOrDie(source)
+	repo.VerifyGitRefOrDie(target)
+	repo.VerifyGitRefOrDie(source)
 
-	if !repository.IsAncestor(target, source) {
+	if !repo.IsAncestor(target, source) {
 		return errors.New("Refusing to submit a non-fast-forward review. First merge the target ref.")
 	}
 
-	repository.SwitchToRef(target)
+	repo.SwitchToRef(target)
 	if *submitMerge {
-		repository.MergeRef(source, false)
+		repo.MergeRef(source, false)
 	} else if *submitRebase {
-		repository.RebaseRef(source)
+		repo.RebaseRef(source)
 	} else {
-		repository.MergeRef(source, true)
+		repo.MergeRef(source, true)
 	}
 	return nil
 }
@@ -80,7 +80,7 @@ var submitCmd = &Command{
 		fmt.Printf("Usage: %s submit <option>...\n\nOptions:\n", arg0)
 		submitFlagSet.PrintDefaults()
 	},
-	RunMethod: func(args []string) error {
-		return submitReview(args)
+	RunMethod: func(repo repository.Repo, args []string) error {
+		return submitReview(repo, args)
 	},
 }

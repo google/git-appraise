@@ -36,14 +36,14 @@ var (
 )
 
 // commentOnReview adds a comment to the current code review.
-func commentOnReview(args []string) error {
+func commentOnReview(repo repository.Repo, args []string) error {
 	commentFlagSet.Parse(args)
 	args = commentFlagSet.Args()
 	if *lgtm && *nmw {
 		return errors.New("You cannot combine the flags -lgtm and -nmw.")
 	}
 
-	r, err := review.GetCurrent()
+	r, err := review.GetCurrent(repo)
 	if err != nil {
 		return fmt.Errorf("Failed to load the current review: %v\n", err)
 	}
@@ -51,7 +51,7 @@ func commentOnReview(args []string) error {
 		return errors.New("There is no current review.")
 	}
 
-	commentedUponCommit := repository.GetCommitHash(r.Request.ReviewRef)
+	commentedUponCommit := repo.GetCommitHash(r.Request.ReviewRef)
 	location := comment.Location{
 		Commit: commentedUponCommit,
 	}
@@ -68,7 +68,7 @@ func commentOnReview(args []string) error {
 		}
 	}
 
-	c := comment.New(*commentMessage)
+	c := comment.New(repo.GetUserEmail(), *commentMessage)
 	c.Location = &location
 	c.Parent = *parent
 	if *lgtm || *nmw {
@@ -84,7 +84,7 @@ var commentCmd = &Command{
 		fmt.Printf("Usage: %s comment <option>... [<file> [<line>]]\n\nOptions:\n", arg0)
 		commentFlagSet.PrintDefaults()
 	},
-	RunMethod: func(args []string) error {
-		return commentOnReview(args)
+	RunMethod: func(repo repository.Repo, args []string) error {
+		return commentOnReview(repo, args)
 	},
 }
