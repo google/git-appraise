@@ -168,6 +168,7 @@ func (repo *GitRepo) GetCommitTime(ref string) string {
 	return repo.runGitCommandOrDie("show", "-s", "--format=%ct", ref)
 }
 
+// GetLastParent returns the last parent of the given commit (as ordered by git).
 func (repo *GitRepo) GetLastParent(ref string) (string, error) {
 	return repo.runGitCommand("rev-list", "--skip", "1", "-n", "1", ref)
 }

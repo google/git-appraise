@@ -63,6 +63,7 @@ type Repo interface {
 	// GetCommitTime returns the commit time of the commit pointed to by the given ref.
 	GetCommitTime(ref string) string
 
+	// GetLastParent returns the last parent of the given commit (as ordered by git).
 	GetLastParent(ref string) (string, error)
 
 	// MergeBase determines if the first commit that is an ancestor of the two arguments.
