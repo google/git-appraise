@@ -1,7 +1,20 @@
-# Code Review Tool For Git
+# Distributed Code Review For Git
 
 This repo contains a command line tool for performing code reviews on git
 repositories.
+
+## Overview
+
+This tool is the first *distributed* code review system for git repos.
+
+By "distributed", we mean that code reviews are stored inside of the repository
+as git objects. Every developer on your team has their own copy of the review
+history that they can push or pull. When pulling, updates from the remote
+repo are automatically merged by the tool.
+
+This design removes the need for any sort of server-side setup. As a result,
+this tool can work with any git hosting provider, and the only setup required
+is installing the client on your workstation.
 
 ## Installation
 
