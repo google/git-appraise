@@ -1,3 +1,5 @@
 {"timestamp":"1445990820","author":"ckerur","resolved":true}
 
 {"timestamp":"1445990820","author":"ckerur","description":"Cool ! Waiting for the tests"}
+
+{"timestamp":"1445990820","author":"ckerur","location":{"commit":"420264cf88df8400568bc2d178c72f2cb396a3ac","path":"commands/request.go","range":{"startLine":48}},"description":"Where is requester being used ?"}
