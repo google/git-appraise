@@ -197,42 +197,9 @@ They must conform to the following schema.
     }
 
 The "url" field should point to a publicly readable file, which contains JSON
-formatted analysis results. Those results should conform to the following schema,
-which is taken from the Note protocol buffer message defined
-[here](https://github.com/google/shipshape/blob/master/shipshape/proto/note.proto).
-
-    {
-      "$schema": "http://json-schema.org/draft-04/schema#",
-      "type": "object",
-      "properties": {
-        "location": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string"
-            },
-            "range": {
-              "type": "object",
-              "properties": {
-                "startLine": {
-                  "type": "integer"
-                }
-              }
-            }
-          }
-        },
-        "category": {
-          "type": "string"
-        },
-        "description": {
-          "id": "description",
-          "type": "string"
-        }
-      },
-      "required": [
-        "description"
-      ]
-    }
+formatted analysis results. Those results should conform to the JSON format of
+the ShipshapeResponse protocol buffer message defined
+[here](https://github.com/google/shipshape/blob/master/shipshape/proto/shipshape_rpc.proto).
 
 ### Review Comments
 
