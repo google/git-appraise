@@ -28,25 +28,37 @@ import (
 // We initialize our mock repo with two branches (one of which holds a pending review),
 // and commit history that looks like this:
 //
-//  Master Branch:    A--B--D--E--F
-//                     \   /    \
-//                       C       \
-//                                \
-//  Review Branch:                 G--H
+//  Master Branch:    A--B--D--E--F--J
+//                     \   /    \  \
+//                       C       \  \
+//                                \  \
+//  Review Branch:                 G--H--I
 //
 // Where commits "B" and "D" represent reviews that have been submitted, and "G"
 // is a pending review.
 const (
-	TestTargetRef = "refs/heads/master"
-	TestReviewRef = "refs/heads/ojarjur/mychange"
-	TestCommitA   = "A"
-	TestCommitB   = "B"
-	TestCommitC   = "C"
-	TestCommitD   = "D"
-	TestCommitE   = "E"
-	TestCommitF   = "F"
-	TestCommitG   = "G"
-	TestCommitH   = "H"
+	TestTargetRef   = "refs/heads/master"
+	TestReviewRef   = "refs/heads/ojarjur/mychange"
+	TestRequestsRef = "refs/notes/devtools/reviews"
+	TestCommentsRef = "refs/notes/devtools/discuss"
+
+	TestCommitA = "A"
+	TestCommitB = "B"
+	TestCommitC = "C"
+	TestCommitD = "D"
+	TestCommitE = "E"
+	TestCommitF = "F"
+	TestCommitG = "G"
+	TestCommitH = "H"
+	TestCommitI = "I"
+	TestCommitJ = "J"
+
+	TestRequestB = `{"timestamp": "0000000001", "reviewRef": "refs/heads/ojarjur/mychange", "targetRef": "refs/heads/master", "requester": "ojarjur", "reviewers": ["ojarjur"], "description": "B"}`
+	TestRequestD = `{"timestamp": "0000000002", "reviewRef": "refs/heads/ojarjur/mychange", "targetRef": "refs/heads/master", "requester": "ojarjur", "reviewers": ["ojarjur"], "description": "D"}`
+	TestRequestG = `{"timestamp": "0000000004", "reviewRef": "refs/heads/ojarjur/mychange", "targetRef": "refs/heads/master", "requester": "ojarjur", "reviewers": ["ojarjur"], "description": "G"}`
+
+	TestDiscussB = `{"timestamp": "0000000001", "author": "ojarjur", "location": {"commit": "B"}, "resolved": true}`
+	TestDiscussD = `{"timestamp": "0000000003", "author": "ojarjur", "location": {"commit": "E"}, "resolved": true}`
 )
 
 type mockCommit struct {
@@ -102,13 +114,23 @@ func NewMockRepoForTest() Repo {
 	commitH := mockCommit{
 		Message: "Seventh commit",
 		Time:    "5",
-		Parents: []string{TestCommitG},
+		Parents: []string{TestCommitG, TestCommitF},
+	}
+	commitI := mockCommit{
+		Message: "Eighth commit",
+		Time:    "6",
+		Parents: []string{TestCommitH},
+	}
+	commitJ := mockCommit{
+		Message: "No, I'm the eighth commit",
+		Time:    "6",
+		Parents: []string{TestCommitF},
 	}
 	return mockRepoForTest{
 		Head: TestTargetRef,
 		Refs: map[string]string{
-			TestTargetRef: TestCommitF,
-			TestReviewRef: TestCommitH,
+			TestTargetRef: TestCommitJ,
+			TestReviewRef: TestCommitI,
 		},
 		Commits: map[string]mockCommit{
 			TestCommitA: commitA,
@@ -119,6 +141,19 @@ func NewMockRepoForTest() Repo {
 			TestCommitF: commitF,
 			TestCommitG: commitG,
 			TestCommitH: commitH,
+			TestCommitI: commitI,
+			TestCommitJ: commitJ,
+		},
+		Notes: map[string]map[string]string{
+			TestRequestsRef: map[string]string{
+				TestCommitB: TestRequestB,
+				TestCommitD: TestRequestD,
+				TestCommitG: TestRequestG,
+			},
+			TestCommentsRef: map[string]string{
+				TestCommitB: TestDiscussB,
+				TestCommitD: TestDiscussD,
+			},
 		},
 	}
 }
@@ -290,7 +325,14 @@ func (r mockRepoForTest) RebaseRef(ref string) {}
 func (r mockRepoForTest) ListCommitsBetween(from, to string) []string { return nil }
 
 // GetNotes reads the notes from the given ref that annotate the given revision.
-func (r mockRepoForTest) GetNotes(notesRef, revision string) []Note { return nil }
+func (r mockRepoForTest) GetNotes(notesRef, revision string) []Note {
+	notesText := r.Notes[notesRef][revision]
+	var notes []Note
+	for _, line := range strings.Split(notesText, "\n") {
+		notes = append(notes, Note(line))
+	}
+	return notes
+}
 
 // AppendNote appends a note to a revision under the given ref.
 func (r mockRepoForTest) AppendNote(ref, revision string, note Note) {}

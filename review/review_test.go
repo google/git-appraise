@@ -19,7 +19,6 @@ package review
 import (
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/comment"
-	"os"
 	"sort"
 	"testing"
 )
@@ -511,58 +510,89 @@ func TestBuildCommentThreads(t *testing.T) {
 	}
 	threads := buildCommentThreads(commentsByHash)
 	if len(threads) != 1 {
-		t.Fatal("Unexpected threads: %v", threads)
+		t.Fatalf("Unexpected threads: %v", threads)
 	}
 	rootThread := threads[0]
 	if rootThread.Comment.Description != "root" {
-		t.Fatal("Unexpected root thread: %v", rootThread)
+		t.Fatalf("Unexpected root thread: %v", rootThread)
 	}
 	if len(rootThread.Children) != 1 {
-		t.Fatal("Unexpected root children: %v", rootThread.Children)
+		t.Fatalf("Unexpected root children: %v", rootThread.Children)
 	}
 	rootChild := rootThread.Children[0]
 	if rootChild.Comment.Description != "child" {
-		t.Fatal("Unexpected child: %v", rootChild)
+		t.Fatalf("Unexpected child: %v", rootChild)
 	}
 	if len(rootChild.Children) != 1 {
-		t.Fatal("Unexpected leaves: %v", rootChild.Children)
+		t.Fatalf("Unexpected leaves: %v", rootChild.Children)
 	}
 	threadLeaf := rootChild.Children[0]
 	if threadLeaf.Comment.Description != "leaf" {
-		t.Fatal("Unexpected leaf: %v", threadLeaf)
+		t.Fatalf("Unexpected leaf: %v", threadLeaf)
 	}
 	if len(threadLeaf.Children) != 0 {
-		t.Fatal("Unexpected leaf children: %v", threadLeaf.Children)
+		t.Fatalf("Unexpected leaf children: %v", threadLeaf.Children)
 	}
 }
 
 func TestGetHeadCommit(t *testing.T) {
-	// TODO(ojarjur): It's pretty terrible that this relies on running within the git repo of
-	// the tool and then using the tool's own review history as test data. We should change this
-	// to use a mock git repo.
-	cwd, err := os.Getwd()
+	repo := repository.NewMockRepoForTest()
+
+	submittedSimpleReview := Get(repo, repository.TestCommitB)
+	submittedSimpleReviewHead, err := submittedSimpleReview.GetHeadCommit()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("Unable to compute the head commit for a known review of a simple commit: ", err)
 	}
-	selfRepo, err := repository.NewGitRepo(cwd)
+	if submittedSimpleReviewHead != repository.TestCommitB {
+		t.Fatal("Unexpected head commit computed for a known review of a simple commit.")
+	}
+
+	submittedModifiedReview := Get(repo, repository.TestCommitD)
+	submittedModifiedReviewHead, err := submittedModifiedReview.GetHeadCommit()
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("Unable to compute the head commit for a known, multi-commit review: ", err)
 	}
-	submittedMergeReview := Get(selfRepo, "fcc9b48925b8a880813275fa29b43426b5f1fccd")
+	if submittedModifiedReviewHead != repository.TestCommitE {
+		t.Fatal("Unexpected head commit for a known, multi-commit review.")
+	}
+
+	pendingReview := Get(repo, repository.TestCommitG)
+	pendingReviewHead, err := pendingReview.GetHeadCommit()
+	if err != nil {
+		t.Fatal("Unable to compute the head commit for a known review of a merge commit: ", err)
+	}
+	if pendingReviewHead != repository.TestCommitI {
+		t.Fatal("Unexpected head commit computed for a pending review.")
+	}
+}
+
+func TestGetBaseCommit(t *testing.T) {
+	repo := repository.NewMockRepoForTest()
+
+	submittedSimpleReview := Get(repo, repository.TestCommitB)
+	submittedSimpleReviewBase, err := submittedSimpleReview.GetBaseCommit()
+	if err != nil {
+		t.Fatal("Unable to compute the base commit for a known review of a simple commit: ", err)
+	}
+	if submittedSimpleReviewBase != repository.TestCommitA {
+		t.Fatal("Unexpected base commit computed for a known review of a simple commit.")
+	}
+
+	submittedMergeReview := Get(repo, repository.TestCommitD)
 	submittedMergeReviewBase, err := submittedMergeReview.GetBaseCommit()
 	if err != nil {
 		t.Fatal("Unable to compute the base commit for a known review of a merge commit: ", err)
 	}
-	if submittedMergeReviewBase != "5c2b1d1e12eae76a85eb1b586c58d60e8c9ce388" {
+	if submittedMergeReviewBase != repository.TestCommitC {
 		t.Fatal("Unexpected base commit computed for a known review of a merge commit.")
 	}
 
-	submittedModifiedReview := Get(selfRepo, "62f1f51aea3b59829071c58ad2189231b6505fd3")
-	submittedModifiedReviewBase, err := submittedModifiedReview.GetBaseCommit()
+	pendingReview := Get(repo, repository.TestCommitG)
+	pendingReviewBase, err := pendingReview.GetBaseCommit()
 	if err != nil {
-		t.Fatal("Unable to compute the base commit for a known, multi-commit review: ", err)
+		t.Fatal("Unable to compute the base commit for a known review of a merge commit: ", err)
 	}
-	if submittedModifiedReviewBase != "b346936104f9bb4532d31abd085b531109e0b19c" {
-		t.Fatal("Unexpected base commit for a known, multi-commit review.")
+	if pendingReviewBase != repository.TestCommitF {
+		t.Fatal("Unexpected base commit computed for a pending review.")
 	}
 }

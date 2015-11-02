@@ -399,16 +399,9 @@ func (r *Review) GetBaseCommit() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	leftHandSide := targetRefHead
-	rightHandSide := r.Revision
-	if r.Request.ReviewRef == "" {
-		if reviewRefHead, err := r.Repo.ResolveRefCommit(r.Request.ReviewRef); err == nil {
-			rightHandSide = reviewRefHead
-		}
-	}
 
-	if r.Repo.IsAncestor(rightHandSide, leftHandSide) {
+	if r.Repo.IsAncestor(r.Revision, leftHandSide) {
 		if r.Request.BaseCommit != "" {
 			return r.Request.BaseCommit, nil
 		}
@@ -418,7 +411,14 @@ func (r *Review) GetBaseCommit() (string, error) {
 		// usually what we want, since merging a target branch into a feature branch
 		// results in the previous commit to the feature branch being the first parent,
 		// and the latest commit to the target branch being the second parent.
-		return r.Repo.GetLastParent(rightHandSide)
+		return r.Repo.GetLastParent(r.Revision)
+	}
+
+	rightHandSide := r.Revision
+	if r.Request.ReviewRef != "" {
+		if reviewRefHead, err := r.Repo.ResolveRefCommit(r.Request.ReviewRef); err == nil {
+			rightHandSide = reviewRefHead
+		}
 	}
 
 	return r.Repo.MergeBase(leftHandSide, rightHandSide), nil
