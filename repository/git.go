@@ -19,6 +19,7 @@ package repository
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -171,6 +172,38 @@ func (repo *GitRepo) GetCommitTime(ref string) string {
 // GetLastParent returns the last parent of the given commit (as ordered by git).
 func (repo *GitRepo) GetLastParent(ref string) (string, error) {
 	return repo.runGitCommand("rev-list", "--skip", "1", "-n", "1", ref)
+}
+
+// GetCommitDetails returns the details of a commit's metadata.
+func (repo GitRepo) GetCommitDetails(ref string) (*CommitDetails, error) {
+	var err error
+	show := func(formatString string) (result string) {
+		if err != nil {
+			return ""
+		}
+		result, err = repo.runGitCommand("show", "-s", ref, fmt.Sprintf("--format=tformat:%s", formatString))
+		return result
+	}
+
+	jsonFormatString := "{\"tree\":\"%T\", \"time\": \"%at\"}"
+	detailsJSON := show(jsonFormatString)
+	if err != nil {
+		return nil, err
+	}
+	var details CommitDetails
+	err = json.Unmarshal([]byte(detailsJSON), &details)
+	if err != nil {
+		return nil, err
+	}
+	details.Author = show("%an")
+	details.AuthorEmail = show("%ae")
+	details.Summary = show("%s")
+	parentsString := show("%P")
+	details.Parents = strings.Split(parentsString, " ")
+	if err != nil {
+		return nil, err
+	}
+	return &details, nil
 }
 
 // MergeBase determines if the first commit that is an ancestor of the two arguments.

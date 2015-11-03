@@ -20,6 +20,15 @@ package repository
 // Note represents the contents of a git-note
 type Note []byte
 
+type CommitDetails struct {
+	Author      string   `json:"author,omitempty"`
+	AuthorEmail string   `json:"authorEmail,omitempty"`
+	Tree        string   `json:"tree,omitempty"`
+	Time        string   `json:"time,omitempty"`
+	Parents     []string `json:"parents,omitempty"`
+	Summary     string   `json:"summary,omitempty"`
+}
+
 // Repo represents a source code repository.
 type Repo interface {
 	// GetPath returns the path to the repo.
@@ -65,6 +74,9 @@ type Repo interface {
 
 	// GetLastParent returns the last parent of the given commit (as ordered by git).
 	GetLastParent(ref string) (string, error)
+
+	// GetCommitDetails returns the details of a commit's metadata.
+	GetCommitDetails(ref string) (*CommitDetails, error)
 
 	// MergeBase determines if the first commit that is an ancestor of the two arguments.
 	MergeBase(a, b string) string

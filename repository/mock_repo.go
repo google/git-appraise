@@ -256,6 +256,21 @@ func (r mockRepoForTest) GetLastParent(ref string) (string, error) {
 	return "", err
 }
 
+// GetCommitDetails returns the details of a commit's metadata.
+func (r mockRepoForTest) GetCommitDetails(ref string) (*CommitDetails, error) {
+	commit, err := r.getCommit(ref)
+	if err != nil {
+		return nil, err
+	}
+	var details CommitDetails
+	details.Author = "Test Author"
+	details.AuthorEmail = "author@example.com"
+	details.Summary = commit.Message
+	details.Time = commit.Time
+	details.Parents = commit.Parents
+	return &details, nil
+}
+
 // ancestors returns the breadth-first traversal of a commit's ancestors
 func (r mockRepoForTest) ancestors(commit string) []string {
 	queue := []string{commit}
@@ -335,10 +350,22 @@ func (r mockRepoForTest) GetNotes(notesRef, revision string) []Note {
 }
 
 // AppendNote appends a note to a revision under the given ref.
-func (r mockRepoForTest) AppendNote(ref, revision string, note Note) {}
+func (r mockRepoForTest) AppendNote(ref, revision string, note Note) {
+	existingNotes := r.Notes[ref][revision]
+	newNotes := existingNotes + "\n" + string(note)
+	r.Notes[ref][revision] = newNotes
+}
 
 // ListNotedRevisions returns the collection of revisions that are annotated by notes in the given ref.
-func (r mockRepoForTest) ListNotedRevisions(notesRef string) []string { return nil }
+func (r mockRepoForTest) ListNotedRevisions(notesRef string) []string {
+	var revisions []string
+	for revision := range r.Notes[notesRef] {
+		if _, ok := r.Commits[revision]; ok {
+			revisions = append(revisions, revision)
+		}
+	}
+	return revisions
+}
 
 // PushNotes pushes git notes to a remote repo.
 func (r mockRepoForTest) PushNotes(remote, notesRefPattern string) error { return nil }
