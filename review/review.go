@@ -425,14 +425,14 @@ func (r *Review) GetBaseCommit() (string, error) {
 }
 
 // PrintDiff displays the diff for a review.
-func (r *Review) PrintDiff() error {
+func (r *Review) PrintDiff(diffArgs ...string) error {
 	var baseCommit, headCommit string
 	baseCommit, err := r.GetBaseCommit()
 	if err == nil {
 		headCommit, err = r.GetHeadCommit()
 	}
 	if err == nil {
-		fmt.Println(r.Repo.Diff(baseCommit, headCommit))
+		fmt.Println(r.Repo.Diff(baseCommit, headCommit, diffArgs...))
 	}
 	return err
 }

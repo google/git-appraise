@@ -59,15 +59,19 @@ Showing the status of the current review, including comments:
 
     git appraise show
 
-Commenting on a review:
+Showing the diff of a particular review:
+
+    git appraise show --diff [--diff-opts "<diff-options>"] [<review-hash>]
+
+Commenting on the current review:
 
     git appraise comment -m "<message>" [<file> [<line>]]
 
 Accepting the changes in a review:
 
-    git appraise accept [-m "<message>"]
+    git appraise accept [-m "<message>"] [<review-hash>]
 
-Submitting a review:
+Submitting the current review:
 
     git appraise submit [--merge | --rebase]
 

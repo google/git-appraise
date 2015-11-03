@@ -193,7 +193,10 @@ func (repo *GitRepo) IsAncestor(ancestor, descendant string) bool {
 
 // Diff computes the diff between two given commits.
 func (repo *GitRepo) Diff(left, right string, diffArgs ...string) string {
-	return repo.runGitCommandOrDie("diff", left, right)
+	args := []string{"diff"}
+	args = append(args, diffArgs...)
+	args = append(args, fmt.Sprintf("%s..%s", left, right))
+	return repo.runGitCommandOrDie(args...)
 }
 
 // SwitchToRef changes the currently-checked-out ref.

@@ -22,16 +22,21 @@ import (
 	"fmt"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
+	"strings"
 )
 
 var showFlagSet = flag.NewFlagSet("show", flag.ExitOnError)
 var showJsonOutput = showFlagSet.Bool("json", false, "Format the output as JSON")
 var showDiffOutput = showFlagSet.Bool("diff", false, "Show the current diff for the review")
+var showDiffOptions = showFlagSet.String("diff-opts", "", "Options to pass to the diff tool; can only be used with the --diff option")
 
 // showReview prints the current code review.
 func showReview(repo repository.Repo, args []string) error {
 	showFlagSet.Parse(args)
 	args = showFlagSet.Args()
+	if *showDiffOptions != "" && !*showDiffOutput {
+		return errors.New("The --diff-opts flag can only be used if the --diff flag is set.")
+	}
 
 	var r *review.Review
 	var err error
@@ -55,7 +60,11 @@ func showReview(repo repository.Repo, args []string) error {
 		return r.PrintJson()
 	}
 	if *showDiffOutput {
-		return r.PrintDiff()
+		var diffArgs []string
+		if *showDiffOptions != "" {
+			diffArgs = strings.Split(*showDiffOptions, ",")
+		}
+		return r.PrintDiff(diffArgs...)
 	}
 	return r.PrintDetails()
 }
@@ -63,7 +72,8 @@ func showReview(repo repository.Repo, args []string) error {
 // showCmd defines the "show" subcommand.
 var showCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s show (<commit>)\n", arg0)
+		fmt.Printf("Usage: %s show <option>... (<commit>)\n\nOptions:\n", arg0)
+		showFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {
 		return showReview(repo, args)
