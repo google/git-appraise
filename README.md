@@ -59,13 +59,13 @@ Showing the status of the current review, including comments:
 
     git appraise show
 
-Showing the diff of a particular review:
+Showing the diff of a review:
 
     git appraise show --diff [--diff-opts "<diff-options>"] [<review-hash>]
 
-Commenting on the current review:
+Commenting on a review:
 
-    git appraise comment -m "<message>" [<file> [<line>]]
+    git appraise comment -m "<message>" [-f <file> [-l <line>]] [<review-hash>]
 
 Accepting the changes in a review:
 
