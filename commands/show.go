@@ -72,7 +72,7 @@ func showReview(repo repository.Repo, args []string) error {
 // showCmd defines the "show" subcommand.
 var showCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s show <option>... (<commit>)\n\nOptions:\n", arg0)
+		fmt.Printf("Usage: %s show [<option>...] [<commit>]\n\nOptions:\n", arg0)
 		showFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {

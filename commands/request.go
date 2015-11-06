@@ -101,7 +101,7 @@ func requestReview(repo repository.Repo, args []string) error {
 // requestCmd defines the "request" subcommand.
 var requestCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s request <option>...\n\nOptions:\n", arg0)
+		fmt.Printf("Usage: %s request [<option>...]\n\nOptions:\n", arg0)
 		requestFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {

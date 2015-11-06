@@ -72,7 +72,7 @@ func acceptReview(repo repository.Repo, args []string) error {
 // acceptCmd defines the "accept" subcommand.
 var acceptCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s accept <option>... (<commit>)\n\nOptions:\n", arg0)
+		fmt.Printf("Usage: %s accept [<option>...] [<commit>]\n\nOptions:\n", arg0)
 		acceptFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {

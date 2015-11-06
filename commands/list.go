@@ -49,7 +49,7 @@ func listReviews(repo repository.Repo, args []string) {
 // listCmd defines the "list" subcommand.
 var listCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s list <option>...\n\nOptions:\n", arg0)
+		fmt.Printf("Usage: %s list [<option>...]\n\nOptions:\n", arg0)
 		listFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {

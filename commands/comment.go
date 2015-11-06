@@ -23,56 +23,70 @@ import (
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"github.com/google/git-appraise/review/comment"
-	"strconv"
 )
 
 var commentFlagSet = flag.NewFlagSet("comment", flag.ExitOnError)
 
 var (
 	commentMessage = commentFlagSet.String("m", "", "Message to attach to the review")
-	parent         = commentFlagSet.String("p", "", "Parent comment")
-	lgtm           = commentFlagSet.Bool("lgtm", false, "'Looks Good To Me'. Set this to express your approval. This cannot be combined with nmw")
-	nmw            = commentFlagSet.Bool("nmw", false, "'Needs More Work'. Set this to express your disapproval. This cannot be combined with lgtm")
+	commentParent  = commentFlagSet.String("p", "", "Parent comment")
+	commentFile    = commentFlagSet.String("f", "", "File being commented upon")
+	commentLine    = commentFlagSet.Uint("l", 0, "Line being commented upon; requires that the -f flag also be set")
+	commentLgtm    = commentFlagSet.Bool("lgtm", false, "'Looks Good To Me'. Set this to express your approval. This cannot be combined with nmw")
+	commentNmw     = commentFlagSet.Bool("nmw", false, "'Needs More Work'. Set this to express your disapproval. This cannot be combined with lgtm")
 )
 
 // commentOnReview adds a comment to the current code review.
 func commentOnReview(repo repository.Repo, args []string) error {
 	commentFlagSet.Parse(args)
 	args = commentFlagSet.Args()
-	if *lgtm && *nmw {
+	if *commentLgtm && *commentNmw {
 		return errors.New("You cannot combine the flags -lgtm and -nmw.")
 	}
+	if *commentLine != 0 && *commentFile == "" {
+		return errors.New("Specifying a line number with the -l flag requires that you also specify a file name with the -f flag.")
+	}
 
-	r, err := review.GetCurrent(repo)
+	var r *review.Review
+	var err error
+	if len(args) > 1 {
+		return errors.New("Only accepting a single review is supported.")
+	}
+
+	if len(args) == 1 {
+		r = review.Get(repo, args[0])
+	} else {
+		r, err = review.GetCurrent(repo)
+	}
+
 	if err != nil {
-		return fmt.Errorf("Failed to load the current review: %v\n", err)
+		return fmt.Errorf("Failed to load the review: %v\n", err)
 	}
 	if r == nil {
-		return errors.New("There is no current review.")
+		return errors.New("There is no matching review.")
 	}
 
-	commentedUponCommit := repo.GetCommitHash(r.Request.ReviewRef)
+	commentedUponCommit, err := r.GetHeadCommit()
+	if err != nil {
+		return err
+	}
 	location := comment.Location{
 		Commit: commentedUponCommit,
 	}
-	if len(args) > 0 {
-		location.Path = args[0]
-		if len(args) > 1 {
-			startLine, err := strconv.ParseUint(args[1], 0, 32)
-			if err != nil {
-				return err
-			}
+	if *commentFile != "" {
+		location.Path = *commentFile
+		if *commentLine != 0 {
 			location.Range = &comment.Range{
-				StartLine: uint32(startLine),
+				StartLine: uint32(*commentLine),
 			}
 		}
 	}
 
 	c := comment.New(repo.GetUserEmail(), *commentMessage)
 	c.Location = &location
-	c.Parent = *parent
-	if *lgtm || *nmw {
-		resolved := *lgtm
+	c.Parent = *commentParent
+	if *commentLgtm || *commentNmw {
+		resolved := *commentLgtm
 		c.Resolved = &resolved
 	}
 	return r.AddComment(c)
@@ -81,7 +95,7 @@ func commentOnReview(repo repository.Repo, args []string) error {
 // commentCmd defines the "comment" subcommand.
 var commentCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s comment <option>... [<file> [<line>]]\n\nOptions:\n", arg0)
+		fmt.Printf("Usage: %s comment [<option>...] [<review-hash>]\n\nOptions:\n", arg0)
 		commentFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {

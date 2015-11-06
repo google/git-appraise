@@ -77,7 +77,7 @@ func submitReview(repo repository.Repo, args []string) error {
 // submitCmd defines the "submit" subcommand.
 var submitCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s submit <option>...\n\nOptions:\n", arg0)
+		fmt.Printf("Usage: %s submit [<option>...]\n\nOptions:\n", arg0)
 		submitFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {
