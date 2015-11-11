@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/google/git-appraise/commands/output"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"strings"
@@ -57,16 +58,16 @@ func showReview(repo repository.Repo, args []string) error {
 		return errors.New("There is no matching review.")
 	}
 	if *showJsonOutput {
-		return r.PrintJson()
+		return output.PrintJson(r)
 	}
 	if *showDiffOutput {
 		var diffArgs []string
 		if *showDiffOptions != "" {
 			diffArgs = strings.Split(*showDiffOptions, ",")
 		}
-		return r.PrintDiff(diffArgs...)
+		return output.PrintDiff(r, diffArgs...)
 	}
-	return r.PrintDetails()
+	return output.PrintDetails(r)
 }
 
 // showCmd defines the "show" subcommand.

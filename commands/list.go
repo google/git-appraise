@@ -19,6 +19,7 @@ package commands
 import (
 	"flag"
 	"fmt"
+	"github.com/google/git-appraise/commands/output"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 )
@@ -42,7 +43,7 @@ func listReviews(repo repository.Repo, args []string) {
 		fmt.Printf("Loaded %d open reviews:\n", len(reviews))
 	}
 	for _, r := range reviews {
-		r.PrintSummary()
+		output.PrintSummary(&r)
 	}
 }
 
