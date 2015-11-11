@@ -73,7 +73,7 @@ func TestCIReport(t *testing.T) {
 		repository.Note(testCINote4),
 	}))
 	if err != nil {
-		t.Fatal("Failed to properly fetch the latest report: %v", err)
+		t.Fatal("Failed to properly fetch the latest report", err)
 	}
 	expected, err = Parse(repository.Note(testCINote4))
 	if err != nil {
