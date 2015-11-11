@@ -1,0 +1,1 @@
+{"timestamp":"1447214804","reviewRef":"refs/heads/ojarjur/add-analysis-logic","targetRef":"refs/heads/master","requester":"ojarjur@google.com","reviewers":["ckerur@google.com"],"description":"Add logic for reading static analyses and for finding the most recent continuous-integration result.","baseCommit":"3363ba510def1d77c9b2ffc7dbfe365997da14cd"}
