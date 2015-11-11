@@ -232,6 +232,11 @@ func (repo *GitRepo) Diff(left, right string, diffArgs ...string) string {
 	return repo.runGitCommandOrDie(args...)
 }
 
+// Show returns the contents of the given file at the given commit.
+func (repo *GitRepo) Show(commit, path string) (string, error) {
+	return repo.runGitCommand("show", fmt.Sprintf("%s:%s", commit, path))
+}
+
 // SwitchToRef changes the currently-checked-out ref.
 func (repo *GitRepo) SwitchToRef(ref string) {
 	// If the ref starts with "refs/heads/", then we have to trim that prefix,

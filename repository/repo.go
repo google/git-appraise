@@ -87,6 +87,9 @@ type Repo interface {
 	// Diff computes the diff between two given commits.
 	Diff(left, right string, diffArgs ...string) string
 
+	// Show returns the contents of the given file at the given commit.
+	Show(commit, path string) (string, error)
+
 	// SwitchToRef changes the currently-checked-out ref.
 	SwitchToRef(ref string)
 

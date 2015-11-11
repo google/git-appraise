@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/git-appraise/repository"
+	"github.com/google/git-appraise/review/analyses"
 	"github.com/google/git-appraise/review/ci"
 	"github.com/google/git-appraise/review/comment"
 	"github.com/google/git-appraise/review/request"
@@ -33,13 +34,29 @@ import (
 
 const (
 	// Template for printing the summary of a code review.
-	reviewTemplate = `[%s] %s
-  "%s"
+	reviewSummaryTemplate = `[%s] %.12s
+  %s
+`
+	// Template for printing the summary of a code review.
+	reviewDetailsTemplate = `  %q -> %q
+  reviewers: %q
+  requester: %q
+  build status: %s
+`
+	// Template for printing the location of an inline comment
+	commentLocationTemplate = `%s%q@%.12s
 `
 	// Template for printing a single comment.
-	commentTemplate = `[%s] %s
-  %s %s "%s"
+	commentTemplate = `comment: %s
+author: %s
+time:   %s
+status: %s
+%s`
+	// Template for displaying the summary of the comment threads for a review
+	commentSummaryTemplate = `  comments (%d threads):
 `
+	// Number of lines of context to print for inline comments
+	contextLineCount = 5
 )
 
 // CommentThread represents the tree-based hierarchy of comments.
@@ -67,13 +84,14 @@ type CommentThread struct {
 // correspond to either the current commit in the review ref (for pending
 // reviews), or to the last commented-upon commit (for submitted reviews).
 type Review struct {
-	Repo      repository.Repo `json:"-"`
-	Revision  string          `json:"revision"`
-	Request   request.Request `json:"request"`
-	Comments  []CommentThread `json:"comments,omitempty"`
-	Resolved  *bool           `json:"resolved,omitempty"`
-	Submitted bool            `json:"submitted"`
-	Reports   []ci.Report     `json:"reports,omitempty"`
+	Repo      repository.Repo   `json:"-"`
+	Revision  string            `json:"revision"`
+	Request   request.Request   `json:"request"`
+	Comments  []CommentThread   `json:"comments,omitempty"`
+	Resolved  *bool             `json:"resolved,omitempty"`
+	Submitted bool              `json:"submitted"`
+	Reports   []ci.Report       `json:"reports,omitempty"`
+	Analyses  []analyses.Report `json:"analyses,omitempty"`
 }
 
 type byTimestamp []CommentThread
@@ -207,8 +225,11 @@ func Get(repo repository.Repo, revision string) *Review {
 	review.Comments = review.loadComments()
 	review.Resolved = updateThreadsStatus(review.Comments)
 	review.Submitted = repo.IsAncestor(revision, review.Request.TargetRef)
-	// TODO(ojarjur): Optionally fetch the CI status of the last commit
-	// in the review for which there are comments.
+	currentCommit, err := review.GetHeadCommit()
+	if err == nil {
+		review.Reports = ci.ParseAllValid(repo.GetNotes(ci.Ref, currentCommit))
+		review.Analyses = analyses.ParseAllValid(repo.GetNotes(analyses.Ref, currentCommit))
+	}
 	return &review
 }
 
@@ -240,7 +261,6 @@ func ListOpen(repo repository.Repo) []Review {
 // If there are multiple matching reviews, then an error is returned.
 func GetCurrent(repo repository.Repo) (*Review, error) {
 	reviewRef := repo.GetHeadRef()
-	currentCommit := repo.GetCommitHash(reviewRef)
 	var matchingReviews []Review
 	for _, review := range ListOpen(repo) {
 		if review.Request.ReviewRef == reviewRef {
@@ -254,8 +274,6 @@ func GetCurrent(repo repository.Repo) (*Review, error) {
 		return nil, fmt.Errorf("There are %d open reviews for the ref \"%s\"", len(matchingReviews), reviewRef)
 	}
 	r := &matchingReviews[0]
-	reports := ci.ParseAllValid(repo.GetNotes(ci.Ref, currentCommit))
-	r.Reports = reports
 	return r, nil
 }
 
@@ -264,12 +282,23 @@ func (r *Review) PrintSummary() {
 	statusString := "pending"
 	if r.Resolved != nil {
 		if *r.Resolved {
-			statusString = "accepted"
+			if r.Submitted {
+				statusString = "submitted"
+			} else {
+				statusString = "accepted"
+			}
 		} else {
-			statusString = "rejected"
+			if r.Submitted {
+				statusString = "danger"
+			} else {
+				statusString = "rejected"
+			}
 		}
+	} else if r.Submitted {
+		statusString = "tbr"
 	}
-	fmt.Printf(reviewTemplate, statusString, r.Revision, r.Request.Description)
+	indentedDescription := strings.Replace(r.Request.Description, "\n", "\n  ", -1)
+	fmt.Printf(reviewSummaryTemplate, statusString, r.Revision, indentedDescription)
 }
 
 // reformatTimestamp takes a timestamp string of the form "0123456789" and changes it
@@ -286,8 +315,39 @@ func reformatTimestamp(timestamp string) string {
 	return t.Format(time.UnixDate)
 }
 
-// showThread prints the given comment thread, indented by the given prefix string.
-func showThread(thread CommentThread, indent string) error {
+// showThread prints the detailed output for an entire comment thread.
+func (r *Review) showThread(thread CommentThread) error {
+	comment := thread.Comment
+	indent := "    "
+	if comment.Location != nil && comment.Location.Path != "" && comment.Location.Range != nil && comment.Location.Range.StartLine > 0 {
+		contents, err := r.Repo.Show(comment.Location.Commit, comment.Location.Path)
+		if err != nil {
+			return err
+		}
+		lines := strings.Split(contents, "\n")
+		if comment.Location.Range.StartLine <= uint32(len(lines)) {
+			var firstLine uint32 = 0
+			lastLine := comment.Location.Range.StartLine
+			if lastLine > contextLineCount {
+				firstLine = lastLine - contextLineCount
+			}
+			fmt.Printf(commentLocationTemplate, indent, comment.Location.Path, comment.Location.Commit)
+			fmt.Println(indent + "|" + strings.Join(lines[firstLine:lastLine], "\n"+indent+"|"))
+		}
+	}
+	return r.showSubThread(thread, indent)
+}
+
+// showSubThread prints the given comment (sub)thread, indented by the given prefix string.
+func (r *Review) showSubThread(thread CommentThread, indent string) error {
+	statusString := "fyi"
+	if thread.Resolved != nil {
+		if *thread.Resolved {
+			statusString = "lgtm"
+		} else {
+			statusString = "needs work"
+		}
+	}
 	comment := thread.Comment
 	threadHash, err := comment.Hash()
 	if err != nil {
@@ -295,19 +355,74 @@ func showThread(thread CommentThread, indent string) error {
 	}
 
 	timestamp := reformatTimestamp(comment.Timestamp)
-	statusString := "fyi"
-	if comment.Resolved != nil {
-		if *comment.Resolved {
-			statusString = "lgtm"
-		} else {
-			statusString = "needs work"
+	commentSummary := fmt.Sprintf(indent+commentTemplate, threadHash, comment.Author, timestamp, statusString, comment.Description)
+	indent = indent + "  "
+	indentedSummary := strings.Replace(commentSummary, "\n", "\n"+indent, -1)
+	fmt.Println(indentedSummary)
+	for _, child := range thread.Children {
+		err := r.showSubThread(child, indent)
+		if err != nil {
+			return err
 		}
 	}
+	return nil
+}
 
-	threadDetails := fmt.Sprintf(commentTemplate, timestamp, threadHash, comment.Author, statusString, comment.Description)
-	fmt.Print(indent + strings.Replace(threadDetails, "\n", "\n"+indent, 1))
-	for _, child := range thread.Children {
-		err := showThread(child, indent+"  ")
+// GetBuildStatusMessage returns a string of the current build-and-test status
+// of the review, or "unknown" if the build-and-test status cannot be determined.
+func (r *Review) GetBuildStatusMessage() string {
+	statusMessage := "unknown"
+	ciReport, err := ci.GetLatestCIReport(r.Reports)
+	if err != nil {
+		return fmt.Sprintf("unknown: %s", err)
+	}
+	if ciReport != nil {
+		statusMessage = fmt.Sprintf("%s (%q)", ciReport.Status, ciReport.URL)
+	}
+	return statusMessage
+}
+
+// GetAnalysesNotes returns all of the notes from the most recent static
+// analysis run recorded in the git notes.
+func (r *Review) GetAnalysesNotes() ([]analyses.Note, error) {
+	latestAnalyses, err := analyses.GetLatestAnalysesReport(r.Analyses)
+	if err != nil {
+		return nil, err
+	}
+	if latestAnalyses == nil {
+		return nil, fmt.Errorf("No analyses available")
+	}
+	reportResults, err := latestAnalyses.GetLintReportResult()
+	if err != nil {
+		return nil, err
+	}
+	var analysesNotes []analyses.Note
+	for _, reportResult := range reportResults {
+		analysesNotes = append(analysesNotes, reportResult.Notes...)
+	}
+	return analysesNotes, nil
+}
+
+// printAnalyses prints the static analysis results for the latest commit in the review.
+func (r *Review) printAnalyses() {
+	analysesNotes, err := r.GetAnalysesNotes()
+	if err != nil {
+		fmt.Println("  analyses: ", err)
+		return
+	}
+	if analysesNotes == nil {
+		fmt.Println("  analyses: passed")
+		return
+	}
+	fmt.Printf("  analyses: %d warnings\n", len(analysesNotes))
+	// TODO(ojarjur): Print the actual notes
+}
+
+// printComments prints all of the comments for the review, with snippets of the preceding source code.
+func (r *Review) printComments() error {
+	fmt.Printf(commentSummaryTemplate, len(r.Comments))
+	for _, thread := range r.Comments {
+		err := r.showThread(thread)
 		if err != nil {
 			return err
 		}
@@ -318,13 +433,13 @@ func showThread(thread CommentThread, indent string) error {
 // PrintDetails prints a multi-line overview of a review, including all comments.
 func (r *Review) PrintDetails() error {
 	r.PrintSummary()
-	for _, thread := range r.Comments {
-		err := showThread(thread, "  ")
-		if err != nil {
-			return err
-		}
+	fmt.Printf(reviewDetailsTemplate, r.Request.ReviewRef, r.Request.TargetRef,
+		strings.Join(r.Request.Reviewers, ", "),
+		r.Request.Requester, r.GetBuildStatusMessage())
+	r.printAnalyses()
+	if err := r.printComments(); err != nil {
+		return err
 	}
-	// TODO(ojarjur): If there are CI status reports for the last commit, then show them.
 	return nil
 }
 

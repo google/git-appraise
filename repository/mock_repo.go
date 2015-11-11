@@ -315,6 +315,11 @@ func (r mockRepoForTest) Diff(left, right string, diffArgs ...string) string {
 	return fmt.Sprintf("Diff between %q and %q", left, right)
 }
 
+// Show returns the contents of the given file at the given commit.
+func (r mockRepoForTest) Show(commit, path string) (string, error) {
+	return fmt.Sprintf("%s:%s", commit, path), nil
+}
+
 // SwitchToRef changes the currently-checked-out ref.
 func (r mockRepoForTest) SwitchToRef(ref string) {
 	r.Head = ref
