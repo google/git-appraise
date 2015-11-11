@@ -1,3 +1,5 @@
 {"timestamp":"1447284512","author":"ckerur","description":"Overall Looks good. "}
 
 {"timestamp":"1447284512","author":"ckerur","location":{"commit":"a3f462b139c47923e69b34b7c43cf63d3866560d","path":"commands/output/output.go","range":{"startLine":83}},"description":"Can an exception be thrown here ?"}
+
+{"timestamp":"1447284512","author":"ckerur","location":{"commit":"a3f462b139c47923e69b34b7c43cf63d3866560d","path":"commands/output/output.go","range":{"startLine":56}},"description":"this method is a little confusing to read.\n\nConsider changing  into 2 methods -one that calculates status and the other that does the printing ...\n\nThat way this method could look like\n\nif(r.Resolved == nil and r.Submitted)\n  return \"tbr\"\nif(r.Resolved == nil)\nreturn \"pending\"\n\nif (*r.Resolved ){\n    if(r.Submitted) {\n        return \"submitted\"\n   }\n   else return \"rejected\"\n}\n\nif(r.submitted)\n   return \"danger\"...\n\n\n"}
