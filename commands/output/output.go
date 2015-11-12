@@ -52,26 +52,30 @@ status: %s
 	contextLineCount = 5
 )
 
+// getStatusString returns a human friendly string encapsulating both the review's
+// resolved status, and its submitted status.
+func getStatusString(r *review.Review) string {
+	if r.Resolved == nil && r.Submitted {
+		return "tbr"
+	}
+	if r.Resolved == nil {
+		return "pending"
+	}
+	if *r.Resolved && r.Submitted {
+		return "submitted"
+	}
+	if *r.Resolved {
+		return "accepted"
+	}
+	if r.Submitted {
+		return "danger"
+	}
+	return "rejected"
+}
+
 // PrintSummary prints a single-line summary of a review.
 func PrintSummary(r *review.Review) {
-	statusString := "pending"
-	if r.Resolved != nil {
-		if *r.Resolved {
-			if r.Submitted {
-				statusString = "submitted"
-			} else {
-				statusString = "accepted"
-			}
-		} else {
-			if r.Submitted {
-				statusString = "danger"
-			} else {
-				statusString = "rejected"
-			}
-		}
-	} else if r.Submitted {
-		statusString = "tbr"
-	}
+	statusString := getStatusString(r)
 	indentedDescription := strings.Replace(r.Request.Description, "\n", "\n  ", -1)
 	fmt.Printf(reviewSummaryTemplate, statusString, r.Revision, indentedDescription)
 }
