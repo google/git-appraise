@@ -11,3 +11,5 @@
 {"timestamp":"1447351671","author":"ckerur","location":{"commit":"cf2857001dc0ad09db95bbd61931aa41f6128cb2","path":"commands/output/output.go","range":{"startLine":88}},"description":"Just repeating..what happens if an exception is thrown here ? How does Go handle it ?"}
 
 {"timestamp":"1447352390","author":"ojarjur@google.com","parent":"698898fa30f5c1c44263dee73001a523ee6796a4","location":{"commit":"cf2857001dc0ad09db95bbd61931aa41f6128cb2","path":"commands/output/output.go","range":{"startLine":88}},"description":"Go does not have special control flow for expcetions the way Java (for instance) does. Since this method does not declare error as part of its return type, the only way it can not return a string is if the entire program exits"}
+
+{"timestamp":"1447359390","author":"git-mirror","location":{"commit":"a3f462b139c47923e69b34b7c43cf63d3866560d","path":"commands/output/output.go","range":{"startLine":56}},"description":"ojarjur@google.com:\n\nDone"}
