@@ -15,3 +15,5 @@
 {"timestamp":"1447359390","author":"git-mirror","location":{"commit":"cf2857001dc0ad09db95bbd61931aa41f6128cb2","path":"commands/output/output.go","range":{"startLine":88}},"description":"ojarjur@google.com:\n\nGo does not have special control flow for expcetions the way Java (for instance) does. Since this method does not declare error as part of its return type, the only way it can not return a string is if the entire program exits"}
 
 {"timestamp":"1447359390","author":"git-mirror","location":{"commit":"a3f462b139c47923e69b34b7c43cf63d3866560d","path":"commands/output/output.go","range":{"startLine":56}},"description":"ojarjur@google.com:\n\nDone"}
+
+{"timestamp":"1447359390","author":"git-mirror","location":{"commit":"a3f462b139c47923e69b34b7c43cf63d3866560d","path":"commands/output/output.go","range":{"startLine":83}},"description":"ojarjur@google.com:\n\nNo, no exceptions can come out of this. The method is meant to be safe for any string; if it sees one that it doesn't know how to handle, then it just leaves it alone."}
