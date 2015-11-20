@@ -186,6 +186,14 @@ func (r mockRepoForTest) resolveLocalRef(ref string) (string, error) {
 	return "", fmt.Errorf("The ref %q does not exist", ref)
 }
 
+// VerifyCommit verifies that the supplied hash points to a known commit.
+func (r mockRepoForTest) VerifyCommit(hash string) error {
+	if _, ok := r.Commits[hash]; !ok {
+		return fmt.Errorf("The given hash %q is not a known commit", hash)
+	}
+	return nil
+}
+
 // VerifyGitRef verifies that the supplied ref points to a known commit.
 func (r mockRepoForTest) VerifyGitRef(ref string) error {
 	_, err := r.resolveLocalRef(ref)

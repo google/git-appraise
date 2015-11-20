@@ -300,6 +300,9 @@ func (r *Review) GetJson() (string, error) {
 // and all of the commits that are referenced in the given comment threads.
 func (r *Review) findLastCommit(latestCommit string, commentThreads []CommentThread) string {
 	isLater := func(commit string) bool {
+		if err := r.Repo.VerifyCommit(commit); err != nil {
+			return false
+		}
 		if r.Repo.IsAncestor(latestCommit, commit) {
 			return true
 		}

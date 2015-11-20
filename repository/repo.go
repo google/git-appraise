@@ -43,6 +43,9 @@ type Repo interface {
 	// HasUncommittedChanges returns true if there are local, uncommitted changes.
 	HasUncommittedChanges() bool
 
+	// VerifyCommit verifies that the supplied hash points to a known commit.
+	VerifyCommit(hash string) error
+
 	// VerifyGitRef verifies that the supplied ref points to a known commit.
 	VerifyGitRef(ref string) error
 

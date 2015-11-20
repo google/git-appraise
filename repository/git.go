@@ -111,6 +111,19 @@ func (repo *GitRepo) HasUncommittedChanges() bool {
 	return false
 }
 
+// VerifyCommit verifies that the supplied hash points to a known commit.
+func (repo *GitRepo) VerifyCommit(hash string) error {
+	out, err := repo.runGitCommand("cat-file", "-t", hash)
+	if err != nil {
+		return err
+	}
+	objectType := strings.TrimSpace(string(out))
+	if objectType != "commit" {
+		return fmt.Errorf("Hash %q points to a non-commit object of type %q", hash, objectType)
+	}
+	return nil
+}
+
 // VerifyGitRef verifies that the supplied ref points to a known commit.
 func (repo *GitRepo) VerifyGitRef(ref string) error {
 	_, err := repo.runGitCommand("show-ref", "--verify", ref)
