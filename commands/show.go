@@ -46,7 +46,7 @@ func showReview(repo repository.Repo, args []string) error {
 	}
 
 	if len(args) == 1 {
-		r = review.Get(repo, args[0])
+		r, err = review.Get(repo, args[0])
 	} else {
 		r, err = review.GetCurrent(repo)
 	}

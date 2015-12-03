@@ -43,7 +43,7 @@ func acceptReview(repo repository.Repo, args []string) error {
 	}
 
 	if len(args) == 1 {
-		r = review.Get(repo, args[0])
+		r, err = review.Get(repo, args[0])
 	} else {
 		r, err = review.GetCurrent(repo)
 	}
@@ -63,7 +63,11 @@ func acceptReview(repo repository.Repo, args []string) error {
 		Commit: acceptedCommit,
 	}
 	resolved := true
-	c := comment.New(repo.GetUserEmail(), *acceptMessage)
+	userEmail, err := repo.GetUserEmail()
+	if err != nil {
+		return err
+	}
+	c := comment.New(userEmail, *acceptMessage)
 	c.Location = &location
 	c.Resolved = &resolved
 	return r.AddComment(c)

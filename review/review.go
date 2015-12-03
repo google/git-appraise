@@ -181,11 +181,11 @@ func (r *Review) loadComments() []CommentThread {
 // Get returns the specified code review.
 //
 // If no review request exists, the returned review is nil.
-func Get(repo repository.Repo, revision string) *Review {
+func Get(repo repository.Repo, revision string) (*Review, error) {
 	requestNotes := repo.GetNotes(request.Ref, revision)
 	requests := request.ParseAllValid(requestNotes)
 	if requests == nil {
-		return nil
+		return nil, nil
 	}
 	review := Review{
 		Repo:     repo,
@@ -194,21 +194,25 @@ func Get(repo repository.Repo, revision string) *Review {
 	}
 	review.Comments = review.loadComments()
 	review.Resolved = updateThreadsStatus(review.Comments)
-	review.Submitted = repo.IsAncestor(revision, review.Request.TargetRef)
+	submitted, err := repo.IsAncestor(revision, review.Request.TargetRef)
+	if err != nil {
+		return nil, err
+	}
+	review.Submitted = submitted
 	currentCommit, err := review.GetHeadCommit()
 	if err == nil {
 		review.Reports = ci.ParseAllValid(repo.GetNotes(ci.Ref, currentCommit))
 		review.Analyses = analyses.ParseAllValid(repo.GetNotes(analyses.Ref, currentCommit))
 	}
-	return &review
+	return &review, nil
 }
 
 // ListAll returns all reviews stored in the git-notes.
 func ListAll(repo repository.Repo) []Review {
 	var reviews []Review
 	for _, revision := range repo.ListNotedRevisions(request.Ref) {
-		review := Get(repo, revision)
-		if review != nil {
+		review, err := Get(repo, revision)
+		if err == nil && review != nil {
 			reviews = append(reviews, *review)
 		}
 	}
@@ -230,7 +234,10 @@ func ListOpen(repo repository.Repo) []Review {
 //
 // If there are multiple matching reviews, then an error is returned.
 func GetCurrent(repo repository.Repo) (*Review, error) {
-	reviewRef := repo.GetHeadRef()
+	reviewRef, err := repo.GetHeadRef()
+	if err != nil {
+		return nil, err
+	}
 	var matchingReviews []Review
 	for _, review := range ListOpen(repo) {
 		if review.Request.ReviewRef == reviewRef {
@@ -303,13 +310,21 @@ func (r *Review) findLastCommit(latestCommit string, commentThreads []CommentThr
 		if err := r.Repo.VerifyCommit(commit); err != nil {
 			return false
 		}
-		if r.Repo.IsAncestor(latestCommit, commit) {
+		if t, e := r.Repo.IsAncestor(latestCommit, commit); e == nil && t {
 			return true
 		}
-		if r.Repo.IsAncestor(commit, latestCommit) {
+		if t, e := r.Repo.IsAncestor(commit, latestCommit); e == nil && t {
 			return false
 		}
-		return r.Repo.GetCommitTime(commit) > r.Repo.GetCommitTime(latestCommit)
+		ct, err := r.Repo.GetCommitTime(commit)
+		if err != nil {
+			return false
+		}
+		lt, err := r.Repo.GetCommitTime(latestCommit)
+		if err != nil {
+			return true
+		}
+		return ct > lt
 	}
 	updateLatest := func(commit string) {
 		if commit == "" {
@@ -335,12 +350,7 @@ func (r *Review) GetHeadCommit() (string, error) {
 		return r.Revision, nil
 	}
 
-	targetRefHead, err := r.Repo.ResolveRefCommit(r.Request.TargetRef)
-	if err != nil {
-		return "", err
-	}
-
-	if r.Repo.IsAncestor(r.Revision, targetRefHead) {
+	if r.Submitted {
 		// The review has already been submitted.
 		// Go through the list of comments and find the last commented upon commit.
 		return r.findLastCommit(r.Revision, r.Comments), nil
@@ -351,13 +361,7 @@ func (r *Review) GetHeadCommit() (string, error) {
 
 // GetBaseCommit returns the commit against which a review should be compared.
 func (r *Review) GetBaseCommit() (string, error) {
-	targetRefHead, err := r.Repo.ResolveRefCommit(r.Request.TargetRef)
-	if err != nil {
-		return "", err
-	}
-	leftHandSide := targetRefHead
-
-	if r.Repo.IsAncestor(r.Revision, leftHandSide) {
+	if r.Submitted {
 		if r.Request.BaseCommit != "" {
 			return r.Request.BaseCommit, nil
 		}
@@ -370,6 +374,11 @@ func (r *Review) GetBaseCommit() (string, error) {
 		return r.Repo.GetLastParent(r.Revision)
 	}
 
+	targetRefHead, err := r.Repo.ResolveRefCommit(r.Request.TargetRef)
+	if err != nil {
+		return "", err
+	}
+	leftHandSide := targetRefHead
 	rightHandSide := r.Revision
 	if r.Request.ReviewRef != "" {
 		if reviewRefHead, err := r.Repo.ResolveRefCommit(r.Request.ReviewRef); err == nil {
@@ -377,7 +386,7 @@ func (r *Review) GetBaseCommit() (string, error) {
 		}
 	}
 
-	return r.Repo.MergeBase(leftHandSide, rightHandSide), nil
+	return r.Repo.MergeBase(leftHandSide, rightHandSide)
 }
 
 // GetDiff returns the diff for a review.
@@ -388,7 +397,7 @@ func (r *Review) GetDiff(diffArgs ...string) (string, error) {
 		headCommit, err = r.GetHeadCommit()
 	}
 	if err == nil {
-		return r.Repo.Diff(baseCommit, headCommit, diffArgs...), nil
+		return r.Repo.Diff(baseCommit, headCommit, diffArgs...)
 	}
 	return "", err
 }

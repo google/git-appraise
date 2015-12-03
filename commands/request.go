@@ -65,26 +65,53 @@ func requestReview(repo repository.Repo, args []string) error {
 	if !*requestAllowUncommitted {
 		// Requesting a code review with uncommited local changes is usually a mistake, so
 		// we want to report that to the user instead of creating the request.
-		if repo.HasUncommittedChanges() {
+		hasUncommitted, err := repo.HasUncommittedChanges()
+		if err != nil {
+			return err
+		}
+		if hasUncommitted {
 			return errors.New("You have uncommitted or untracked files. Use --allow-uncommitted to ignore those.")
 		}
 	}
 
-	r := buildRequestFromFlags(repo.GetUserEmail())
-	if r.ReviewRef == "HEAD" {
-		r.ReviewRef = repo.GetHeadRef()
+	userEmail, err := repo.GetUserEmail()
+	if err != nil {
+		return err
 	}
-	repo.VerifyGitRefOrDie(r.TargetRef)
-	repo.VerifyGitRefOrDie(r.ReviewRef)
-	r.BaseCommit = repo.GetCommitHash(r.TargetRef)
+	r := buildRequestFromFlags(userEmail)
+	if r.ReviewRef == "HEAD" {
+		headRef, err := repo.GetHeadRef()
+		if err != nil {
+			return err
+		}
+		r.ReviewRef = headRef
+	}
+	if err := repo.VerifyGitRef(r.TargetRef); err != nil {
+		return err
+	}
+	if err := repo.VerifyGitRef(r.ReviewRef); err != nil {
+		return err
+	}
+	base, err := repo.GetCommitHash(r.TargetRef)
+	if err != nil {
+		return err
+	}
+	r.BaseCommit = base
 
-	reviewCommits := repo.ListCommitsBetween(r.TargetRef, r.ReviewRef)
+	reviewCommits, err := repo.ListCommitsBetween(r.TargetRef, r.ReviewRef)
+	if err != nil {
+		return err
+	}
 	if reviewCommits == nil {
 		return errors.New("There are no commits included in the review request")
 	}
 
 	if r.Description == "" {
-		r.Description = repo.GetCommitMessage(reviewCommits[0])
+		description, err := repo.GetCommitMessage(reviewCommits[0])
+		if err != nil {
+			return err
+		}
+		r.Description = description
 	}
 
 	note, err := r.Write()

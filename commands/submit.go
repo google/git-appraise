@@ -56,22 +56,31 @@ func submitReview(repo repository.Repo, args []string) error {
 
 	target := r.Request.TargetRef
 	source := r.Request.ReviewRef
-	repo.VerifyGitRefOrDie(target)
-	repo.VerifyGitRefOrDie(source)
+	if err := repo.VerifyGitRef(target); err != nil {
+		return err
+	}
+	if err := repo.VerifyGitRef(source); err != nil {
+		return err
+	}
 
-	if !repo.IsAncestor(target, source) {
+	isAncestor, err := repo.IsAncestor(target, source)
+	if err != nil {
+		return err
+	}
+	if !isAncestor {
 		return errors.New("Refusing to submit a non-fast-forward review. First merge the target ref.")
 	}
 
-	repo.SwitchToRef(target)
-	if *submitMerge {
-		repo.MergeRef(source, false)
-	} else if *submitRebase {
-		repo.RebaseRef(source)
-	} else {
-		repo.MergeRef(source, true)
+	if err := repo.SwitchToRef(target); err != nil {
+		return err
 	}
-	return nil
+	if *submitMerge {
+		return repo.MergeRef(source, false)
+	} else if *submitRebase {
+		return repo.RebaseRef(source)
+	} else {
+		return repo.MergeRef(source, true)
+	}
 }
 
 // submitCmd defines the "submit" subcommand.

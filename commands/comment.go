@@ -54,7 +54,7 @@ func commentOnReview(repo repository.Repo, args []string) error {
 	}
 
 	if len(args) == 1 {
-		r = review.Get(repo, args[0])
+		r, err = review.Get(repo, args[0])
 	} else {
 		r, err = review.GetCurrent(repo)
 	}
@@ -82,7 +82,11 @@ func commentOnReview(repo repository.Repo, args []string) error {
 		}
 	}
 
-	c := comment.New(repo.GetUserEmail(), *commentMessage)
+	userEmail, err := repo.GetUserEmail()
+	if err != nil {
+		return err
+	}
+	c := comment.New(userEmail, *commentMessage)
 	c.Location = &location
 	c.Parent = *commentParent
 	if *commentLgtm || *commentNmw {

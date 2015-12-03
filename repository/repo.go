@@ -35,13 +35,13 @@ type Repo interface {
 	GetPath() string
 
 	// GetRepoStateHash returns a hash which embodies the entire current state of a repository.
-	GetRepoStateHash() string
+	GetRepoStateHash() (string, error)
 
 	// GetUserEmail returns the email address that the user has used to configure git.
-	GetUserEmail() string
+	GetUserEmail() (string, error)
 
 	// HasUncommittedChanges returns true if there are local, uncommitted changes.
-	HasUncommittedChanges() bool
+	HasUncommittedChanges() (bool, error)
 
 	// VerifyCommit verifies that the supplied hash points to a known commit.
 	VerifyCommit(hash string) error
@@ -49,14 +49,11 @@ type Repo interface {
 	// VerifyGitRef verifies that the supplied ref points to a known commit.
 	VerifyGitRef(ref string) error
 
-	// VerifyGitRefOrDie verifies that the supplied ref points to a known commit.
-	VerifyGitRefOrDie(ref string)
-
 	// GetHeadRef returns the ref that is the current HEAD.
-	GetHeadRef() string
+	GetHeadRef() (string, error)
 
 	// GetCommitHash returns the hash of the commit pointed to by the given ref.
-	GetCommitHash(ref string) string
+	GetCommitHash(ref string) (string, error)
 
 	// ResolveRefCommit returns the commit pointed to by the given ref, which may be a remote ref.
 	//
@@ -70,10 +67,10 @@ type Repo interface {
 	ResolveRefCommit(ref string) (string, error)
 
 	// GetCommitMessage returns the message stored in the commit pointed to by the given ref.
-	GetCommitMessage(ref string) string
+	GetCommitMessage(ref string) (string, error)
 
 	// GetCommitTime returns the commit time of the commit pointed to by the given ref.
-	GetCommitTime(ref string) string
+	GetCommitTime(ref string) (string, error)
 
 	// GetLastParent returns the last parent of the given commit (as ordered by git).
 	GetLastParent(ref string) (string, error)
@@ -82,28 +79,28 @@ type Repo interface {
 	GetCommitDetails(ref string) (*CommitDetails, error)
 
 	// MergeBase determines if the first commit that is an ancestor of the two arguments.
-	MergeBase(a, b string) string
+	MergeBase(a, b string) (string, error)
 
 	// IsAncestor determines if the first argument points to a commit that is an ancestor of the second.
-	IsAncestor(ancestor, descendant string) bool
+	IsAncestor(ancestor, descendant string) (bool, error)
 
 	// Diff computes the diff between two given commits.
-	Diff(left, right string, diffArgs ...string) string
+	Diff(left, right string, diffArgs ...string) (string, error)
 
 	// Show returns the contents of the given file at the given commit.
 	Show(commit, path string) (string, error)
 
 	// SwitchToRef changes the currently-checked-out ref.
-	SwitchToRef(ref string)
+	SwitchToRef(ref string) error
 
 	// MergeRef merges the given ref into the current one.
 	//
 	// The ref argument is the ref to merge, and fastForward indicates that the
 	// current ref should only move forward, as opposed to creating a bubble merge.
-	MergeRef(ref string, fastForward bool)
+	MergeRef(ref string, fastForward bool) error
 
 	// RebaseRef rebases the given ref into the current one.
-	RebaseRef(ref string)
+	RebaseRef(ref string) error
 
 	// ListCommitsBetween returns the list of commits between the two given revisions.
 	//
@@ -113,13 +110,13 @@ type Repo interface {
 	// merge base of the two is used as the starting point.
 	//
 	// The generated list is in chronological order (with the oldest commit first).
-	ListCommitsBetween(from, to string) []string
+	ListCommitsBetween(from, to string) ([]string, error)
 
 	// GetNotes reads the notes from the given ref that annotate the given revision.
 	GetNotes(notesRef, revision string) []Note
 
 	// AppendNote appends a note to a revision under the given ref.
-	AppendNote(ref, revision string, note Note)
+	AppendNote(ref, revision string, note Note) error
 
 	// ListNotedRevisions returns the collection of revisions that are annotated by notes in the given ref.
 	ListNotedRevisions(notesRef string) []string
@@ -130,5 +127,5 @@ type Repo interface {
 	// PullNotes fetches the contents of the given notes ref from a remote repo,
 	// and then merges them with the corresponding local notes using the
 	// "cat_sort_uniq" strategy.
-	PullNotes(remote, notesRefPattern string)
+	PullNotes(remote, notesRefPattern string) error
 }

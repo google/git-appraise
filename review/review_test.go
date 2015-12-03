@@ -538,7 +538,10 @@ func TestBuildCommentThreads(t *testing.T) {
 func TestGetHeadCommit(t *testing.T) {
 	repo := repository.NewMockRepoForTest()
 
-	submittedSimpleReview := Get(repo, repository.TestCommitB)
+	submittedSimpleReview, err := Get(repo, repository.TestCommitB)
+	if err != nil {
+		t.Fatal(err)
+	}
 	submittedSimpleReviewHead, err := submittedSimpleReview.GetHeadCommit()
 	if err != nil {
 		t.Fatal("Unable to compute the head commit for a known review of a simple commit: ", err)
@@ -547,7 +550,10 @@ func TestGetHeadCommit(t *testing.T) {
 		t.Fatal("Unexpected head commit computed for a known review of a simple commit.")
 	}
 
-	submittedModifiedReview := Get(repo, repository.TestCommitD)
+	submittedModifiedReview, err := Get(repo, repository.TestCommitD)
+	if err != nil {
+		t.Fatal(err)
+	}
 	submittedModifiedReviewHead, err := submittedModifiedReview.GetHeadCommit()
 	if err != nil {
 		t.Fatal("Unable to compute the head commit for a known, multi-commit review: ", err)
@@ -556,7 +562,10 @@ func TestGetHeadCommit(t *testing.T) {
 		t.Fatal("Unexpected head commit for a known, multi-commit review.")
 	}
 
-	pendingReview := Get(repo, repository.TestCommitG)
+	pendingReview, err := Get(repo, repository.TestCommitG)
+	if err != nil {
+		t.Fatal(err)
+	}
 	pendingReviewHead, err := pendingReview.GetHeadCommit()
 	if err != nil {
 		t.Fatal("Unable to compute the head commit for a known review of a merge commit: ", err)
@@ -569,7 +578,10 @@ func TestGetHeadCommit(t *testing.T) {
 func TestGetBaseCommit(t *testing.T) {
 	repo := repository.NewMockRepoForTest()
 
-	submittedSimpleReview := Get(repo, repository.TestCommitB)
+	submittedSimpleReview, err := Get(repo, repository.TestCommitB)
+	if err != nil {
+		t.Fatal(err)
+	}
 	submittedSimpleReviewBase, err := submittedSimpleReview.GetBaseCommit()
 	if err != nil {
 		t.Fatal("Unable to compute the base commit for a known review of a simple commit: ", err)
@@ -578,7 +590,10 @@ func TestGetBaseCommit(t *testing.T) {
 		t.Fatal("Unexpected base commit computed for a known review of a simple commit.")
 	}
 
-	submittedMergeReview := Get(repo, repository.TestCommitD)
+	submittedMergeReview, err := Get(repo, repository.TestCommitD)
+	if err != nil {
+		t.Fatal(err)
+	}
 	submittedMergeReviewBase, err := submittedMergeReview.GetBaseCommit()
 	if err != nil {
 		t.Fatal("Unable to compute the base commit for a known review of a merge commit: ", err)
@@ -587,7 +602,10 @@ func TestGetBaseCommit(t *testing.T) {
 		t.Fatal("Unexpected base commit computed for a known review of a merge commit.")
 	}
 
-	pendingReview := Get(repo, repository.TestCommitG)
+	pendingReview, err := Get(repo, repository.TestCommitG)
+	if err != nil {
+		t.Fatal(err)
+	}
 	pendingReviewBase, err := pendingReview.GetBaseCommit()
 	if err != nil {
 		t.Fatal("Unable to compute the base commit for a known review of a merge commit: ", err)
