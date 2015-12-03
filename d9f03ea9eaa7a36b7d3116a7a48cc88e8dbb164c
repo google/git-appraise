@@ -1,1 +1,3 @@
 {"timestamp":"1449171877","author":"ckerur","resolved":true}
+
+{"timestamp":"1449171877","author":"ckerur","description":"I don't know where all the changes need to be, so leaving it to you to check everything is covered .\n\nCan we fail faster on this transition from tool to library ? If we built this as a standalone library now, do you think we would uncover any more such issues ?"}
