@@ -97,7 +97,9 @@ type Repo interface {
 	//
 	// The ref argument is the ref to merge, and fastForward indicates that the
 	// current ref should only move forward, as opposed to creating a bubble merge.
-	MergeRef(ref string, fastForward bool) error
+	// The messages argument(s) provide text that should be included in the default
+	// merge commit message (separated by blank lines).
+	MergeRef(ref string, fastForward bool, messages ...string) error
 
 	// RebaseRef rebases the given ref into the current one.
 	RebaseRef(ref string) error

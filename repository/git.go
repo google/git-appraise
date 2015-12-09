@@ -244,12 +244,18 @@ func (repo *GitRepo) SwitchToRef(ref string) error {
 //
 // The ref argument is the ref to merge, and fastForward indicates that the
 // current ref should only move forward, as opposed to creating a bubble merge.
-func (repo *GitRepo) MergeRef(ref string, fastForward bool) error {
+// The messages argument(s) provide text that should be included in the default
+// merge commit message (separated by blank lines).
+func (repo *GitRepo) MergeRef(ref string, fastForward bool, messages ...string) error {
 	args := []string{"merge"}
 	if fastForward {
 		args = append(args, "--ff", "--ff-only")
 	} else {
 		args = append(args, "--no-ff")
+	}
+	if len(messages) > 0 {
+		commitMessage := strings.Join(messages, "\n\n")
+		args = append(args, "-e", "-m", commitMessage)
 	}
 	args = append(args, ref)
 	return repo.runGitCommandInline(args...)

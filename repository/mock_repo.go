@@ -345,7 +345,7 @@ func (r mockRepoForTest) SwitchToRef(ref string) error {
 //
 // The ref argument is the ref to merge, and fastForward indicates that the
 // current ref should only move forward, as opposed to creating a bubble merge.
-func (r mockRepoForTest) MergeRef(ref string, fastForward bool) error { return nil }
+func (r mockRepoForTest) MergeRef(ref string, fastForward bool, messages ...string) error { return nil }
 
 // RebaseRef rebases the given ref into the current one.
 func (r mockRepoForTest) RebaseRef(ref string) error { return nil }

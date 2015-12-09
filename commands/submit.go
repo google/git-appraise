@@ -75,7 +75,8 @@ func submitReview(repo repository.Repo, args []string) error {
 		return err
 	}
 	if *submitMerge {
-		return repo.MergeRef(source, false)
+		submitMessage := fmt.Sprintf("Submitting review %.12s", r.Revision)
+		return repo.MergeRef(source, false, submitMessage, r.Request.Description)
 	} else if *submitRebase {
 		return repo.RebaseRef(source)
 	} else {
