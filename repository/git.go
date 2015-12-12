@@ -18,6 +18,7 @@ limitations under the License.
 package repository
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
@@ -37,7 +38,13 @@ type GitRepo struct {
 func (repo *GitRepo) runGitCommand(args ...string) (string, error) {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = repo.Path
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	out, err := cmd.Output()
+	if err != nil {
+		errorMessage := strings.TrimSpace(stderr.String())
+		err = fmt.Errorf(errorMessage)
+	}
 	return strings.Trim(string(out), "\n"), err
 }
 
