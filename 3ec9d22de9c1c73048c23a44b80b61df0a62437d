@@ -1,0 +1,1 @@
+{"timestamp":"1450187000","targetRef":"refs/heads/master","reviewRef":"refs/pull/6/head","requester":"hazbo","description":"Small tweaks to satisfy the go lint tool\nThere are more things the lint tool picks up, however some changes would mean\r\nmaking changes to parts of the public API for a package, i.e. for reviews the\r\nlint tool suggests changing GetJson() to GetJSON()."}
