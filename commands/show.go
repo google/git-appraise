@@ -27,7 +27,7 @@ import (
 )
 
 var showFlagSet = flag.NewFlagSet("show", flag.ExitOnError)
-var showJsonOutput = showFlagSet.Bool("json", false, "Format the output as JSON")
+var showJSONOutput = showFlagSet.Bool("json", false, "Format the output as JSON")
 var showDiffOutput = showFlagSet.Bool("diff", false, "Show the current diff for the review")
 var showDiffOptions = showFlagSet.String("diff-opts", "", "Options to pass to the diff tool; can only be used with the --diff option")
 
@@ -57,7 +57,7 @@ func showReview(repo repository.Repo, args []string) error {
 	if r == nil {
 		return errors.New("There is no matching review.")
 	}
-	if *showJsonOutput {
+	if *showJSONOutput {
 		return output.PrintJson(r)
 	}
 	if *showDiffOutput {

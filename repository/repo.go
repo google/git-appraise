@@ -20,6 +20,7 @@ package repository
 // Note represents the contents of a git-note
 type Note []byte
 
+// CommitDetails represents the contents of a commit.
 type CommitDetails struct {
 	Author      string   `json:"author,omitempty"`
 	AuthorEmail string   `json:"authorEmail,omitempty"`
