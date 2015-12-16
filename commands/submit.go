@@ -37,17 +37,32 @@ var (
 // The "args" parameter contains all of the command line arguments that followed the subcommand.
 func submitReview(repo repository.Repo, args []string) error {
 	submitFlagSet.Parse(args)
+	args = submitFlagSet.Args()
 
 	if *submitMerge && *submitRebase {
 		return errors.New("Only one of --merge or --rebase is allowed.")
 	}
 
-	r, err := review.GetCurrent(repo)
+	var r *review.Review
+	var err error
+	if len(args) > 1 {
+		return errors.New("Only accepting a single review is supported.")
+	}
+	if len(args) == 1 {
+		r, err = review.Get(repo, args[0])
+	} else {
+		r, err = review.GetCurrent(repo)
+	}
+
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to load the review: %v\n", err)
 	}
 	if r == nil {
-		return errors.New("There is nothing to submit")
+		return errors.New("There is no matching review.")
+	}
+
+	if r.Submitted {
+		return errors.New("The review has already been submitted.")
 	}
 
 	if !*submitTBR && (r.Resolved == nil || !*r.Resolved) {
@@ -55,11 +70,11 @@ func submitReview(repo repository.Repo, args []string) error {
 	}
 
 	target := r.Request.TargetRef
-	source := r.Request.ReviewRef
 	if err := repo.VerifyGitRef(target); err != nil {
 		return err
 	}
-	if err := repo.VerifyGitRef(source); err != nil {
+	source, err := r.GetHeadCommit()
+	if err != nil {
 		return err
 	}
 
