@@ -35,17 +35,24 @@ type GitRepo struct {
 }
 
 // Run the given git command and return its stdout, or an error if the command fails.
-func (repo *GitRepo) runGitCommand(args ...string) (string, error) {
+func (repo *GitRepo) runGitCommandRaw(args ...string) (string, string, error) {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = repo.Path
+	var stdout bytes.Buffer
 	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	out, err := cmd.Output()
+	err := cmd.Run()
+	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
+}
+
+// Run the given git command and return its stdout, or an error if the command fails.
+func (repo *GitRepo) runGitCommand(args ...string) (string, error) {
+	stdout, stderr, err := repo.runGitCommandRaw(args...)
 	if err != nil {
-		errorMessage := strings.TrimSpace(stderr.String())
-		err = fmt.Errorf(errorMessage)
+		err = fmt.Errorf(stderr)
 	}
-	return strings.Trim(string(out), "\n"), err
+	return stdout, err
 }
 
 // Run the given git command using the same stdin, stdout, and stderr as the review tool.
@@ -62,7 +69,7 @@ func (repo *GitRepo) runGitCommandInline(args ...string) error {
 // and returns the corresponding GitRepo instance if it is.
 func NewGitRepo(path string) (*GitRepo, error) {
 	repo := &GitRepo{Path: path}
-	_, err := repo.runGitCommand("rev-parse")
+	_, _, err := repo.runGitCommandRaw("rev-parse")
 	if err == nil {
 		return repo, nil
 	}
@@ -213,7 +220,7 @@ func (repo *GitRepo) MergeBase(a, b string) (string, error) {
 
 // IsAncestor determines if the first argument points to a commit that is an ancestor of the second.
 func (repo *GitRepo) IsAncestor(ancestor, descendant string) (bool, error) {
-	_, err := repo.runGitCommand("merge-base", "--is-ancestor", ancestor, descendant)
+	_, _, err := repo.runGitCommandRaw("merge-base", "--is-ancestor", ancestor, descendant)
 	if err == nil {
 		return true, nil
 	}
