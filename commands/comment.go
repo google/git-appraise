@@ -43,6 +43,9 @@ func commentOnReview(repo repository.Repo, args []string) error {
 	if *commentLgtm && *commentNmw {
 		return errors.New("You cannot combine the flags -lgtm and -nmw.")
 	}
+	if !*commentLgtm && !*commentNmw && *commentMessage == "" {
+		return errors.New("Message cannot be empty if neither the -lgtm or -nmw flag has been set.")
+	}
 	if *commentLine != 0 && *commentFile == "" {
 		return errors.New("Specifying a line number with the -l flag requires that you also specify a file name with the -f flag.")
 	}
