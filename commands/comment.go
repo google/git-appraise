@@ -23,9 +23,13 @@ import (
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"github.com/google/git-appraise/review/comment"
+	"io/ioutil"
+	"os"
+	"os/exec"
 )
 
 var commentFlagSet = flag.NewFlagSet("comment", flag.ExitOnError)
+var commentFilename = "APPRAISE_COMMENT_EDITMSG"
 
 var (
 	commentMessage = commentFlagSet.String("m", "", "Message to attach to the review")
@@ -40,11 +44,38 @@ var (
 func commentOnReview(repo repository.Repo, args []string) error {
 	commentFlagSet.Parse(args)
 	args = commentFlagSet.Args()
+	if *commentMessage == "" {
+		editor, err := repo.GetCoreEditor()
+		if err != nil {
+			return fmt.Errorf("Unable to detect default git editor: %v\n", err)
+		}
+
+		path := fmt.Sprintf("%s/.git/%s", repo.GetPath(), commentFilename)
+
+		cmd := exec.Command(editor, path)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Start()
+		if err != nil {
+			return fmt.Errorf("Unable to start editor: %v\n", err)
+		}
+
+		err = cmd.Wait()
+		if err != nil {
+			return fmt.Errorf("Editing finished with error: %v\n", err)
+		}
+
+		comment, err := ioutil.ReadFile(path)
+		if err != nil {
+			os.Remove(path)
+			return fmt.Errorf("Error reading comment file: %v\n", err)
+		}
+		*commentMessage = string(comment)
+		os.Remove(path)
+	}
 	if *commentLgtm && *commentNmw {
 		return errors.New("You cannot combine the flags -lgtm and -nmw.")
-	}
-	if !*commentLgtm && !*commentNmw && *commentMessage == "" {
-		return errors.New("Message cannot be empty if neither the -lgtm or -nmw flag has been set.")
 	}
 	if *commentLine != 0 && *commentFile == "" {
 		return errors.New("Specifying a line number with the -l flag requires that you also specify a file name with the -f flag.")
