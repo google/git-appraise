@@ -1,0 +1,1 @@
+{"timestamp":"1450364829","author":"hazbo","Parent":"","description":"I initially thought about abstracting the exec stuff out a little bit as it could easily be used elsewhere in the codebase, to use an editor for writing a message, but it's really not that much code as of now I just left it in the comment file."}
