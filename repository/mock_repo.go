@@ -162,11 +162,11 @@ func (r mockRepoForTest) GetPath() string { return "~/mockRepo/" }
 
 // GetRepoStateHash returns a hash which embodies the entire current state of a repository.
 func (r mockRepoForTest) GetRepoStateHash() (string, error) {
-	repoJson, err := json.Marshal(r)
+	repoJSON, err := json.Marshal(r)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%x", sha1.Sum([]byte(repoJson))), nil
+	return fmt.Sprintf("%x", sha1.Sum([]byte(repoJSON))), nil
 }
 
 // GetUserEmail returns the email address that the user has used to configure git.

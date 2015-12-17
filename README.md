@@ -88,7 +88,7 @@ clear that these are meant to be read and written by automated tools.
 
 When a field named "v" appears in one of these notes, it is used to denote
 the version of the metadata format being used. If that field is missing, then
-it defaults to the value 0, which corresponds to this initial verison of the
+it defaults to the value 0, which corresponds to this initial version of the
 formats.
 
 ### Code Review Requests
