@@ -172,6 +172,9 @@ func (r mockRepoForTest) GetRepoStateHash() (string, error) {
 // GetUserEmail returns the email address that the user has used to configure git.
 func (r mockRepoForTest) GetUserEmail() (string, error) { return "user@example.com", nil }
 
+// GetCoreEditor returns the name of the editor that the user has used to configure git.
+func (r mockRepoForTest) GetCoreEditor() (string, error) { return "vi", nil }
+
 // HasUncommittedChanges returns true if there are local, uncommitted changes.
 func (r mockRepoForTest) HasUncommittedChanges() (bool, error) { return false, nil }
 
