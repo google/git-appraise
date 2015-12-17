@@ -1,3 +1,5 @@
 {"timestamp":"1450364829","author":"hazbo","Parent":"","description":"I initially thought about abstracting the exec stuff out a little bit as it could easily be used elsewhere in the codebase, to use an editor for writing a message, but it's really not that much code as of now I just left it in the comment file."}
 
 {"timestamp":"1450376019","author":"ojarjur@google.com","location":{"commit":"09aecba64027d190f6211a75b2e05a6940013d86","path":"repository/git.go","range":{"startLine":100}},"description":"The command \"git config core.editor\" only works if the user has explicitly set that config value, and not if they are instead relying on an environment variable.\n\nInstead, we should use \"git var GIT_EDITOR\", which is what the built-in git commands use."}
+
+{"timestamp":"1450378175","author":"ojarjur@google.com","location":{"commit":"09aecba64027d190f6211a75b2e05a6940013d86"},"description":"Thanks for doing this. This looks good, and I think you chose the right approach since it matches what the built in git commands do. Just one potential improvement over the way we pick the editor, but overal LGTM.","resolved":true}
