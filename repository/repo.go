@@ -41,6 +41,9 @@ type Repo interface {
 	// GetUserEmail returns the email address that the user has used to configure git.
 	GetUserEmail() (string, error)
 
+	// GetCoreEditor returns the name of the editor that the user has used to configure git.
+	GetCoreEditor() (string, error)
+
 	// HasUncommittedChanges returns true if there are local, uncommitted changes.
 	HasUncommittedChanges() (bool, error)
 
