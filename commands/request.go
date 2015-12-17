@@ -92,13 +92,13 @@ func requestReview(repo repository.Repo, args []string) error {
 	if err := repo.VerifyGitRef(r.ReviewRef); err != nil {
 		return err
 	}
-	base, err := repo.GetCommitHash(r.TargetRef)
+	base, err := repo.MergeBase(r.TargetRef, r.ReviewRef)
 	if err != nil {
 		return err
 	}
 	r.BaseCommit = base
 
-	reviewCommits, err := repo.ListCommitsBetween(r.TargetRef, r.ReviewRef)
+	reviewCommits, err := repo.ListCommitsBetween(base, r.ReviewRef)
 	if err != nil {
 		return err
 	}
