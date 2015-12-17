@@ -97,7 +97,7 @@ func (repo *GitRepo) GetUserEmail() (string, error) {
 
 // GetCoreEditor returns the name of the editor that the user has used to configure git.
 func (repo *GitRepo) GetCoreEditor() (string, error) {
-	return repo.runGitCommand("config", "core.editor")
+	return repo.runGitCommand("var", "GIT_EDITOR")
 }
 
 // HasUncommittedChanges returns true if there are local, uncommitted changes.
