@@ -5,7 +5,7 @@ repositories.
 
 ## Overview
 
-This tool is the first *distributed* code review system for git repos.
+This tool is a *distributed* code review system for git repos.
 
 By "distributed", we mean that code reviews are stored inside of the repository
 as git objects. Every developer on your team has their own copy of the review
