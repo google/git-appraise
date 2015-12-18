@@ -75,6 +75,8 @@ Submitting the current review:
 
     git appraise submit [--merge | --rebase]
 
+A more detailed getting started doc is available [here](docs/tutorial.md).
+
 ## Metadata
 
 The code review data is stored in git-notes, using the formats described below.
