@@ -282,6 +282,11 @@ is formatted as a 10 digit decimal number with zero padding. It should be the
 first field written, so that the lexicographical ordering of comments matches
 their chronological ordering.
 
+## Plugins
+
+  - [Eclipse](https://github.com/google/git-appraise-eclipse)
+  - [Jenkins](https://github.com/jenkinsci/google-git-notes-publisher-plugin)
+
 ## Contributing
 
 Please see [the CONTRIBUTING file](CONTRIBUTING.md) for information on contributing to Git Appraise.
