@@ -119,15 +119,16 @@ func showThread(r *review.Review, thread review.CommentThread) error {
 
 // showSubThread prints the given comment (sub)thread, indented by the given prefix string.
 func showSubThread(r *review.Review, thread review.CommentThread, indent string) error {
+	comment := thread.Comment
 	statusString := "fyi"
-	if thread.Resolved != nil {
-		if *thread.Resolved {
+	if comment.Resolved != nil {
+		if *comment.Resolved {
 			statusString = "lgtm"
 		} else {
 			statusString = "needs work"
 		}
 	}
-	comment := thread.Comment
+
 	threadHash, err := comment.Hash()
 	if err != nil {
 		return err
