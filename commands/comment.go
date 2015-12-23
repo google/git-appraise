@@ -44,6 +44,26 @@ var (
 func commentOnReview(repo repository.Repo, args []string) error {
 	commentFlagSet.Parse(args)
 	args = commentFlagSet.Args()
+
+	var r *review.Review
+	var err error
+	if len(args) > 1 {
+		return errors.New("Only accepting a single review is supported.")
+	}
+
+	if len(args) == 1 {
+		r, err = review.Get(repo, args[0])
+	} else {
+		r, err = review.GetCurrent(repo)
+	}
+
+	if err != nil {
+		return fmt.Errorf("Failed to load the review: %v\n", err)
+	}
+	if r == nil {
+		return errors.New("There is no matching review.")
+	}
+
 	if *commentMessage == "" {
 		editor, err := repo.GetCoreEditor()
 		if err != nil {
@@ -79,25 +99,6 @@ func commentOnReview(repo repository.Repo, args []string) error {
 	}
 	if *commentLine != 0 && *commentFile == "" {
 		return errors.New("Specifying a line number with the -l flag requires that you also specify a file name with the -f flag.")
-	}
-
-	var r *review.Review
-	var err error
-	if len(args) > 1 {
-		return errors.New("Only accepting a single review is supported.")
-	}
-
-	if len(args) == 1 {
-		r, err = review.Get(repo, args[0])
-	} else {
-		r, err = review.GetCurrent(repo)
-	}
-
-	if err != nil {
-		return fmt.Errorf("Failed to load the review: %v\n", err)
-	}
-	if r == nil {
-		return errors.New("There is no matching review.")
 	}
 
 	commentedUponCommit, err := r.GetHeadCommit()

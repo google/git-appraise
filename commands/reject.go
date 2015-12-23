@@ -40,6 +40,25 @@ func rejectReview(repo repository.Repo, args []string) error {
 	rejectFlagSet.Parse(args)
 	args = rejectFlagSet.Args()
 
+	var r *review.Review
+	var err error
+	if len(args) > 1 {
+		return errors.New("Only rejecting a single review is supported.")
+	}
+
+	if len(args) == 1 {
+		r, err = review.Get(repo, args[0])
+	} else {
+		r, err = review.GetCurrent(repo)
+	}
+
+	if err != nil {
+		return fmt.Errorf("Failed to load the review: %v\n", err)
+	}
+	if r == nil {
+		return errors.New("There is no matching review.")
+	}
+
 	if *rejectMessage == "" {
 		editor, err := repo.GetCoreEditor()
 		if err != nil {
@@ -69,25 +88,6 @@ func rejectReview(repo repository.Repo, args []string) error {
 		}
 		*rejectMessage = string(comment)
 		os.Remove(path)
-	}
-
-	var r *review.Review
-	var err error
-	if len(args) > 1 {
-		return errors.New("Only rejecting a single review is supported.")
-	}
-
-	if len(args) == 1 {
-		r, err = review.Get(repo, args[0])
-	} else {
-		r, err = review.GetCurrent(repo)
-	}
-
-	if err != nil {
-		return fmt.Errorf("Failed to load the review: %v\n", err)
-	}
-	if r == nil {
-		return errors.New("There is no matching review.")
 	}
 
 	rejectedCommit, err := r.GetHeadCommit()
