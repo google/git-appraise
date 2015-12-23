@@ -1,0 +1,1 @@
+{"timestamp":"1450887698","targetRef":"refs/heads/master","reviewRef":"refs/pull/23/head","requester":"hazbo","description":"Possible bug fix for thread comment status\nAs pointed out in #22, the status for every comment seems to be fyi.\r\nThis seems to fix that."}
