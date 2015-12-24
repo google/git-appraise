@@ -1,0 +1,1 @@
+{"timestamp":"1450916053","targetRef":"refs/heads/master","reviewRef":"refs/pull/24/head","requester":"jishi9","description":"Fixed updateThreadsStatus to modify original thread instances, rather than modifying copies\nThis is a proposed fix to #22 \r\n\r\n`updateThreadsStatus` was not actually updating the CommentThread instances, but updating copies thereof."}
