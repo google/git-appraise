@@ -9,3 +9,4 @@
 {"timestamp":"1451947559","author":"ojarjur@google.com","parent":"7753dd58a35a4e71d8b03faef0c91a47e86418ae","location":{"commit":"ec1a0bb461324ff9ad3372d59985c499299c7049","path":"commands/comment.go","range":{"startLine":117}},"description":"I don't feel strongly about it either way."}
 
 {"timestamp":"1451947584","author":"ojarjur@google.com","location":{"commit":"ec1a0bb461324ff9ad3372d59985c499299c7049"},"resolved":true}
+{"timestamp":"1451164601","author":"jishi9","location":{"commit":"df324616ea2bc9bf6fc7025fc80a373ecec687b6","path":"commands/comment.go","range":{"startLine":116}},"Parent":"","description":"Is `*commentParent` necessarily a hash, or could it be some other reference resolvable to a hash?"}
