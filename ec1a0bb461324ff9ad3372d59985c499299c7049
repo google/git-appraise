@@ -10,3 +10,4 @@
 
 {"timestamp":"1451947584","author":"ojarjur@google.com","location":{"commit":"ec1a0bb461324ff9ad3372d59985c499299c7049"},"resolved":true}
 {"timestamp":"1451164601","author":"jishi9","location":{"commit":"df324616ea2bc9bf6fc7025fc80a373ecec687b6","path":"commands/comment.go","range":{"startLine":116}},"Parent":"","description":"Is `*commentParent` necessarily a hash, or could it be some other reference resolvable to a hash?"}
+{"timestamp":"1451164601","author":"jishi9","location":{"commit":"df324616ea2bc9bf6fc7025fc80a373ecec687b6","path":"commands/comment.go","range":{"startLine":117}},"Parent":"","description":"Should this message mention the string `*commentParent` provided? For example:\r\n`There is no matching parent comment: 11223344abcdef`"}
