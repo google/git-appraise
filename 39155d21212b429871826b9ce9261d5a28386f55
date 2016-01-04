@@ -4,3 +4,4 @@
 {"timestamp":"1450916053","author":"googlebot","Parent":"e2a6beadf5d99e33c7d11f7a56a3e1b01665b482","description":"CLAs look good, thanks!\n\n\u003c!-- ok --\u003e"}
 
 {"timestamp":"1451931562","author":"ojarjur@google.com","location":{"commit":"39155d21212b429871826b9ce9261d5a28386f55"},"resolved":true}
+{"timestamp":"1451932139","author":"ojarjur","Parent":"caa4b7427c828069e2c7c6c3bd2653affe63ad26","description":"Thanks for doing this; good catch on the bug."}
