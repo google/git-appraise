@@ -44,6 +44,7 @@ var CommandMap = map[string]*Command{
 	"list":    listCmd,
 	"pull":    pullCmd,
 	"push":    pushCmd,
+	"reject":  rejectCmd,
 	"request": requestCmd,
 	"show":    showCmd,
 	"submit":  submitCmd,

@@ -56,6 +56,36 @@ func commentHashExists(hashToFind string, threads []review.CommentThread) bool {
 func commentOnReview(repo repository.Repo, args []string) error {
 	commentFlagSet.Parse(args)
 	args = commentFlagSet.Args()
+
+	var r *review.Review
+	var err error
+	if len(args) > 1 {
+		return errors.New("Only accepting a single review is supported.")
+	}
+
+	if len(args) == 1 {
+		r, err = review.Get(repo, args[0])
+	} else {
+		r, err = review.GetCurrent(repo)
+	}
+
+	if err != nil {
+		return fmt.Errorf("Failed to load the review: %v\n", err)
+	}
+	if r == nil {
+		return errors.New("There is no matching review.")
+	}
+
+	if *commentLgtm && *commentNmw {
+		return errors.New("You cannot combine the flags -lgtm and -nmw.")
+	}
+	if *commentLine != 0 && *commentFile == "" {
+		return errors.New("Specifying a line number with the -l flag requires that you also specify a file name with the -f flag.")
+	}
+	if *commentParent != "" && !commentHashExists(*commentParent, r.Comments) {
+		return errors.New("There is no matching parent comment.")
+	}
+
 	if *commentMessage == "" {
 		editor, err := repo.GetCoreEditor()
 		if err != nil {
@@ -85,35 +115,6 @@ func commentOnReview(repo repository.Repo, args []string) error {
 		}
 		*commentMessage = string(comment)
 		os.Remove(path)
-	}
-	if *commentLgtm && *commentNmw {
-		return errors.New("You cannot combine the flags -lgtm and -nmw.")
-	}
-	if *commentLine != 0 && *commentFile == "" {
-		return errors.New("Specifying a line number with the -l flag requires that you also specify a file name with the -f flag.")
-	}
-
-	var r *review.Review
-	var err error
-	if len(args) > 1 {
-		return errors.New("Only accepting a single review is supported.")
-	}
-
-	if len(args) == 1 {
-		r, err = review.Get(repo, args[0])
-	} else {
-		r, err = review.GetCurrent(repo)
-	}
-
-	if err != nil {
-		return fmt.Errorf("Failed to load the review: %v\n", err)
-	}
-	if r == nil {
-		return errors.New("There is no matching review.")
-	}
-
-	if *commentParent != "" && !commentHashExists(*commentParent, r.Comments) {
-		return errors.New("There is no matching parent comment.")
 	}
 
 	commentedUponCommit, err := r.GetHeadCommit()
