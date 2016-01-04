@@ -40,6 +40,18 @@ var (
 	commentNmw     = commentFlagSet.Bool("nmw", false, "'Needs More Work'. Set this to express your disapproval. This cannot be combined with lgtm")
 )
 
+func commentHashExists(hashToFind string, threads []review.CommentThread) bool {
+	for _, thread := range threads {
+		if thread.Hash == hashToFind {
+			return true
+		}
+		if commentHashExists(hashToFind, thread.Children) {
+			return true
+		}
+	}
+	return false
+}
+
 // commentOnReview adds a comment to the current code review.
 func commentOnReview(repo repository.Repo, args []string) error {
 	commentFlagSet.Parse(args)
@@ -98,6 +110,10 @@ func commentOnReview(repo repository.Repo, args []string) error {
 	}
 	if r == nil {
 		return errors.New("There is no matching review.")
+	}
+
+	if *commentParent != "" && !commentHashExists(*commentParent, r.Comments) {
+		return errors.New("There is no matching parent comment.")
 	}
 
 	commentedUponCommit, err := r.GetHeadCommit()
