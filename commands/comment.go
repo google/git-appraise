@@ -40,6 +40,18 @@ var (
 	commentNmw     = commentFlagSet.Bool("nmw", false, "'Needs More Work'. Set this to express your disapproval. This cannot be combined with lgtm")
 )
 
+func commentHashExists(hashToFind string, threads []review.CommentThread) bool {
+	for _, thread := range threads {
+		if thread.Hash == hashToFind {
+			return true
+		}
+		if commentHashExists(hashToFind, thread.Children) {
+			return true
+		}
+	}
+	return false
+}
+
 // commentOnReview adds a comment to the current code review.
 func commentOnReview(repo repository.Repo, args []string) error {
 	commentFlagSet.Parse(args)
@@ -62,6 +74,16 @@ func commentOnReview(repo repository.Repo, args []string) error {
 	}
 	if r == nil {
 		return errors.New("There is no matching review.")
+	}
+
+	if *commentLgtm && *commentNmw {
+		return errors.New("You cannot combine the flags -lgtm and -nmw.")
+	}
+	if *commentLine != 0 && *commentFile == "" {
+		return errors.New("Specifying a line number with the -l flag requires that you also specify a file name with the -f flag.")
+	}
+	if *commentParent != "" && !commentHashExists(*commentParent, r.Comments) {
+		return errors.New("There is no matching parent comment.")
 	}
 
 	if *commentMessage == "" {
@@ -93,12 +115,6 @@ func commentOnReview(repo repository.Repo, args []string) error {
 		}
 		*commentMessage = string(comment)
 		os.Remove(path)
-	}
-	if *commentLgtm && *commentNmw {
-		return errors.New("You cannot combine the flags -lgtm and -nmw.")
-	}
-	if *commentLine != 0 && *commentFile == "" {
-		return errors.New("Specifying a line number with the -l flag requires that you also specify a file name with the -f flag.")
 	}
 
 	commentedUponCommit, err := r.GetHeadCommit()

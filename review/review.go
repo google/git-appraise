@@ -82,7 +82,8 @@ func updateThreadsStatus(threads []CommentThread) *bool {
 	sort.Sort(byTimestamp(threads))
 	noUnresolved := true
 	var result *bool
-	for _, thread := range threads {
+	for i := range threads {
+		thread := &threads[i]
 		thread.updateResolvedStatus()
 		if thread.Resolved != nil {
 			noUnresolved = noUnresolved && *thread.Resolved
