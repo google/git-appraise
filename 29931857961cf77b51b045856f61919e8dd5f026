@@ -13,3 +13,5 @@
 {"timestamp":"1450877794","author":"hazbo","Parent":"960153d08adb2b1f96625042998968762fa1a48c","description":"@jishi9 I've made some changes here based on what you suggested, in regards to doing various checks. Is this what you had in mind?"}
 {"timestamp":"1450878141","author":"jishi9","Parent":"a71392428a29b25dadc5dbbf8dbd9fbf07b10804","description":"@hazbo yeah exactly. LGTM :+1:\r\n\r\nI just noticed that the message is actually persisted to a file, and hence the user would not have to re-type the message (I think). I still think it's better to do all validations first anyway."}
 {"timestamp":"1450878489","author":"hazbo","Parent":"c6231834cd8ad9550a03999b060cac68bd39c5f0","description":"\u003e  I still think it's better to do all validations first anyway.\r\n\r\nAgreed! :smile:\r\n\r\nThanks for the feedback on this."}
+
+{"timestamp":"1451950460","author":"ojarjur@google.com","location":{"commit":"34bc9118d041cbc5f677c04c379558c22fd6d4a2"},"resolved":true}
