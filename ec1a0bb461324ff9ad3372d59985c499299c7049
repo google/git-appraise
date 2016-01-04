@@ -7,3 +7,5 @@
 {"timestamp":"1451947478","author":"ojarjur@google.com","parent":"af879a46bf6f54ec28dcab9a6663932350518715","location":{"commit":"ec1a0bb461324ff9ad3372d59985c499299c7049","path":"commands/comment.go","range":{"startLine":116}},"description":"It has to be a hash. There are no other ways to refer to one of these comments."}
 
 {"timestamp":"1451947559","author":"ojarjur@google.com","parent":"7753dd58a35a4e71d8b03faef0c91a47e86418ae","location":{"commit":"ec1a0bb461324ff9ad3372d59985c499299c7049","path":"commands/comment.go","range":{"startLine":117}},"description":"I don't feel strongly about it either way."}
+
+{"timestamp":"1451947584","author":"ojarjur@google.com","location":{"commit":"ec1a0bb461324ff9ad3372d59985c499299c7049"},"resolved":true}
