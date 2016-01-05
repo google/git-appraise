@@ -322,18 +322,31 @@ func (r *Review) GetAnalysesNotes() ([]analyses.Note, error) {
 	return analysesNotes, nil
 }
 
+func prettyPrintJson(jsonBytes []byte) (string, error) {
+	var prettyBytes bytes.Buffer
+	err := json.Indent(&prettyBytes, jsonBytes, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return prettyBytes.String(), nil
+}
+
+// GetJson returns the pretty printed JSON for a review summary.
+func (r *ReviewSummary) GetJson() (string, error) {
+	jsonBytes, err := json.Marshal(*r)
+	if err != nil {
+		return "", err
+	}
+	return prettyPrintJson(jsonBytes)
+}
+
 // GetJson returns the pretty printed JSON for a review.
 func (r *Review) GetJson() (string, error) {
 	jsonBytes, err := json.Marshal(*r)
 	if err != nil {
 		return "", err
 	}
-	var prettyBytes bytes.Buffer
-	err = json.Indent(&prettyBytes, jsonBytes, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return prettyBytes.String(), nil
+	return prettyPrintJson(jsonBytes)
 }
 
 // findLastCommit returns the later (newest) commit from the union of the provided commit
