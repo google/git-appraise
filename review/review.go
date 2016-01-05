@@ -44,24 +44,35 @@ type CommentThread struct {
 	Resolved *bool           `json:"resolved,omitempty"`
 }
 
-// Review represents the entire state of a code review.
+// ReviewSummary represents the high-level state of a code review.
 //
-// Reviews have two status fields which are orthogonal:
+// This high-level state corresponds to the data that can be quickly read
+// directly from the repo, so other methods that need to operate on a lot
+// of reviews (such as listing the open reviews) should prefer operating on
+// the summary rather than the details.
+//
+// Review summaries have two status fields which are orthogonal:
 // 1. Resolved indicates if a reviewer has accepted or rejected the change.
 // 2. Submitted indicates if the change has been incorporated into the target.
+type ReviewSummary struct {
+	Repo      repository.Repo `json:"-"`
+	Revision  string          `json:"revision"`
+	Request   request.Request `json:"request"`
+	Comments  []CommentThread `json:"comments,omitempty"`
+	Resolved  *bool           `json:"resolved,omitempty"`
+	Submitted bool            `json:"submitted"`
+}
+
+// Review represents the entire state of a code review.
 //
-// Reviews also include a list of build-and-test status reports. Those
+// This extends ReviewSummary to also include a list of reports for both the
+// continuous integration status, and the static analysis runs. Those reports
 // correspond to either the current commit in the review ref (for pending
 // reviews), or to the last commented-upon commit (for submitted reviews).
 type Review struct {
-	Repo      repository.Repo   `json:"-"`
-	Revision  string            `json:"revision"`
-	Request   request.Request   `json:"request"`
-	Comments  []CommentThread   `json:"comments,omitempty"`
-	Resolved  *bool             `json:"resolved,omitempty"`
-	Submitted bool              `json:"submitted"`
-	Reports   []ci.Report       `json:"reports,omitempty"`
-	Analyses  []analyses.Report `json:"analyses,omitempty"`
+	*ReviewSummary
+	Reports  []ci.Report       `json:"reports,omitempty"`
+	Analyses []analyses.Report `json:"analyses,omitempty"`
 }
 
 type byTimestamp []CommentThread
@@ -173,46 +184,68 @@ func buildCommentThreads(commentsByHash map[string]comment.Comment) []CommentThr
 
 // loadComments reads in the log-structured sequence of comments for a review,
 // and then builds the corresponding tree-structured comment threads.
-func (r *Review) loadComments() []CommentThread {
+func (r *ReviewSummary) loadComments() []CommentThread {
 	commentNotes := r.Repo.GetNotes(comment.Ref, r.Revision)
 	commentsByHash := comment.ParseAllValid(commentNotes)
 	return buildCommentThreads(commentsByHash)
+}
+
+// Get returns the summary of the specified code review.
+//
+// If no review request exists, the returned review summary is nil.
+func GetSummary(repo repository.Repo, revision string) (*ReviewSummary, error) {
+	requestNotes := repo.GetNotes(request.Ref, revision)
+	requests := request.ParseAllValid(requestNotes)
+	if requests == nil {
+		return nil, nil
+	}
+	reviewSummary := ReviewSummary{
+		Repo:     repo,
+		Revision: revision,
+		Request:  requests[len(requests)-1],
+	}
+	reviewSummary.Comments = reviewSummary.loadComments()
+	reviewSummary.Resolved = updateThreadsStatus(reviewSummary.Comments)
+	submitted, err := repo.IsAncestor(revision, reviewSummary.Request.TargetRef)
+	if err != nil {
+		return nil, err
+	}
+	reviewSummary.Submitted = submitted
+	return &reviewSummary, nil
+}
+
+// Details returns the detailed review for the given summary.
+func (r *ReviewSummary) Details() (*Review, error) {
+	review := Review{
+		ReviewSummary: r,
+	}
+	currentCommit, err := review.GetHeadCommit()
+	if err == nil {
+		review.Reports = ci.ParseAllValid(review.Repo.GetNotes(ci.Ref, currentCommit))
+		review.Analyses = analyses.ParseAllValid(review.Repo.GetNotes(analyses.Ref, currentCommit))
+	}
+	return &review, nil
 }
 
 // Get returns the specified code review.
 //
 // If no review request exists, the returned review is nil.
 func Get(repo repository.Repo, revision string) (*Review, error) {
-	requestNotes := repo.GetNotes(request.Ref, revision)
-	requests := request.ParseAllValid(requestNotes)
-	if requests == nil {
-		return nil, nil
-	}
-	review := Review{
-		Repo:     repo,
-		Revision: revision,
-		Request:  requests[len(requests)-1],
-	}
-	review.Comments = review.loadComments()
-	review.Resolved = updateThreadsStatus(review.Comments)
-	submitted, err := repo.IsAncestor(revision, review.Request.TargetRef)
+	summary, err := GetSummary(repo, revision)
 	if err != nil {
 		return nil, err
 	}
-	review.Submitted = submitted
-	currentCommit, err := review.GetHeadCommit()
-	if err == nil {
-		review.Reports = ci.ParseAllValid(repo.GetNotes(ci.Ref, currentCommit))
-		review.Analyses = analyses.ParseAllValid(repo.GetNotes(analyses.Ref, currentCommit))
+	if summary == nil {
+		return nil, nil
 	}
-	return &review, nil
+	return summary.Details()
 }
 
 // ListAll returns all reviews stored in the git-notes.
-func ListAll(repo repository.Repo) []Review {
-	var reviews []Review
+func ListAll(repo repository.Repo) []ReviewSummary {
+	var reviews []ReviewSummary
 	for _, revision := range repo.ListNotedRevisions(request.Ref) {
-		review, err := Get(repo, revision)
+		review, err := GetSummary(repo, revision)
 		if err == nil && review != nil {
 			reviews = append(reviews, *review)
 		}
@@ -221,8 +254,8 @@ func ListAll(repo repository.Repo) []Review {
 }
 
 // ListOpen returns all reviews that are not yet incorporated into their target refs.
-func ListOpen(repo repository.Repo) []Review {
-	var openReviews []Review
+func ListOpen(repo repository.Repo) []ReviewSummary {
+	var openReviews []ReviewSummary
 	for _, review := range ListAll(repo) {
 		if !review.Submitted {
 			openReviews = append(openReviews, review)
@@ -239,7 +272,7 @@ func GetCurrent(repo repository.Repo) (*Review, error) {
 	if err != nil {
 		return nil, err
 	}
-	var matchingReviews []Review
+	var matchingReviews []ReviewSummary
 	for _, review := range ListOpen(repo) {
 		if review.Request.ReviewRef == reviewRef {
 			matchingReviews = append(matchingReviews, review)
@@ -251,8 +284,7 @@ func GetCurrent(repo repository.Repo) (*Review, error) {
 	if len(matchingReviews) != 1 {
 		return nil, fmt.Errorf("There are %d open reviews for the ref \"%s\"", len(matchingReviews), reviewRef)
 	}
-	r := &matchingReviews[0]
-	return r, nil
+	return matchingReviews[0].Details()
 }
 
 // GetBuildStatusMessage returns a string of the current build-and-test status
