@@ -54,7 +54,7 @@ status: %s
 
 // getStatusString returns a human friendly string encapsulating both the review's
 // resolved status, and its submitted status.
-func getStatusString(r *review.Review) string {
+func getStatusString(r *review.ReviewSummary) string {
 	if r.Resolved == nil && r.Submitted {
 		return "tbr"
 	}
@@ -74,7 +74,7 @@ func getStatusString(r *review.Review) string {
 }
 
 // PrintSummary prints a single-line summary of a review.
-func PrintSummary(r *review.Review) {
+func PrintSummary(r *review.ReviewSummary) {
 	statusString := getStatusString(r)
 	indentedDescription := strings.Replace(r.Request.Description, "\n", "\n  ", -1)
 	fmt.Printf(reviewSummaryTemplate, statusString, r.Revision, indentedDescription)
@@ -176,7 +176,7 @@ func printComments(r *review.Review) error {
 
 // PrintDetails prints a multi-line overview of a review, including all comments.
 func PrintDetails(r *review.Review) error {
-	PrintSummary(r)
+	PrintSummary(r.ReviewSummary)
 	fmt.Printf(reviewDetailsTemplate, r.Request.ReviewRef, r.Request.TargetRef,
 		strings.Join(r.Request.Reviewers, ", "),
 		r.Request.Requester, r.GetBuildStatusMessage())

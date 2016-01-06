@@ -34,7 +34,7 @@ var (
 // TODO(ojarjur): Add more flags for filtering the output (e.g. filtering by reviewer or status).
 func listReviews(repo repository.Repo, args []string) {
 	listFlagSet.Parse(args)
-	var reviews []review.Review
+	var reviews []review.ReviewSummary
 	if *listAll {
 		reviews = review.ListAll(repo)
 		fmt.Printf("Loaded %d reviews:\n", len(reviews))
