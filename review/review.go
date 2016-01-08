@@ -44,7 +44,7 @@ type CommentThread struct {
 	Resolved *bool           `json:"resolved,omitempty"`
 }
 
-// ReviewSummary represents the high-level state of a code review.
+// Summary represents the high-level state of a code review.
 //
 // This high-level state corresponds to the data that can be quickly read
 // directly from the repo, so other methods that need to operate on a lot
@@ -54,7 +54,7 @@ type CommentThread struct {
 // Review summaries have two status fields which are orthogonal:
 // 1. Resolved indicates if a reviewer has accepted or rejected the change.
 // 2. Submitted indicates if the change has been incorporated into the target.
-type ReviewSummary struct {
+type Summary struct {
 	Repo      repository.Repo `json:"-"`
 	Revision  string          `json:"revision"`
 	Request   request.Request `json:"request"`
@@ -65,12 +65,12 @@ type ReviewSummary struct {
 
 // Review represents the entire state of a code review.
 //
-// This extends ReviewSummary to also include a list of reports for both the
+// This extends Summary to also include a list of reports for both the
 // continuous integration status, and the static analysis runs. Those reports
 // correspond to either the current commit in the review ref (for pending
 // reviews), or to the last commented-upon commit (for submitted reviews).
 type Review struct {
-	*ReviewSummary
+	*Summary
 	Reports  []ci.Report       `json:"reports,omitempty"`
 	Analyses []analyses.Report `json:"analyses,omitempty"`
 }
@@ -184,22 +184,22 @@ func buildCommentThreads(commentsByHash map[string]comment.Comment) []CommentThr
 
 // loadComments reads in the log-structured sequence of comments for a review,
 // and then builds the corresponding tree-structured comment threads.
-func (r *ReviewSummary) loadComments() []CommentThread {
+func (r *Summary) loadComments() []CommentThread {
 	commentNotes := r.Repo.GetNotes(comment.Ref, r.Revision)
 	commentsByHash := comment.ParseAllValid(commentNotes)
 	return buildCommentThreads(commentsByHash)
 }
 
-// Get returns the summary of the specified code review.
+// GetSummary returns the summary of the specified code review.
 //
 // If no review request exists, the returned review summary is nil.
-func GetSummary(repo repository.Repo, revision string) (*ReviewSummary, error) {
+func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
 	requestNotes := repo.GetNotes(request.Ref, revision)
 	requests := request.ParseAllValid(requestNotes)
 	if requests == nil {
 		return nil, nil
 	}
-	reviewSummary := ReviewSummary{
+	reviewSummary := Summary{
 		Repo:     repo,
 		Revision: revision,
 		Request:  requests[len(requests)-1],
@@ -215,9 +215,9 @@ func GetSummary(repo repository.Repo, revision string) (*ReviewSummary, error) {
 }
 
 // Details returns the detailed review for the given summary.
-func (r *ReviewSummary) Details() (*Review, error) {
+func (r *Summary) Details() (*Review, error) {
 	review := Review{
-		ReviewSummary: r,
+		Summary: r,
 	}
 	currentCommit, err := review.GetHeadCommit()
 	if err == nil {
@@ -242,8 +242,8 @@ func Get(repo repository.Repo, revision string) (*Review, error) {
 }
 
 // ListAll returns all reviews stored in the git-notes.
-func ListAll(repo repository.Repo) []ReviewSummary {
-	var reviews []ReviewSummary
+func ListAll(repo repository.Repo) []Summary {
+	var reviews []Summary
 	for _, revision := range repo.ListNotedRevisions(request.Ref) {
 		review, err := GetSummary(repo, revision)
 		if err == nil && review != nil {
@@ -254,8 +254,8 @@ func ListAll(repo repository.Repo) []ReviewSummary {
 }
 
 // ListOpen returns all reviews that are not yet incorporated into their target refs.
-func ListOpen(repo repository.Repo) []ReviewSummary {
-	var openReviews []ReviewSummary
+func ListOpen(repo repository.Repo) []Summary {
+	var openReviews []Summary
 	for _, review := range ListAll(repo) {
 		if !review.Submitted {
 			openReviews = append(openReviews, review)
@@ -272,7 +272,7 @@ func GetCurrent(repo repository.Repo) (*Review, error) {
 	if err != nil {
 		return nil, err
 	}
-	var matchingReviews []ReviewSummary
+	var matchingReviews []Summary
 	for _, review := range ListOpen(repo) {
 		if review.Request.ReviewRef == reviewRef {
 			matchingReviews = append(matchingReviews, review)
@@ -322,7 +322,7 @@ func (r *Review) GetAnalysesNotes() ([]analyses.Note, error) {
 	return analysesNotes, nil
 }
 
-func prettyPrintJson(jsonBytes []byte) (string, error) {
+func prettyPrintJSON(jsonBytes []byte) (string, error) {
 	var prettyBytes bytes.Buffer
 	err := json.Indent(&prettyBytes, jsonBytes, "", "  ")
 	if err != nil {
@@ -331,22 +331,22 @@ func prettyPrintJson(jsonBytes []byte) (string, error) {
 	return prettyBytes.String(), nil
 }
 
-// GetJson returns the pretty printed JSON for a review summary.
-func (r *ReviewSummary) GetJson() (string, error) {
+// GetJSON returns the pretty printed JSON for a review summary.
+func (r *Summary) GetJSON() (string, error) {
 	jsonBytes, err := json.Marshal(*r)
 	if err != nil {
 		return "", err
 	}
-	return prettyPrintJson(jsonBytes)
+	return prettyPrintJSON(jsonBytes)
 }
 
-// GetJson returns the pretty printed JSON for a review.
-func (r *Review) GetJson() (string, error) {
+// GetJSON returns the pretty printed JSON for a review.
+func (r *Review) GetJSON() (string, error) {
 	jsonBytes, err := json.Marshal(*r)
 	if err != nil {
 		return "", err
 	}
-	return prettyPrintJson(jsonBytes)
+	return prettyPrintJSON(jsonBytes)
 }
 
 // findLastCommit returns the later (newest) commit from the union of the provided commit

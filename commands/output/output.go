@@ -54,7 +54,7 @@ status: %s
 
 // getStatusString returns a human friendly string encapsulating both the review's
 // resolved status, and its submitted status.
-func getStatusString(r *review.ReviewSummary) string {
+func getStatusString(r *review.Summary) string {
 	if r.Resolved == nil && r.Submitted {
 		return "tbr"
 	}
@@ -74,7 +74,7 @@ func getStatusString(r *review.ReviewSummary) string {
 }
 
 // PrintSummary prints a single-line summary of a review.
-func PrintSummary(r *review.ReviewSummary) {
+func PrintSummary(r *review.Summary) {
 	statusString := getStatusString(r)
 	indentedDescription := strings.Replace(r.Request.Description, "\n", "\n  ", -1)
 	fmt.Printf(reviewSummaryTemplate, statusString, r.Revision, indentedDescription)
@@ -105,7 +105,7 @@ func showThread(r *review.Review, thread review.CommentThread) error {
 		}
 		lines := strings.Split(contents, "\n")
 		if comment.Location.Range.StartLine <= uint32(len(lines)) {
-			var firstLine uint32 = 0
+			var firstLine uint32
 			lastLine := comment.Location.Range.StartLine
 			if lastLine > contextLineCount {
 				firstLine = lastLine - contextLineCount
@@ -176,7 +176,7 @@ func printComments(r *review.Review) error {
 
 // PrintDetails prints a multi-line overview of a review, including all comments.
 func PrintDetails(r *review.Review) error {
-	PrintSummary(r.ReviewSummary)
+	PrintSummary(r.Summary)
 	fmt.Printf(reviewDetailsTemplate, r.Request.ReviewRef, r.Request.TargetRef,
 		strings.Join(r.Request.Reviewers, ", "),
 		r.Request.Requester, r.GetBuildStatusMessage())
@@ -187,9 +187,9 @@ func PrintDetails(r *review.Review) error {
 	return nil
 }
 
-// PrintJson pretty prints the given review in JSON format.
-func PrintJson(r *review.Review) error {
-	json, err := r.GetJson()
+// PrintJSON pretty prints the given review in JSON format.
+func PrintJSON(r *review.Review) error {
+	json, err := r.GetJSON()
 	if err != nil {
 		return err
 	}

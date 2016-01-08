@@ -74,6 +74,7 @@ type mockRepoForTest struct {
 	Notes   map[string]map[string]string `json:"notes,omitempty"`
 }
 
+// NewMockRepoForTest returns a mocked-out instance of the Repo interface that has been pre-populated with test data.
 func NewMockRepoForTest() Repo {
 	commitA := mockCommit{
 		Message: "First commit",

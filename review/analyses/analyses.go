@@ -43,29 +43,35 @@ type Report struct {
 	Version int `json:"v,omitempty"`
 }
 
+// LocationRange represents the location within a source file that an analysis message covers.
 type LocationRange struct {
 	StartLine int `json:"start_line,omitempty"`
 }
 
+// Location represents the location within a source tree that an analysis message covers.
 type Location struct {
 	Path  string         `json:"path,omitempty"`
 	Range *LocationRange `json:"range,omitempty"`
 }
 
+// Note represents a single analysis message.
 type Note struct {
 	Location    *Location `json:"location,omitempty"`
 	Category    string    `json:"category,omitempty"`
 	Description string    `json:"description"`
 }
 
+// AnalyzeResponse represents the response from a static-analysis tool.
 type AnalyzeResponse struct {
 	Notes []Note `json:"note,omitempty"`
 }
 
+// ReportDetails represents an entire static analysis run (which might include multiple analysis tools).
 type ReportDetails struct {
 	AnalyzeResponse []AnalyzeResponse `json:"analyze_response,omitempty"`
 }
 
+// GetLintReportResult downloads the details of a lint report and returns the responses embedded in it.
 func (lintReport Report) GetLintReportResult() ([]AnalyzeResponse, error) {
 	if lintReport.URL == "" {
 		return nil, nil
