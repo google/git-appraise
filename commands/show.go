@@ -58,7 +58,7 @@ func showReview(repo repository.Repo, args []string) error {
 		return errors.New("There is no matching review.")
 	}
 	if *showJSONOutput {
-		return output.PrintJson(r)
+		return output.PrintJSON(r)
 	}
 	if *showDiffOutput {
 		var diffArgs []string

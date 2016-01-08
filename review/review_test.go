@@ -56,7 +56,7 @@ func TestCommentSorting(t *testing.T) {
 		descriptions = append(descriptions, thread.Comment.Description)
 	}
 	if !(descriptions[0] == "First" && descriptions[1] == "Second" && descriptions[2] == "Third" && descriptions[3] == "Fourth") {
-		t.Fatalf("Comment thread ordering failed. Got %s", sampleThreads)
+		t.Fatalf("Comment thread ordering failed. Got %v", sampleThreads)
 	}
 }
 
