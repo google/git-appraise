@@ -105,7 +105,7 @@ func showThread(r *review.Review, thread review.CommentThread) error {
 		}
 		lines := strings.Split(contents, "\n")
 		if comment.Location.Range.StartLine <= uint32(len(lines)) {
-			var firstLine uint32 = 0
+			var firstLine uint32
 			lastLine := comment.Location.Range.StartLine
 			if lastLine > contextLineCount {
 				firstLine = lastLine - contextLineCount

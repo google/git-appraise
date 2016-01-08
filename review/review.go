@@ -190,7 +190,7 @@ func (r *Summary) loadComments() []CommentThread {
 	return buildCommentThreads(commentsByHash)
 }
 
-// Get returns the summary of the specified code review.
+// GetSummary returns the summary of the specified code review.
 //
 // If no review request exists, the returned review summary is nil.
 func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
