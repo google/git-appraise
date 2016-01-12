@@ -2,3 +2,5 @@
 {"timestamp":"1450896651","targetRef":"refs/heads/master","reviewRef":"refs/pull/23/head","requester":"hazbo","description":"Possible bug fix for thread comment status\nAs pointed out in #22, the status for every comment seems to be fyi.\r\nThis seems to fix that."}
 {"timestamp":"1450967724","targetRef":"refs/heads/master","reviewRef":"refs/pull/23/head","requester":"hazbo","description":"Possible bug fix for thread comment status\nAs pointed out in #22, the status for every comment seems to be fyi.\r\nThis seems to fix that."}
 {"timestamp":"1451949034","targetRef":"refs/heads/master","reviewRef":"refs/pull/23/head","requester":"hazbo","description":"Possible bug fix for thread comment status\nAs pointed out in #22, the status for every comment seems to be fyi.\r\nThis seems to fix that."}
+
+{"timestamp":"1451949034","reviewRef":"refs/pull/23/head","targetRef":"refs/heads/master","requester":"hazbo","description":"Possible bug fix for thread comment status\n\nAs pointed out in #22, the status for every comment seems to be fyi.\r\nThis seems to fix that.","baseCommit":"d2213d95be6c938faa5937da70c5e15b4e82e6d8"}
