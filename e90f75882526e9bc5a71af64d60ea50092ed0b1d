@@ -1,1 +1,3 @@
 {"timestamp":"1441055563","targetRef":"refs/heads/master","reviewRef":"refs/pull/2/head","requester":"scottmcmaster","description":"Fix config line bang quoting"}
+
+{"timestamp":"1441055563","reviewRef":"refs/pull/2/head","targetRef":"refs/heads/master","requester":"scottmcmaster","description":"Fix config line bang quoting","baseCommit":"5c2b1d1e12eae76a85eb1b586c58d60e8c9ce388"}
