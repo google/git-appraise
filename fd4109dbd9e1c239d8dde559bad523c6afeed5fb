@@ -4,3 +4,5 @@
 {"timestamp":"1450222101","targetRef":"refs/heads/master","reviewRef":"refs/pull/5/head","requester":"stp-ip","description":"Fix typo in README"}
 {"timestamp":"1450338870","targetRef":"refs/heads/master","reviewRef":"refs/pull/5/head","requester":"stp-ip","description":"Fix typo in README"}
 {"timestamp":"1450338936","targetRef":"refs/heads/master","reviewRef":"refs/pull/5/head","requester":"stp-ip","description":"Fix typo in README"}
+
+{"timestamp":"1450338936","reviewRef":"refs/pull/5/head","targetRef":"refs/heads/master","requester":"stp-ip","description":"Fix typo in README","baseCommit":"6302bf385c36958fb8881e43f11daeeb4ed42cc0"}
