@@ -3,3 +3,5 @@
 {"timestamp":"1452736012","author":"ckerur","description":"Minor comment"}
 
 {"timestamp":"1452736012","author":"ckerur","location":{"commit":"dfdd159c9c11c08d84c8c050d2a1a4db29147916","path":"commands/input/input.go","range":{"startLine":27}},"description":"What happens if the command line editor session is left open ?"}
+
+{"timestamp":"1452736012","author":"ckerur","location":{"commit":"dfdd159c9c11c08d84c8c050d2a1a4db29147916","path":"commands/input/input.go","range":{"startLine":48}},"description":"if that fails \u003ctypo\u003e"}
