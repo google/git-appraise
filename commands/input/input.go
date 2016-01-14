@@ -24,7 +24,8 @@ import (
 	"os/exec"
 )
 
-// LaunchEditor launches the default editor configured for the given repo.
+// LaunchEditor launches the default editor configured for the given repo. This
+// method blocks until the editor command has returned.
 //
 // The specified filename should be a temporary file and provided as a relative path
 // from the repo (e.g. "FILENAME" will be converted to ".git/FILENAME"). This file
@@ -45,7 +46,7 @@ func LaunchEditor(repo repository.Repo, fileName string) (string, error) {
 		// Running the editor directly did not work. This might mean that
 		// the editor string is not a path to an executable, but rather
 		// a shell command (e.g. "emacsclient --tty"). As such, we'll try
-		// to run the command through bash, and if that failse try with sh
+		// to run the command through bash, and if that fails, try with sh
 		args := []string{"-c", fmt.Sprintf("%s %q", editor, path)}
 		cmd, err = startInlineCommand("bash", args...)
 		if err != nil {
