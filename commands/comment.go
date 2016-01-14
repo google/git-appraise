@@ -20,12 +20,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"github.com/google/git-appraise/review/comment"
-	"io/ioutil"
-	"os"
-	"os/exec"
 )
 
 var commentFlagSet = flag.NewFlagSet("comment", flag.ExitOnError)
@@ -87,34 +85,10 @@ func commentOnReview(repo repository.Repo, args []string) error {
 	}
 
 	if *commentMessage == "" {
-		editor, err := repo.GetCoreEditor()
+		*commentMessage, err = input.LaunchEditor(repo, commentFilename)
 		if err != nil {
-			return fmt.Errorf("Unable to detect default git editor: %v\n", err)
+			return err
 		}
-
-		path := fmt.Sprintf("%s/.git/%s", repo.GetPath(), commentFilename)
-
-		cmd := exec.Command(editor, path)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Start()
-		if err != nil {
-			return fmt.Errorf("Unable to start editor: %v\n", err)
-		}
-
-		err = cmd.Wait()
-		if err != nil {
-			return fmt.Errorf("Editing finished with error: %v\n", err)
-		}
-
-		comment, err := ioutil.ReadFile(path)
-		if err != nil {
-			os.Remove(path)
-			return fmt.Errorf("Error reading comment file: %v\n", err)
-		}
-		*commentMessage = string(comment)
-		os.Remove(path)
 	}
 
 	commentedUponCommit, err := r.GetHeadCommit()

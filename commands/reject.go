@@ -20,12 +20,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"github.com/google/git-appraise/review/comment"
-	"io/ioutil"
-	"os"
-	"os/exec"
 )
 
 var rejectFlagSet = flag.NewFlagSet("reject", flag.ExitOnError)
@@ -60,34 +58,10 @@ func rejectReview(repo repository.Repo, args []string) error {
 	}
 
 	if *rejectMessage == "" {
-		editor, err := repo.GetCoreEditor()
+		*rejectMessage, err = input.LaunchEditor(repo, rejectFilename)
 		if err != nil {
-			return fmt.Errorf("Unable to detect default git editor: %v\n", err)
+			return err
 		}
-
-		path := fmt.Sprintf("%s/.git/%s", repo.GetPath(), rejectFilename)
-
-		cmd := exec.Command(editor, path)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Start()
-		if err != nil {
-			return fmt.Errorf("Unable to start editor: %v\n", err)
-		}
-
-		err = cmd.Wait()
-		if err != nil {
-			return fmt.Errorf("Editing finished with error: %v\n", err)
-		}
-
-		comment, err := ioutil.ReadFile(path)
-		if err != nil {
-			os.Remove(path)
-			return fmt.Errorf("Error reading comment file: %v\n", err)
-		}
-		*rejectMessage = string(comment)
-		os.Remove(path)
 	}
 
 	rejectedCommit, err := r.GetHeadCommit()
