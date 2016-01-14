@@ -7,3 +7,5 @@
 {"timestamp":"1452736012","author":"ckerur","location":{"commit":"dfdd159c9c11c08d84c8c050d2a1a4db29147916","path":"commands/input/input.go","range":{"startLine":48}},"description":"if that fails \u003ctypo\u003e"}
 
 {"timestamp":"1452796295","author":"ojarjur@google.com","parent":"d89efaf876ee3e78ec69895c2ed03f93dee6e2e1","location":{"commit":"aee6f75ddd9ef88304e58356aa8d331e6923f972","path":"commands/input/input.go","range":{"startLine":27}},"description":"Expanded the godoc to make it more clear that shouldn't happen."}
+
+{"timestamp":"1452796517","author":"ojarjur@google.com","parent":"fd36e9698e3dfe53e07f739fe5edab39b34524f8","location":{"commit":"aee6f75ddd9ef88304e58356aa8d331e6923f972","path":"commands/input/input.go","range":{"startLine":48}},"description":"Done"}
