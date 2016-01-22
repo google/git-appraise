@@ -19,6 +19,7 @@ package review
 import (
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/comment"
+	"github.com/google/git-appraise/review/request"
 	"sort"
 	"testing"
 )
@@ -29,6 +30,12 @@ func TestCommentSorting(t *testing.T) {
 			Comment: comment.Comment{
 				Timestamp:   "012400",
 				Description: "Fourth",
+			},
+		},
+		CommentThread{
+			Comment: comment.Comment{
+				Timestamp:   "012400",
+				Description: "Fifth",
 			},
 		},
 		CommentThread{
@@ -50,13 +57,46 @@ func TestCommentSorting(t *testing.T) {
 			},
 		},
 	}
-	sort.Sort(byTimestamp(sampleThreads))
+	sort.Stable(byTimestamp(sampleThreads))
 	descriptions := []string{}
 	for _, thread := range sampleThreads {
 		descriptions = append(descriptions, thread.Comment.Description)
 	}
-	if !(descriptions[0] == "First" && descriptions[1] == "Second" && descriptions[2] == "Third" && descriptions[3] == "Fourth") {
+	if !(descriptions[0] == "First" && descriptions[1] == "Second" && descriptions[2] == "Third" && descriptions[3] == "Fourth" && descriptions[4] == "Fifth") {
 		t.Fatalf("Comment thread ordering failed. Got %v", sampleThreads)
+	}
+}
+
+func TestRequestSorting(t *testing.T) {
+	sampleRequests := []request.Request{
+		request.Request{
+			Timestamp:   "012400",
+			Description: "Fourth",
+		},
+		request.Request{
+			Timestamp:   "012400",
+			Description: "Fifth",
+		},
+		request.Request{
+			Timestamp:   "012346",
+			Description: "Second",
+		},
+		request.Request{
+			Timestamp:   "012345",
+			Description: "First",
+		},
+		request.Request{
+			Timestamp:   "012347",
+			Description: "Third",
+		},
+	}
+	sort.Stable(requestsByTimestamp(sampleRequests))
+	descriptions := []string{}
+	for _, r := range sampleRequests {
+		descriptions = append(descriptions, r.Description)
+	}
+	if !(descriptions[0] == "First" && descriptions[1] == "Second" && descriptions[2] == "Third" && descriptions[3] == "Fourth" && descriptions[4] == "Fifth") {
+		t.Fatalf("Review request ordering failed. Got %v", sampleRequests)
 	}
 }
 
@@ -612,5 +652,16 @@ func TestGetBaseCommit(t *testing.T) {
 	}
 	if pendingReviewBase != repository.TestCommitF {
 		t.Fatal("Unexpected base commit computed for a pending review.")
+	}
+}
+
+func TestGetRequests(t *testing.T) {
+	repo := repository.NewMockRepoForTest()
+	pendingReview, err := Get(repo, repository.TestCommitG)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pendingReview.AllRequests) != 3 || pendingReview.Request.Description != "Final description of G" {
+		t.Fatal("Unexpected requests for a pending review: ", pendingReview.AllRequests, pendingReview.Request)
 	}
 }

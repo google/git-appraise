@@ -54,7 +54,11 @@ const (
 
 	TestRequestB = `{"timestamp": "0000000001", "reviewRef": "refs/heads/ojarjur/mychange", "targetRef": "refs/heads/master", "requester": "ojarjur", "reviewers": ["ojarjur"], "description": "B"}`
 	TestRequestD = `{"timestamp": "0000000002", "reviewRef": "refs/heads/ojarjur/mychange", "targetRef": "refs/heads/master", "requester": "ojarjur", "reviewers": ["ojarjur"], "description": "D"}`
-	TestRequestG = `{"timestamp": "0000000004", "reviewRef": "refs/heads/ojarjur/mychange", "targetRef": "refs/heads/master", "requester": "ojarjur", "reviewers": ["ojarjur"], "description": "G"}`
+	TestRequestG = `{"timestamp": "0000000004", "reviewRef": "refs/heads/ojarjur/mychange", "targetRef": "refs/heads/master", "requester": "ojarjur", "reviewers": ["ojarjur"], "description": "G"}
+
+{"timestamp": "0000000005", "reviewRef": "refs/heads/ojarjur/mychange", "targetRef": "refs/heads/master", "requester": "ojarjur", "reviewers": ["ojarjur"], "description": "Updated description of G"}
+
+{"timestamp": "0000000005", "reviewRef": "refs/heads/ojarjur/mychange", "targetRef": "refs/heads/master", "requester": "ojarjur", "reviewers": ["ojarjur"], "description": "Final description of G"}`
 
 	TestDiscussB = `{"timestamp": "0000000001", "author": "ojarjur", "location": {"commit": "B"}, "resolved": true}`
 	TestDiscussD = `{"timestamp": "0000000003", "author": "ojarjur", "location": {"commit": "E"}, "resolved": true}`
