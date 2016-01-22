@@ -1,3 +1,5 @@
 {"timestamp":"1453497446","url":"https://travis-ci.org/google/git-appraise/builds/104184722","agent":"continuous-integration/travis-ci/push"}
 
 {"timestamp":"1453497548","v":0,"agent":"Jenkins(1.627) GitNotesJobLogger","url":"https://jenkins-dot-developer-tools-bundle.appspot.com/job/git-appraise/150/"}
+
+{"timestamp":"1453497554","v":0,"agent":"Jenkins(1.627) GitNotesJobLogger","url":"https://jenkins-dot-developer-tools-bundle.appspot.com/job/git-appraise/150/","status":"success"}
