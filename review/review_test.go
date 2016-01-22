@@ -662,6 +662,6 @@ func TestGetRequests(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(pendingReview.AllRequests) != 3 || pendingReview.Request.Description != "Final description of G" {
-		t.Fatal("Unexpected requests for a pending review: %v %v", pendingReview.AllRequests, pendingReview.Request)
+		t.Fatal("Unexpected requests for a pending review: ", pendingReview.AllRequests, pendingReview.Request)
 	}
 }
