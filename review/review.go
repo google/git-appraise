@@ -55,12 +55,13 @@ type CommentThread struct {
 // 1. Resolved indicates if a reviewer has accepted or rejected the change.
 // 2. Submitted indicates if the change has been incorporated into the target.
 type Summary struct {
-	Repo      repository.Repo `json:"-"`
-	Revision  string          `json:"revision"`
-	Request   request.Request `json:"request"`
-	Comments  []CommentThread `json:"comments,omitempty"`
-	Resolved  *bool           `json:"resolved,omitempty"`
-	Submitted bool            `json:"submitted"`
+	Repo        repository.Repo   `json:"-"`
+	Revision    string            `json:"revision"`
+	Request     request.Request   `json:"request"`
+	AllRequests []request.Request `json:"-"`
+	Comments    []CommentThread   `json:"comments,omitempty"`
+	Resolved    *bool             `json:"resolved,omitempty"`
+	Submitted   bool              `json:"submitted"`
 }
 
 // Review represents the entire state of a code review.
@@ -84,13 +85,24 @@ func (threads byTimestamp) Less(i, j int) bool {
 	return threads[i].Comment.Timestamp < threads[j].Comment.Timestamp
 }
 
+type requestsByTimestamp []request.Request
+
+// Interface methods for sorting review requests by timestamp
+func (requests requestsByTimestamp) Len() int { return len(requests) }
+func (requests requestsByTimestamp) Swap(i, j int) {
+	requests[i], requests[j] = requests[j], requests[i]
+}
+func (requests requestsByTimestamp) Less(i, j int) bool {
+	return requests[i].Timestamp < requests[j].Timestamp
+}
+
 // updateThreadsStatus calculates the aggregate status of a sequence of comment threads.
 //
 // The aggregate status is the conjunction of all of the non-nil child statuses.
 //
 // This has the side-effect of setting the "Resolved" field of all descendant comment threads.
 func updateThreadsStatus(threads []CommentThread) *bool {
-	sort.Sort(byTimestamp(threads))
+	sort.Stable(byTimestamp(threads))
 	noUnresolved := true
 	var result *bool
 	for i := range threads {
@@ -199,10 +211,12 @@ func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
 	if requests == nil {
 		return nil, nil
 	}
+	sort.Stable(requestsByTimestamp(requests))
 	reviewSummary := Summary{
-		Repo:     repo,
-		Revision: revision,
-		Request:  requests[len(requests)-1],
+		Repo:        repo,
+		Revision:    revision,
+		Request:     requests[len(requests)-1],
+		AllRequests: requests,
 	}
 	reviewSummary.Comments = reviewSummary.loadComments()
 	reviewSummary.Resolved = updateThreadsStatus(reviewSummary.Comments)

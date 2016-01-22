@@ -147,6 +147,15 @@ The "reviewRef" field is used to specify a git ref that tracks the current
 revision under review, and the "targetRef" field is used to specify the git ref
 that should be updated once the review is approved.
 
+If there are multiple requests for a single commit, then they are sorted by
+timestamp and the final request is treated as the current one. This sorting
+should be done in a stable manner, so that if there are multiple requests
+with the same timestamp, then the last such request in the note is treated
+as the current one.
+
+This design allows a user to update a review request by re-running the
+`git appraise request` command.
+
 ### Continuous Integration Status
 
 Continuous integration build and test results are stored in the
