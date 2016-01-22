@@ -1,1 +1,3 @@
 {"timestamp":"1453495367","author":"astroilov","resolved":true}
+
+{"timestamp":"1453496095","author":"ojarjur","location":{"commit":"7dd2de1e3fc7df4dafc66c0d181402cd03f35f48","path":"review/review_test.go","range":{"startLine":665}},"description":"This line uses formatting directives in a non-formatting method (t.Fatal). I need to fix that."}
