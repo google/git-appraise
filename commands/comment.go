@@ -27,7 +27,6 @@ import (
 )
 
 var commentFlagSet = flag.NewFlagSet("comment", flag.ExitOnError)
-var commentFilename = "APPRAISE_COMMENT_EDITMSG"
 
 var (
 	commentMessage = commentFlagSet.String("m", "", "Message to attach to the review")
