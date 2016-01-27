@@ -27,7 +27,6 @@ import (
 )
 
 var rejectFlagSet = flag.NewFlagSet("reject", flag.ExitOnError)
-var rejectFilename = "APPRAISE_COMMENT_EDITMSG"
 
 var (
 	rejectMessage = rejectFlagSet.String("m", "", "Message to attach to the review")
@@ -58,7 +57,7 @@ func rejectReview(repo repository.Repo, args []string) error {
 	}
 
 	if *rejectMessage == "" {
-		*rejectMessage, err = input.LaunchEditor(repo, rejectFilename)
+		*rejectMessage, err = input.LaunchEditor(repo, commentFilename)
 		if err != nil {
 			return err
 		}
