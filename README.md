@@ -213,6 +213,15 @@ They must conform to the following schema.
     "url": {
       "type": "string"
     },
+    "status": {
+      "type": "string",
+      "enum": [
+        null,
+        "lgtm",
+        "fyi",
+        "nmw"
+      ]
+    },
     "v": {
       "type": "integer",
       "default": 0,

@@ -336,6 +336,31 @@ func (r *Review) GetAnalysesNotes() ([]analyses.Note, error) {
 	return analysesNotes, nil
 }
 
+// GetAnalysesMessage returns a string summarizing the results of the
+// most recent static analyses.
+func (r *Review) GetAnalysesMessage() string {
+	latestAnalyses, err := analyses.GetLatestAnalysesReport(r.Analyses)
+	if err != nil {
+		return err.Error()
+	}
+	if latestAnalyses == nil {
+		return "No analyses available"
+	}
+	status := latestAnalyses.Status
+	if status != "" && status != analyses.StatusNeedsMoreWork {
+		return status
+	}
+	analysesNotes, err := r.GetAnalysesNotes()
+	if err != nil {
+		return err.Error()
+	}
+	if analysesNotes == nil {
+		return "passed"
+	}
+	return fmt.Sprintf("%d warnings\n", len(analysesNotes))
+	// TODO(ojarjur): Figure out the best place to display the actual notes
+}
+
 func prettyPrintJSON(jsonBytes []byte) (string, error) {
 	var prettyBytes bytes.Buffer
 	err := json.Indent(&prettyBytes, jsonBytes, "", "  ")

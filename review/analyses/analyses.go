@@ -30,6 +30,13 @@ const (
 	// Ref defines the git-notes ref that we expect to contain analysis reports.
 	Ref = "refs/notes/devtools/analyses"
 
+	// StatusLooksGoodToMe is the status string representing that analyses reported no messages.
+	StatusLooksGoodToMe = "lgtm"
+	// StatusForYourInformation is the status string representing that analyses reported informational messages.
+	StatusForYourInformation = "fyi"
+	// StatusNeedsMoreWork is the status string representing that analyses reported error messages.
+	StatusNeedsMoreWork = "nmw"
+
 	// FormatVersion defines the latest version of the request format supported by the tool.
 	FormatVersion = 0
 )
@@ -39,6 +46,7 @@ const (
 type Report struct {
 	Timestamp string `json:"timestamp,omitempty"`
 	URL       string `json:"url,omitempty"`
+	Status    string `json:"status,omitempty"`
 	// Version represents the version of the metadata format.
 	Version int `json:"v,omitempty"`
 }
