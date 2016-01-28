@@ -1,1 +1,3 @@
 {"timestamp":"1454005614","author":"ojarjur@google.com","location":{"commit":"bc162237d53b500d0ad6dae514c93a5ec577a60a"},"description":"Alternatively, we may want to return the original error. However, this is clearly an improvement over the current state, so LGTM.","resolved":true}
+
+{"timestamp":"1454009842","author":"ojarjur","description":"This has already been merged into master, but for some reason GitHub isn't recognizing that.\r\n\r\nI'm just going to manually close it."}
