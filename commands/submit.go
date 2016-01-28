@@ -94,10 +94,10 @@ func submitReview(repo repository.Repo, args []string) error {
 	if err != nil {
 		return err
 	}
-	if mergeStrategy == "merge" {
+	if mergeStrategy == "merge" && !*submitRebase {
 		*submitMerge = true
 	}
-	if mergeStrategy == "rebase" {
+	if mergeStrategy == "rebase" && !*submitMerge {
 		*submitRebase = true
 	}
 
