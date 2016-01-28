@@ -100,6 +100,11 @@ func (repo *GitRepo) GetCoreEditor() (string, error) {
 	return repo.runGitCommand("var", "GIT_EDITOR")
 }
 
+// GetMergeStrategy returns the way in which a submitted review is merged
+func (repo *GitRepo) GetMergeStrategy() (string, error) {
+	return repo.runGitCommand("config", "appraise.submit")
+}
+
 // HasUncommittedChanges returns true if there are local, uncommitted changes.
 func (repo *GitRepo) HasUncommittedChanges() (bool, error) {
 	out, err := repo.runGitCommand("status", "--porcelain")
