@@ -50,7 +50,7 @@ func (repo *GitRepo) runGitCommandRaw(args ...string) (string, string, error) {
 func (repo *GitRepo) runGitCommand(args ...string) (string, error) {
 	stdout, stderr, err := repo.runGitCommandRaw(args...)
 	if err != nil {
-		if (stderr == "") {
+		if stderr == "" {
 			stderr = "Error running git command: " + strings.Join(args, " ")
 		}
 		err = fmt.Errorf(stderr)
