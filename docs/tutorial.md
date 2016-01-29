@@ -338,7 +338,7 @@ Date:   Thu Dec 17 12:46:32 2015 -0800
     Submitting review 09aecba64027
     
     Force default git editor when omitting -m
-    For review comments, the absense of the -m flag will now attempt to load the
+    For review comments, the absence of the -m flag will now attempt to load the
     user's default git editor.
     
     i.e. git appraise comment c0a643ff39dd

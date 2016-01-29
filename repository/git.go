@@ -50,6 +50,9 @@ func (repo *GitRepo) runGitCommandRaw(args ...string) (string, string, error) {
 func (repo *GitRepo) runGitCommand(args ...string) (string, error) {
 	stdout, stderr, err := repo.runGitCommandRaw(args...)
 	if err != nil {
+		if stderr == "" {
+			stderr = "Error running git command: " + strings.Join(args, " ")
+		}
 		err = fmt.Errorf(stderr)
 	}
 	return stdout, err
@@ -98,6 +101,12 @@ func (repo *GitRepo) GetUserEmail() (string, error) {
 // GetCoreEditor returns the name of the editor that the user has used to configure git.
 func (repo *GitRepo) GetCoreEditor() (string, error) {
 	return repo.runGitCommand("var", "GIT_EDITOR")
+}
+
+// GetSubmitStrategy returns the way in which a review is submitted
+func (repo *GitRepo) GetSubmitStrategy() (string, error) {
+	submitStrategy, _ := repo.runGitCommand("config", "appraise.submit")
+	return submitStrategy, nil
 }
 
 // HasUncommittedChanges returns true if there are local, uncommitted changes.
