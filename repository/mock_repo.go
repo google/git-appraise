@@ -180,6 +180,9 @@ func (r mockRepoForTest) GetUserEmail() (string, error) { return "user@example.c
 // GetCoreEditor returns the name of the editor that the user has used to configure git.
 func (r mockRepoForTest) GetCoreEditor() (string, error) { return "vi", nil }
 
+// GetSubmitStrategy returns the way in which a review is submitted
+func (r mockRepoForTest) GetSubmitStrategy() (string, error) { return "merge", nil }
+
 // HasUncommittedChanges returns true if there are local, uncommitted changes.
 func (r mockRepoForTest) HasUncommittedChanges() (bool, error) { return false, nil }
 

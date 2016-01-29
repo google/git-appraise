@@ -27,9 +27,10 @@ import (
 var submitFlagSet = flag.NewFlagSet("submit", flag.ExitOnError)
 
 var (
-	submitMerge  = submitFlagSet.Bool("merge", false, "Create a merge of the source and target refs.")
-	submitRebase = submitFlagSet.Bool("rebase", false, "Rebase the source ref onto the target ref.")
-	submitTBR    = submitFlagSet.Bool("tbr", false, "(To be reviewed) Force the submission of a review that has not been accepted.")
+	submitMerge       = submitFlagSet.Bool("merge", false, "Create a merge of the source and target refs.")
+	submitRebase      = submitFlagSet.Bool("rebase", false, "Rebase the source ref onto the target ref.")
+	submitFastForward = submitFlagSet.Bool("fast-forward", false, "Create a merge using the default fast-forward mode.")
+	submitTBR         = submitFlagSet.Bool("tbr", false, "(To be reviewed) Force the submission of a review that has not been accepted.")
 )
 
 // Submit the current code review request.
@@ -89,6 +90,23 @@ func submitReview(repo repository.Repo, args []string) error {
 	if err := repo.SwitchToRef(target); err != nil {
 		return err
 	}
+
+	if !(*submitRebase || *submitMerge || *submitFastForward) {
+		submitStrategy, err := repo.GetSubmitStrategy()
+		if err != nil {
+			return err
+		}
+		if submitStrategy == "merge" && !*submitRebase && !*submitFastForward {
+			*submitMerge = true
+		}
+		if submitStrategy == "rebase" && !*submitMerge && !*submitFastForward {
+			*submitRebase = true
+		}
+		if submitStrategy == "fast-forward" && !*submitRebase && !*submitMerge {
+			*submitFastForward = true
+		}
+	}
+
 	if *submitMerge {
 		submitMessage := fmt.Sprintf("Submitting review %.12s", r.Revision)
 		return repo.MergeRef(source, false, submitMessage, r.Request.Description)
