@@ -103,6 +103,12 @@ func (repo *GitRepo) GetCoreEditor() (string, error) {
 	return repo.runGitCommand("var", "GIT_EDITOR")
 }
 
+// GetSubmitStrategy returns the way in which a review is submitted
+func (repo *GitRepo) GetSubmitStrategy() (string, error) {
+	submitStrategy, _ := repo.runGitCommand("config", "appraise.submit")
+	return submitStrategy, nil
+}
+
 // HasUncommittedChanges returns true if there are local, uncommitted changes.
 func (repo *GitRepo) HasUncommittedChanges() (bool, error) {
 	out, err := repo.runGitCommand("status", "--porcelain")
