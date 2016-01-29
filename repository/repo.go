@@ -44,8 +44,8 @@ type Repo interface {
 	// GetCoreEditor returns the name of the editor that the user has used to configure git.
 	GetCoreEditor() (string, error)
 
-	// GetMergeStrategy returns the way in which a submitted review is merged
-	GetMergeStrategy() (string, error)
+	// GetSubmitStrategy returns the way in which a review is submitted
+	GetSubmitStrategy() (string, error)
 
 	// HasUncommittedChanges returns true if there are local, uncommitted changes.
 	HasUncommittedChanges() (bool, error)
