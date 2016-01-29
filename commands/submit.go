@@ -91,18 +91,20 @@ func submitReview(repo repository.Repo, args []string) error {
 		return err
 	}
 
-	submitStrategy, err := repo.GetSubmitStrategy()
-	if err != nil {
-		return err
-	}
-	if submitStrategy == "merge" && !*submitRebase && !*submitFastForward {
-		*submitMerge = true
-	}
-	if submitStrategy == "rebase" && !*submitMerge && !*submitFastForward {
-		*submitRebase = true
-	}
-	if submitStrategy == "fast-forward" && !*submitRebase && !*submitMerge {
-		*submitFastForward = true
+	if !(*submitRebase || *submitMerge || *submitFastForward) {
+		submitStrategy, err := repo.GetSubmitStrategy()
+		if err != nil {
+			return err
+		}
+		if submitStrategy == "merge" && !*submitRebase && !*submitFastForward {
+			*submitMerge = true
+		}
+		if submitStrategy == "rebase" && !*submitMerge && !*submitFastForward {
+			*submitRebase = true
+		}
+		if submitStrategy == "fast-forward" && !*submitRebase && !*submitMerge {
+			*submitFastForward = true
+		}
 	}
 
 	if *submitMerge {
