@@ -21,3 +21,5 @@
 {"timestamp":"1454066246","author":"jishi9","description":"@hazbo It's hidden in `appraise show 708d7c2846d8`, took me a while to find!\r\n\r\nLook for `a35b23b2737594d793d42b7ede04b8f068145384` in the output, where it says \"This should only be done if the user has not set one of the command line flags\"\r\n\r\n"}
 
 {"timestamp":"1454066246","author":"jishi9","description":"@hazbo It's hidden in `git appraise show 708d7c2846d8`, took me a while to find!\r\n\r\nLook for `a35b23b2737594d793d42b7ede04b8f068145384` in the output, where it says \"This should only be done if the user has not set one of the command line flags\"\r\n\r\n"}
+
+{"timestamp":"1454066485","author":"hazbo","description":"@jishi9 thanks a lot! :)"}
