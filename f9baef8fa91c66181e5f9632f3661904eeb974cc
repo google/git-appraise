@@ -1,3 +1,5 @@
 {"timestamp":"1454537346","author":"ckerur","resolved":true}
 
 {"timestamp":"1454537346","author":"ckerur","description":"One minor comment"}
+
+{"timestamp":"1454537346","author":"ckerur","location":{"commit":"ef43f3ffcbcedb85f7c1e70161ad802c63acc12f","path":"README.md","range":{"startLine":221}},"description":"Are these considered well undertood acronyms ?\n\nSpecially the Needs More Work ? Is there a reason not to just spell them out.."}
