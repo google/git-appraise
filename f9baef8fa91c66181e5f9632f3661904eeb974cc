@@ -3,3 +3,5 @@
 {"timestamp":"1454537346","author":"ckerur","description":"One minor comment"}
 
 {"timestamp":"1454537346","author":"ckerur","location":{"commit":"ef43f3ffcbcedb85f7c1e70161ad802c63acc12f","path":"README.md","range":{"startLine":221}},"description":"Are these considered well undertood acronyms ?\n\nSpecially the Needs More Work ? Is there a reason not to just spell them out.."}
+
+{"timestamp":"1454538361","author":"ojarjur@google.com","parent":"a2e82452352b00f8a20234d1ea7aa459e6523237","location":{"commit":"ef43f3ffcbcedb85f7c1e70161ad802c63acc12f","path":"README.md","range":{"startLine":221}},"description":"No, these are not generally well understood acronyms.\n\nHowever, there is a reason to not spell them out more; this is the format\nfor messages that are actually written to the repo, and so it's beneficial\nto keep them terse.\n\nThat being said, the spec should absolutely spell out what they mean. I'll\nadd that.\n"}
