@@ -325,15 +325,7 @@ func (r *Review) GetAnalysesNotes() ([]analyses.Note, error) {
 	if latestAnalyses == nil {
 		return nil, fmt.Errorf("No analyses available")
 	}
-	reportResults, err := latestAnalyses.GetLintReportResult()
-	if err != nil {
-		return nil, err
-	}
-	var analysesNotes []analyses.Note
-	for _, reportResult := range reportResults {
-		analysesNotes = append(analysesNotes, reportResult.Notes...)
-	}
-	return analysesNotes, nil
+	return latestAnalyses.GetNotes()
 }
 
 // GetAnalysesMessage returns a string summarizing the results of the
@@ -350,7 +342,7 @@ func (r *Review) GetAnalysesMessage() string {
 	if status != "" && status != analyses.StatusNeedsMoreWork {
 		return status
 	}
-	analysesNotes, err := r.GetAnalysesNotes()
+	analysesNotes, err := latestAnalyses.GetNotes()
 	if err != nil {
 		return err.Error()
 	}

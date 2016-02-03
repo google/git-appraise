@@ -80,11 +80,11 @@ type ReportDetails struct {
 }
 
 // GetLintReportResult downloads the details of a lint report and returns the responses embedded in it.
-func (lintReport Report) GetLintReportResult() ([]AnalyzeResponse, error) {
-	if lintReport.URL == "" {
+func (analysesReport Report) GetLintReportResult() ([]AnalyzeResponse, error) {
+	if analysesReport.URL == "" {
 		return nil, nil
 	}
-	res, err := http.Get(lintReport.URL)
+	res, err := http.Get(analysesReport.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -99,6 +99,19 @@ func (lintReport Report) GetLintReportResult() ([]AnalyzeResponse, error) {
 		return nil, err
 	}
 	return details.AnalyzeResponse, nil
+}
+
+// GetNotes downloads the details of an analyses report and returns the notes embedded in it.
+func (analysesReport Report) GetNotes() ([]Note, error) {
+	reportResults, err := analysesReport.GetLintReportResult()
+	if err != nil {
+		return nil, err
+	}
+	var reportNotes []Note
+	for _, reportResult := range reportResults {
+		reportNotes = append(reportNotes, reportResult.Notes...)
+	}
+	return reportNotes, nil
 }
 
 // Parse parses an analysis report from a git note.
