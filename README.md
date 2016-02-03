@@ -238,6 +238,16 @@ formatted analysis results. Those results should conform to the JSON format of
 the ShipshapeResponse protocol buffer message defined
 [here](https://github.com/google/shipshape/blob/master/shipshape/proto/shipshape_rpc.proto).
 
+The "status" field represents the overall status of all messages from the
+analysis results, with the enum values indicating the following:
+
+*   `lgtm`: This stands for "Looks Good To Me" and indicates the analyses
+    produced no messages.
+*   `fyi`: This stands for "For your information" and indicates the analyses
+    produced some messages, but none of them indicate errors.
+*   `nmw`: This stands for "Needs more work" and indicates the analyses
+    produced at least one message indicating an error.
+
 ### Review Comments
 
 Review comments are comments that were written by a person rather than by a
