@@ -325,15 +325,32 @@ func (r *Review) GetAnalysesNotes() ([]analyses.Note, error) {
 	if latestAnalyses == nil {
 		return nil, fmt.Errorf("No analyses available")
 	}
-	reportResults, err := latestAnalyses.GetLintReportResult()
+	return latestAnalyses.GetNotes()
+}
+
+// GetAnalysesMessage returns a string summarizing the results of the
+// most recent static analyses.
+func (r *Review) GetAnalysesMessage() string {
+	latestAnalyses, err := analyses.GetLatestAnalysesReport(r.Analyses)
 	if err != nil {
-		return nil, err
+		return err.Error()
 	}
-	var analysesNotes []analyses.Note
-	for _, reportResult := range reportResults {
-		analysesNotes = append(analysesNotes, reportResult.Notes...)
+	if latestAnalyses == nil {
+		return "No analyses available"
 	}
-	return analysesNotes, nil
+	status := latestAnalyses.Status
+	if status != "" && status != analyses.StatusNeedsMoreWork {
+		return status
+	}
+	analysesNotes, err := latestAnalyses.GetNotes()
+	if err != nil {
+		return err.Error()
+	}
+	if analysesNotes == nil {
+		return "passed"
+	}
+	return fmt.Sprintf("%d warnings\n", len(analysesNotes))
+	// TODO(ojarjur): Figure out the best place to display the actual notes
 }
 
 func prettyPrintJSON(jsonBytes []byte) (string, error) {

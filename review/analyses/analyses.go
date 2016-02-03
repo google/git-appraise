@@ -30,6 +30,13 @@ const (
 	// Ref defines the git-notes ref that we expect to contain analysis reports.
 	Ref = "refs/notes/devtools/analyses"
 
+	// StatusLooksGoodToMe is the status string representing that analyses reported no messages.
+	StatusLooksGoodToMe = "lgtm"
+	// StatusForYourInformation is the status string representing that analyses reported informational messages.
+	StatusForYourInformation = "fyi"
+	// StatusNeedsMoreWork is the status string representing that analyses reported error messages.
+	StatusNeedsMoreWork = "nmw"
+
 	// FormatVersion defines the latest version of the request format supported by the tool.
 	FormatVersion = 0
 )
@@ -39,6 +46,7 @@ const (
 type Report struct {
 	Timestamp string `json:"timestamp,omitempty"`
 	URL       string `json:"url,omitempty"`
+	Status    string `json:"status,omitempty"`
 	// Version represents the version of the metadata format.
 	Version int `json:"v,omitempty"`
 }
@@ -72,11 +80,11 @@ type ReportDetails struct {
 }
 
 // GetLintReportResult downloads the details of a lint report and returns the responses embedded in it.
-func (lintReport Report) GetLintReportResult() ([]AnalyzeResponse, error) {
-	if lintReport.URL == "" {
+func (analysesReport Report) GetLintReportResult() ([]AnalyzeResponse, error) {
+	if analysesReport.URL == "" {
 		return nil, nil
 	}
-	res, err := http.Get(lintReport.URL)
+	res, err := http.Get(analysesReport.URL)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +99,19 @@ func (lintReport Report) GetLintReportResult() ([]AnalyzeResponse, error) {
 		return nil, err
 	}
 	return details.AnalyzeResponse, nil
+}
+
+// GetNotes downloads the details of an analyses report and returns the notes embedded in it.
+func (analysesReport Report) GetNotes() ([]Note, error) {
+	reportResults, err := analysesReport.GetLintReportResult()
+	if err != nil {
+		return nil, err
+	}
+	var reportNotes []Note
+	for _, reportResult := range reportResults {
+		reportNotes = append(reportNotes, reportResult.Notes...)
+	}
+	return reportNotes, nil
 }
 
 // Parse parses an analysis report from a git note.

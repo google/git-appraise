@@ -149,17 +149,7 @@ func showSubThread(r *review.Review, thread review.CommentThread, indent string)
 
 // printAnalyses prints the static analysis results for the latest commit in the review.
 func printAnalyses(r *review.Review) {
-	analysesNotes, err := r.GetAnalysesNotes()
-	if err != nil {
-		fmt.Println("  analyses: ", err)
-		return
-	}
-	if analysesNotes == nil {
-		fmt.Println("  analyses: passed")
-		return
-	}
-	fmt.Printf("  analyses: %d warnings\n", len(analysesNotes))
-	// TODO(ojarjur): Print the actual notes
+	fmt.Println("  analyses: ", r.GetAnalysesMessage())
 }
 
 // printComments prints all of the comments for the review, with snippets of the preceding source code.

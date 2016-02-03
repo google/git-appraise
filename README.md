@@ -213,6 +213,15 @@ They must conform to the following schema.
     "url": {
       "type": "string"
     },
+    "status": {
+      "type": "string",
+      "enum": [
+        null,
+        "lgtm",
+        "fyi",
+        "nmw"
+      ]
+    },
     "v": {
       "type": "integer",
       "default": 0,
@@ -228,6 +237,16 @@ The "url" field should point to a publicly readable file, which contains JSON
 formatted analysis results. Those results should conform to the JSON format of
 the ShipshapeResponse protocol buffer message defined
 [here](https://github.com/google/shipshape/blob/master/shipshape/proto/shipshape_rpc.proto).
+
+The "status" field represents the overall status of all messages from the
+analysis results, with the enum values indicating the following:
+
+*   `lgtm`: This stands for "Looks Good To Me" and indicates the analyses
+    produced no messages.
+*   `fyi`: This stands for "For your information" and indicates the analyses
+    produced some messages, but none of them indicate errors.
+*   `nmw`: This stands for "Needs more work" and indicates the analyses
+    produced at least one message indicating an error.
 
 ### Review Comments
 
