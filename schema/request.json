@@ -8,13 +8,11 @@
     },
 
     "reviewRef": {
-      "id": "reviewRef",
       "description": "used to specify a git ref that tracks the current revision under review",
       "type": "string"
     },
 
     "targetRef": {
-      "id": "targetRef",
       "description": "used to specify the git ref that should be updated once the review is approved",
       "type": "string"
     },
@@ -36,11 +34,7 @@
 
     "v": {
       "type": "integer",
-      "enum": [
-        null,
-        0
-      ],
-      "default": 0
+      "enum": [0]
     },
 
     "baseCommit": {

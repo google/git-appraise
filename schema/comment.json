@@ -50,11 +50,7 @@
 
     "v": {
       "type": "integer",
-      "default": 0,
-      "enum": [
-        null,
-        0
-      ]
+      "enum": [0]
     }
   }
 }
