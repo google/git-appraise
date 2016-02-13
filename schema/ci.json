@@ -29,5 +29,12 @@
       "type": "integer",
       "enum": [0]
     }
-  }
+  },
+
+  "required": [
+    "timestamp",
+    "url",
+    "status",
+    "agent"
+  ]
 }

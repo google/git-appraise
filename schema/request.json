@@ -43,6 +43,10 @@
   },
 
   "required": [
-    "targetRef"
+    "timestamp",
+    "reviewRef",
+    "targetRef",
+    "requester",
+    "baseCommit"
   ]
 }

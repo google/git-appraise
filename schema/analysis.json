@@ -29,6 +29,12 @@
     }
   },
 
+  "required": [
+    "timestamp",
+    "url",
+    "status"
+  ],
+
   "definitions": {
     "lgtm": {
       "title": "Looks Good To Me",

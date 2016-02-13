@@ -52,5 +52,11 @@
       "type": "integer",
       "enum": [0]
     }
-  }
+  },
+
+  "required": [
+    "timestamp",
+    "author",
+    "description"
+  ]
 }
