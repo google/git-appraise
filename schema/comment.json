@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+
+  "properties": {
+    "timestamp": {
+      "description": "the number of seconds since the Unix epoch",
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 10,
+      "pattern": "[0-9]{10,10}"
+    },
+
+    "author": {
+      "type": "string"
+    },
+
+    "parent": {
+      "description": "the SHA1 hash of another comment on the same revision, and it means this comment is a reply to that comment",
+      "type": "string"
+    },
+
+    "location": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "range": {
+          "type": "object",
+          "properties": {
+            "startLine": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+
+    "description": {
+      "type": "string"
+    },
+
+    "resolved": {
+      "type": "boolean"
+    },
+
+    "v": {
+      "type": "integer",
+      "default": 0,
+      "enum": [
+        null,
+        0
+      ]
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+
+  "properties": {
+    "timestamp": {
+      "type": "string"
+    },
+
+    "url": {
+      "type": "string"
+    },
+
+    "status": {
+      "description": "the final status of a build or test",
+      "type": "string",
+      "enum": [
+        "success",
+        "failure"
+      ]
+    },
+
+    "agent": {
+      "description": "a free-form string that identifies the build and test runner",
+      "type": "string"
+    },
+
+    "v": {
+      "type": "integer",
+      "enum": [
+        null,
+        0
+      ],
+      "default": 0
+    }
+  }
+}
