@@ -4,7 +4,11 @@
 
   "properties": {
     "timestamp": {
-      "type": "string"
+      "description": "the number of seconds since the Unix epoch",
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 10,
+      "pattern": "[0-9]{10,10}"
     },
 
     "requester": {
