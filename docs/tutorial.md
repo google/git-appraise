@@ -1,10 +1,10 @@
-# Getting started with git-appraise
+# Getting started with git-review
 
-This file gives an example code-review workflow using git-appraise. It starts
+This file gives an example code-review workflow using git-review. It starts
 with cloning a repository and goes all the way through to browsing
 your submitted commits.
 
-The git-appraise tool is largely agnostic of what workflow you use, so feel
+The git-review tool is largely agnostic of what workflow you use, so feel
 free to change things to your liking, but this particular workflow should help
 you get started.
 
@@ -31,7 +31,7 @@ git push
 
 ## Creating our first review
 
-Generally, reviews in git-appraise are used to decide if the code in one branch
+Generally, reviews in git-review are used to decide if the code in one branch
 (called the "source") is ready to merge into another branch (called the
 "target"). The meaning of each branch and the policies around merging into a
 branch vary from team to team, but for this example we'll use a simple practice
@@ -59,11 +59,11 @@ git push
 ### Requesting the review
 
 Up to this point we've only used the regular commands that come with git. Now,
-we will use git-appraise to perform a review:
+we will use git-review to perform a review:
 
 Request a review:
 ```shell
-git appraise request
+git review request
 ```
 
 The output of this will be a summary of the newly requested review:
@@ -77,7 +77,7 @@ Message: "Added an explanation to the README file"
 
 Show the details of the current review:
 ```shell
-git appraise show
+git review show
 ```
 
 ```
@@ -93,7 +93,7 @@ git appraise show
 
 Show the changes included in the review:
 ```shell
-git appraise show --diff
+git review show -p
 ```
 
 ```
@@ -113,15 +113,15 @@ This involves pushing both our commits, and our code review data to the remote
 repository:
 ```shell
 git push
-git appraise pull
-git appraise push
+git review pull
+git review push
 ```
 
-The command `git appraise pull` is used to make sure that our local code review
+The command `git review pull` is used to make sure that our local code review
 data includes everything from the remote repo before we try to push our changes
 back to it. If you forget to run this command, then the subsequent call to
-`git appraise push` might fail with a message that the push was rejected. If
-that happens, simply run `git appraise pull` and try again.
+`git review push` might fail with a message that the push was rejected. If
+that happens, simply run `git review pull` and try again.
 
 ## Reviewing the change
 
@@ -130,12 +130,12 @@ Your teammates can review your changes using the same tool.
 Fetch the current data from the remote repository:
 ```shell
 git fetch origin
-git appraise pull
+git review pull
 ```
 
 List the open reviews:
 ```shell
-git appraise list
+git review list
 ```
 
 The output of this command will be a list of entries formatted like this:
@@ -148,13 +148,13 @@ Loaded 1 open reviews:
 The text within the square brackets is the status of a review, and for open
 reviews will be one of "pending", "accepted", or "rejected". The text which
 follows the status is the hash of the first commit in the review. This is
-used to uniquely identify reviews, and most git-appraise commands will accept
+used to uniquely identify reviews, and most git-review commands will accept
 this hash as an argument in order to select the review to handle.
 
 For instance, we can see the details of a specific review using the "show"
 subcommand:
 ```shell
-git appraise show 1e6eb14c8014
+git review show 1e6eb14c8014
 ```
 
 ```
@@ -170,7 +170,7 @@ git appraise show 1e6eb14c8014
 
 ... or, we can see the diff of the changes under review:
 ```shell
-git appraise show --diff 1e6eb14c8014
+git review show -p 1e6eb14c8014
 ```
 
 ```
@@ -185,12 +185,12 @@ index 08fde78..85c4208 100644
 
 Comments can be added either for the entire review, or on individual lines:
 ```shell
-git appraise comment -f README.md -l 2 -m "Ah, so that's what this is" 1e6eb14c8014
+git review comment -f README.md -l 2 -m "Ah, so that's what this is" 1e6eb14c8014
 ```
 
-These comments then show up in the output of `git appraise show`:
+These comments then show up in the output of `git review show`:
 ```shell
-git appraise show 1e6eb14c8014
+git review show 1e6eb14c8014
 ```
 
 ```
@@ -216,22 +216,22 @@ Comments initially only exist in your local repository, so to share them
 with the rest of your team you have to push your review changes back:
 
 ```shell
-git appraise pull
-git appraise push
+git review pull
+git review push
 ```
 
 When the change is ready to be merged, you indicate that by accepting the
 review:
 
 ```shell
-git appraise accept 1e6eb14c8014
-git appraise pull
-git appraise push
+git review accept 1e6eb14c8014
+git review pull
+git review push
 ```
 
 The updated status of the review will visible in the output of "show":
 ```shell
-git appraise show 1e6eb14c8014
+git review show 1e6eb14c8014
 ```
 
 ```
@@ -262,7 +262,7 @@ git appraise show 1e6eb14c8014
 Once a review has been accepted, you can merge it with the tool:
 
 ```shell
-git appraise submit --merge 1e6eb14c8014
+git review merge 1e6eb14c8014
 git push
 ```
 
@@ -301,7 +301,7 @@ rounds of changes before they are accepted. By using these merge commits, we
 can preserve both the full history of individual reviews, and the high-level
 (review-based) history of the repository.
 
-This can be seen with the history of git-appraise itself. We can see the high
+This can be seen with the history of git-review itself. We can see the high
 level review history using `git log --first-parent`:
 
 ```
@@ -341,7 +341,7 @@ Date:   Thu Dec 17 12:46:32 2015 -0800
     For review comments, the absence of the -m flag will now attempt to load the
     user's default git editor.
     
-    i.e. git appraise comment c0a643ff39dd
+    i.e. git review comment c0a643ff39dd
     
     An initial draft as discussed in #8
     
