@@ -7,6 +7,14 @@
       "type": "string"
     },
 
+    "requester": {
+      "type": "string"
+    },
+
+    "baseCommit": {
+      "type": "string"
+    },
+
     "reviewRef": {
       "description": "used to specify a git ref that tracks the current revision under review",
       "type": "string"
@@ -14,10 +22,6 @@
 
     "targetRef": {
       "description": "used to specify the git ref that should be updated once the review is approved",
-      "type": "string"
-    },
-
-    "requester": {
       "type": "string"
     },
 
@@ -35,18 +39,14 @@
     "v": {
       "type": "integer",
       "enum": [0]
-    },
-
-    "baseCommit": {
-      "type": "string"
     }
   },
 
   "required": [
     "timestamp",
-    "reviewRef",
-    "targetRef",
     "requester",
-    "baseCommit"
+    "baseCommit",
+    "reviewRef",
+    "targetRef"
   ]
 }

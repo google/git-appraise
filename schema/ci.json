@@ -7,7 +7,8 @@
       "type": "string"
     },
 
-    "url": {
+    "agent": {
+      "description": "a free-form string that identifies the build and test runner",
       "type": "string"
     },
 
@@ -20,8 +21,7 @@
       ]
     },
 
-    "agent": {
-      "description": "a free-form string that identifies the build and test runner",
+    "url": {
       "type": "string"
     },
 
@@ -33,8 +33,8 @@
 
   "required": [
     "timestamp",
-    "url",
+    "agent",
     "status",
-    "agent"
+    "url"
   ]
 }
