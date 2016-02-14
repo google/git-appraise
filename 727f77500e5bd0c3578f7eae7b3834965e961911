@@ -8,3 +8,5 @@
 {"timestamp":"1455457305","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":101}},"description":"if the bucket holds requests, then the namespace should follow"}
 {"timestamp":"1455457376","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":206}},"description":"scratch this. this should be the other way around i.e. talk about analyses, not \"robot comments\", and keep to `refs/notes/*/analyses`"}
 {"timestamp":"1455457387","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":257}},"description":"if the bucket holds comments, then the namespace should follow"}
+
+{"timestamp":"1455457435","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"docs/tutorial.md","range":{"startLine":67}},"description":"\"Request a review: `git appraise request`\"\r\nvs\r\n\"Request a review: `git review request`\"\r\n"}
