@@ -5,3 +5,5 @@
 {"timestamp":"1455456792","author":"andreineculau","description":"thanks @hazbo . I will sprinkle the diff with the questions, for you and @ojarjur, as it provides context e.g. I meant \"why git appraise submit --merge instead of git review merge?\""}
 
 {"timestamp":"1455456876","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":58}},"description":"my suggestions are in line with the builtin `git branch` and `git tag` for instance\r\n\r\nNOTE: should also support the short `-l`"}
+
+{"timestamp":"1455456895","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":66}},"description":"my suggestion is in line with `git log`"}
