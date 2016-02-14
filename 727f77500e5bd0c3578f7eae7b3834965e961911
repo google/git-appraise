@@ -13,3 +13,5 @@
 {"timestamp":"1455457239","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":91}},"description":"if this tool is called `git-appraise`, or `git-review` as with my suggestion, then take ownership over the git-appraise/git-review namespace, not `devtools`"}
 
 {"timestamp":"1455457305","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":101}},"description":"if the bucket holds requests, then the namespace should follow"}
+
+{"timestamp":"1455457376","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":206}},"description":"scratch this. this should be the other way around i.e. talk about analyses, not \"robot comments\", and keep to `refs/notes/*/analyses`"}
