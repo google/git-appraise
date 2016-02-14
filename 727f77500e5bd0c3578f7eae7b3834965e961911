@@ -11,3 +11,5 @@
 {"timestamp":"1455457175","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":79}},"description":"the goal of a \"pull request\", \"merge request\", \"review\", etc is to be \"merged\" (not necessarily ad-literam with git-merge, but to make its way into the targetRef)\r\n\r\npoint is that the phrase \"submit\" has no equivalent in the git world, but there are merge/rebase equivalents."}
 
 {"timestamp":"1455457239","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":91}},"description":"if this tool is called `git-appraise`, or `git-review` as with my suggestion, then take ownership over the git-appraise/git-review namespace, not `devtools`"}
+
+{"timestamp":"1455457305","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":101}},"description":"if the bucket holds requests, then the namespace should follow"}
