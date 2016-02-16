@@ -7,3 +7,5 @@
 {"timestamp":"1455638850","author":"ojarjur","location":{"commit":"951857bf15ca79bc251d8888faecd44bd37d90a4","path":"schema/request.json","range":{"startLine":53}},"description":"We can omit \"baseCommit\" if the commit anchoring the review is not a merge commit (since the base is just that commit's parent)... so that field should not be required.\r\n\r\nThe \"reviewRef\" can also be optional if the user is trying to do a post-submit review (e.g. review a commit that has already been submitted to the master branch)."}
 
 {"timestamp":"1455639008","author":"ojarjur","description":"Thanks so much for doing this; this looks like a major improvement in the documentation of the spec!\r\n\r\nI've posted some feedback about the required fields, but overall this looks really good.\r\n\r\nFYI, I'm not at my computer much this week, so I may be slow to respond (or unavailable) until next Monday. Sorry for that delay, and thanks again for the help."}
+
+{"timestamp":"1455651261","author":"andreineculau","description":"@ojarjur I hope the new commit solves everything.\r\nbut take it easy on yourself, carpe diem :) this will still be here years from now :)"}
