@@ -49,8 +49,6 @@
   "required": [
     "timestamp",
     "requester",
-    "baseCommit",
-    "reviewRef",
     "targetRef"
   ]
 }

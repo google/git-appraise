@@ -56,7 +56,6 @@
 
   "required": [
     "timestamp",
-    "author",
-    "description"
+    "author"
   ]
 }
