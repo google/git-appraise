@@ -52,3 +52,5 @@
 {"timestamp":"1456172203","author":"ojarjur","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":58}},"description":"This sounds like a good change to me; I'll add a tracking issue for it."}
 
 {"timestamp":"1456172634","author":"ojarjur","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":58}},"description":"Created https://github.com/google/git-appraise/issues/42 to track this."}
+
+{"timestamp":"1456172856","author":"ojarjur","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":66}},"description":"Added https://github.com/google/git-appraise/issues/43 to track this."}
