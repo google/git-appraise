@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+
+  "properties": {
+    "timestamp": {
+      "description": "the number of seconds since the Unix epoch",
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 10,
+      "pattern": "[0-9]{10,10}"
+    },
+
+    "requester": {
+      "type": "string"
+    },
+
+    "baseCommit": {
+      "type": "string"
+    },
+
+    "reviewRef": {
+      "description": "used to specify a git ref that tracks the current revision under review",
+      "type": "string"
+    },
+
+    "targetRef": {
+      "description": "used to specify the git ref that should be updated once the review is approved",
+      "type": "string"
+    },
+
+    "reviewers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+
+    "description": {
+      "type": "string"
+    },
+
+    "v": {
+      "type": "integer",
+      "enum": [0]
+    }
+  },
+
+  "required": [
+    "timestamp",
+    "requester",
+    "targetRef"
+  ]
+}

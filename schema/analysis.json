@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+
+  "properties": {
+    "timestamp": {
+      "description": "the number of seconds since the Unix epoch",
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 10,
+      "pattern": "[0-9]{10,10}"
+    },
+
+    "status": {
+      "description": "represents the overall status of all messages from the analysis results",
+      "oneOf": [{
+        "$ref": "#/definitions/lgtm"
+      }, {
+        "$ref": "#/definitions/fyi"
+      }, {
+        "$ref": "#/definitions/nmw"
+      }]
+    },
+
+    "url": {
+      "description": "a publicly readable file, which contains JSON formatted analysis results. Those results should conform to the JSON format of the ShipshapeResponse protocol buffer message defined https://github.com/google/shipshape/blob/master/shipshape/proto/shipshape_rpc.proto",
+      "type": "string"
+    },
+
+    "v": {
+      "type": "integer",
+      "enum": [0]
+    }
+  },
+
+  "required": [
+    "timestamp",
+    "url"
+  ],
+
+  "definitions": {
+    "lgtm": {
+      "title": "Looks Good To Me",
+      "description": "indicates the analysis produced no messages",
+      "type": "string",
+      "enum": ["lgtm"]
+    },
+    "fyi": {
+      "title": "For your information",
+      "description": "indicates the analysis produced some messages, but none of them indicate errors",
+      "type": "string",
+      "enum": ["fyi"]
+    },
+    "nmw": {
+      "title": "Needs more work",
+      "description": "indicates the analysis produced at least one message indicating an error",
+      "type": "string",
+      "enum": ["nmw"]
+    }
+  }
+}
