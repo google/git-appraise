@@ -24,6 +24,7 @@ import (
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"github.com/google/git-appraise/review/comment"
+	"strings"
 )
 
 var commentFlagSet = flag.NewFlagSet("comment", flag.ExitOnError)
@@ -37,6 +38,7 @@ var (
 	commentNmw     = commentFlagSet.Bool("nmw", false, "'Needs More Work'. Set this to express your disapproval. This cannot be combined with lgtm")
 )
 
+// commentHashExists checks if the given comment hash exists in the given comment threads.
 func commentHashExists(hashToFind string, threads []review.CommentThread) bool {
 	for _, thread := range threads {
 		if thread.Hash == hashToFind {
@@ -47,6 +49,19 @@ func commentHashExists(hashToFind string, threads []review.CommentThread) bool {
 		}
 	}
 	return false
+}
+
+// checkCommentLocation verifies that the given location exists at the given commit.
+func checkCommentLocation(repo repository.Repo, commit, file string, line uint) error {
+	contents, err := repo.Show(commit, file)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(contents, "\n")
+	if line >= uint(len(lines)) {
+		return fmt.Errorf("Line number %d does not exist in file %q", line, file)
+	}
+	return nil
 }
 
 // commentOnReview adds a comment to the current code review.
@@ -98,6 +113,9 @@ func commentOnReview(repo repository.Repo, args []string) error {
 		Commit: commentedUponCommit,
 	}
 	if *commentFile != "" {
+		if err := checkCommentLocation(r.Repo, commentedUponCommit, *commentFile, *commentLine); err != nil {
+			return fmt.Errorf("Unabled to comment on the given location: %v", err)
+		}
 		location.Path = *commentFile
 		if *commentLine != 0 {
 			location.Range = &comment.Range{
