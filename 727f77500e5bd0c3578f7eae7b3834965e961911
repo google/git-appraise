@@ -66,3 +66,5 @@
 {"timestamp":"1456493596","author":"andreineculau","description":"Thanks for all the effort and time"}
 
 {"timestamp":"1456493347","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":79}},"description":"\u003e I've actually been thinking of adding a \"git appraise rebase\" command that would not submit the review.\r\n\r\n:+1: much better than my initial suggestion\r\n\r\nyou don't want an open issue on this?"}
+
+{"timestamp":"1456501623","author":"ojarjur","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":66}},"description":"Yes, it would just take the hash of the review. That's another reason I was hesitant to add a \"diff\" subcommand, but I don't think it should be a deal breaker."}
