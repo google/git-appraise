@@ -62,3 +62,5 @@
 {"timestamp":"1456493263","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":66}},"description":"if you go with `git appraise diff`, what would that take as input? **one** hash? `git diff` takes a **range**"}
 
 {"timestamp":"1456493347","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":79}},"description":"\u003e I've actually been thinking of adding a \"git appraise rebase\" command that would not submit the review.\r\n\r\n:+1: much better than my initial suggestion"}
+
+{"timestamp":"1456493596","author":"andreineculau","description":"Thanks for all the effort and time"}
