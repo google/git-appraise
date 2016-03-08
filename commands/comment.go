@@ -58,7 +58,7 @@ func checkCommentLocation(repo repository.Repo, commit, file string, line uint) 
 		return err
 	}
 	lines := strings.Split(contents, "\n")
-	if line >= uint(len(lines)) {
+	if line > uint(len(lines)) {
 		return fmt.Errorf("Line number %d does not exist in file %q", line, file)
 	}
 	return nil
