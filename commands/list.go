@@ -17,6 +17,7 @@ limitations under the License.
 package commands
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/google/git-appraise/commands/output"
@@ -27,24 +28,38 @@ import (
 var listFlagSet = flag.NewFlagSet("list", flag.ExitOnError)
 
 var (
-	listAll = listFlagSet.Bool("a", false, "List all reviews (not just the open ones).")
+	listAll        = listFlagSet.Bool("a", false, "List all reviews (not just the open ones).")
+	listJSONOutput = listFlagSet.Bool("json", false, "Format the output as JSON")
 )
 
 // listReviews lists all extant reviews.
 // TODO(ojarjur): Add more flags for filtering the output (e.g. filtering by reviewer or status).
-func listReviews(repo repository.Repo, args []string) {
+func listReviews(repo repository.Repo, args []string) error {
 	listFlagSet.Parse(args)
 	var reviews []review.Summary
 	if *listAll {
 		reviews = review.ListAll(repo)
-		fmt.Printf("Loaded %d reviews:\n", len(reviews))
+		if !*listJSONOutput {
+			fmt.Printf("Loaded %d reviews:\n", len(reviews))
+		}
 	} else {
 		reviews = review.ListOpen(repo)
-		fmt.Printf("Loaded %d open reviews:\n", len(reviews))
+		if !*listJSONOutput {
+			fmt.Printf("Loaded %d open reviews:\n", len(reviews))
+		}
+	}
+	if *listJSONOutput {
+		b, err := json.MarshalIndent(reviews, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(b))
+		return nil
 	}
 	for _, r := range reviews {
 		output.PrintSummary(&r)
 	}
+	return nil
 }
 
 // listCmd defines the "list" subcommand.
@@ -54,7 +69,6 @@ var listCmd = &Command{
 		listFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {
-		listReviews(repo, args)
-		return nil
+		return listReviews(repo, args)
 	},
 }
