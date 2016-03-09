@@ -13,3 +13,5 @@
 {"timestamp":"1457487419","author":"mattn","location":{"commit":"de9ebcdf2a1e93365eefc2739f73f2c68a280c11","path":"commands/comment.go","range":{"startLine":62}},"description":"Ah, I just notice line is uint. Sorry, will fix soon."}
 
 {"timestamp":"1457487715","author":"mattn","location":{"commit":"de9ebcdf2a1e93365eefc2739f73f2c68a280c11","path":"commands/comment.go","range":{"startLine":62}},"description":"Fixed \u0026 Squashed."}
+
+{"timestamp":"1457556748","author":"ojarjur@google.com","location":{"commit":"1b6d44cd17cb9c3b138c19ce596e4f6c740de36c"},"resolved":true}
