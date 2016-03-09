@@ -11,3 +11,5 @@
 {"timestamp":"1457486436","author":"ojarjur","location":{"commit":"de9ebcdf2a1e93365eefc2739f73f2c68a280c11","path":"commands/comment.go","range":{"startLine":62}},"description":"I actually meant something like:\r\n\r\n    if line \u003e uint(len(lines)) {\r\n\r\nI.E. You are absolutely right that the check against the number of lines should be `\u003e` rather than `\u003e=`, but there's no need to check that the line is non-negative, as the flag library should not allow that anyway."}
 
 {"timestamp":"1457487419","author":"mattn","location":{"commit":"de9ebcdf2a1e93365eefc2739f73f2c68a280c11","path":"commands/comment.go","range":{"startLine":62}},"description":"Ah, I just notice line is uint. Sorry, will fix soon."}
+
+{"timestamp":"1457557187","author":"ojarjur@google.com","location":{"commit":"42ab207875c1202958af8e39a9af728c3946f90a"},"resolved":true}
