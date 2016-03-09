@@ -13,3 +13,5 @@
 {"timestamp":"1457487419","author":"mattn","location":{"commit":"de9ebcdf2a1e93365eefc2739f73f2c68a280c11","path":"commands/comment.go","range":{"startLine":62}},"description":"Ah, I just notice line is uint. Sorry, will fix soon."}
 
 {"timestamp":"1457487715","author":"mattn","location":{"commit":"de9ebcdf2a1e93365eefc2739f73f2c68a280c11","path":"commands/comment.go","range":{"startLine":62}},"description":"Fixed \u0026 Squashed."}
+
+{"timestamp":"1457486106","author":"mattn","location":{"commit":"de9ebcdf2a1e93365eefc2739f73f2c68a280c11","path":"commands/comment.go","range":{"startLine":62}},"description":"\u003cdel\u003e\r\nIs this your expected?\r\n```go\r\nfunc checkCommentLocation(repo repository.Repo, commit, file string, line uint) error {\r\n\tcontents, err := repo.Show(commit, file)\r\n\tif err != nil {\r\n\t\treturn err\r\n\t}\r\n\tlines := strings.Split(contents, \"\\n\")\r\n\tif line \u003c 0 || line \u003e= uint(len(lines)) {\r\n\t\treturn fmt.Errorf(\"Line number %d does not exist in file %q\", line, file)\r\n\t}\r\n\treturn nil\r\n}\r\n```\r\n\u003c/del\u003e"}
