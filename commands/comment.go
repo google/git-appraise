@@ -114,7 +114,7 @@ func commentOnReview(repo repository.Repo, args []string) error {
 	}
 	if *commentFile != "" {
 		if err := checkCommentLocation(r.Repo, commentedUponCommit, *commentFile, *commentLine); err != nil {
-			return fmt.Errorf("Unabled to comment on the given location: %v", err)
+			return fmt.Errorf("Unable to comment on the given location: %v", err)
 		}
 		location.Path = *commentFile
 		if *commentLine != 0 {
