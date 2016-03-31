@@ -111,6 +111,13 @@ type Repo interface {
 	// RebaseRef rebases the given ref into the current one.
 	RebaseRef(ref string) error
 
+	// ListCommits returns the list of commits reachable from the given ref.
+	//
+	// The generated list is in chronological order (with the oldest commit first).
+	//
+	// If the specified ref does not exist, then this method returns an empty result.
+	ListCommits(ref string) []string
+
 	// ListCommitsBetween returns the list of commits between the two given revisions.
 	//
 	// The "from" parameter is the starting point (exclusive), and the "to" parameter
@@ -123,6 +130,13 @@ type Repo interface {
 
 	// GetNotes reads the notes from the given ref that annotate the given revision.
 	GetNotes(notesRef, revision string) []Note
+
+	// GetAllNotes reads the contents of the notes under the given ref for every commit.
+	//
+	// The returned value is a mapping from commit hash to the list of notes for that commit.
+	//
+	// This is the batch version of the corresponding GetNotes(...) method.
+	GetAllNotes(notesRef string) (map[string][]Note, error)
 
 	// AppendNote appends a note to a revision under the given ref.
 	AppendNote(ref, revision string, note Note) error

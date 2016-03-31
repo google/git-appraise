@@ -18,12 +18,15 @@ limitations under the License.
 package repository
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -34,15 +37,21 @@ type GitRepo struct {
 	Path string
 }
 
-// Run the given git command and return its stdout, or an error if the command fails.
-func (repo *GitRepo) runGitCommandRaw(args ...string) (string, string, error) {
+// Run the given git command with the given I/O reader/writers, returning an error if it fails.
+func (repo *GitRepo) runGitCommandWithIO(stdin io.Reader, stdout, stderr io.Writer, args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = repo.Path
+	cmd.Stdin = stdin
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	return cmd.Run()
+}
+
+// Run the given git command and return its stdout, or an error if the command fails.
+func (repo *GitRepo) runGitCommandRaw(args ...string) (string, string, error) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
+	err := repo.runGitCommandWithIO(nil, &stdout, &stderr, args...)
 	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
 }
 
@@ -60,12 +69,7 @@ func (repo *GitRepo) runGitCommand(args ...string) (string, error) {
 
 // Run the given git command using the same stdin, stdout, and stderr as the review tool.
 func (repo *GitRepo) runGitCommandInline(args ...string) error {
-	cmd := exec.Command("git", args...)
-	cmd.Dir = repo.Path
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	return repo.runGitCommandWithIO(os.Stdin, os.Stdout, os.Stderr, args...)
 }
 
 // NewGitRepo determines if the given working directory is inside of a git repository,
@@ -294,6 +298,26 @@ func (repo *GitRepo) RebaseRef(ref string) error {
 	return repo.runGitCommandInline("rebase", "-i", ref)
 }
 
+// ListCommits returns the list of commits reachable from the given ref.
+//
+// The generated list is in chronological order (with the oldest commit first).
+//
+// If the specified ref does not exist, then this method returns an empty result.
+func (repo *GitRepo) ListCommits(ref string) []string {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if err := repo.runGitCommandWithIO(nil, &stdout, &stderr, "rev-list", "--reverse", ref); err != nil {
+		return nil
+	}
+
+	byteLines := bytes.Split(stdout.Bytes(), []byte("\n"))
+	var commits []string
+	for _, byteLine := range byteLines {
+		commits = append(commits, string(byteLine))
+	}
+	return commits
+}
+
 // ListCommitsBetween returns the list of commits between the two given revisions.
 //
 // The "from" parameter is the starting point (exclusive), and the "to" parameter
@@ -325,6 +349,209 @@ func (repo *GitRepo) GetNotes(notesRef, revision string) []Note {
 		notes = append(notes, Note([]byte(line)))
 	}
 	return notes
+}
+
+func stringsReader(s []*string) io.Reader {
+	var subReaders []io.Reader
+	for _, strPtr := range s {
+		subReader := strings.NewReader(*strPtr)
+		subReaders = append(subReaders, subReader, strings.NewReader("\n"))
+	}
+	return io.MultiReader(subReaders...)
+}
+
+// splitBatchCheckOutput parses the output of a 'git cat-file --batch-check=...' command.
+//
+// The output is expected to be formatted as a series of entries, with each
+// entry consisting of:
+// 1. The SHA1 hash of the git object being output, followed by a space.
+// 2. The git "type" of the object (commit, blob, tree, missing, etc), followed by a newline.
+//
+// To generate this format, make sure that the 'git cat-file' command includes
+// the argument '--batch-check=%(objectname) %(objecttype)'.
+//
+// The return value is a map from object hash to a boolean indicating if that object is a commit.
+func splitBatchCheckOutput(out *bytes.Buffer) (map[string]bool, error) {
+	isCommit := make(map[string]bool)
+	reader := bufio.NewReader(out)
+	for {
+		nameLine, err := reader.ReadString(byte(' '))
+		if err == io.EOF {
+			return isCommit, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("Failure while reading the next object name: %v", err)
+		}
+		nameLine = strings.TrimSuffix(nameLine, " ")
+		typeLine, err := reader.ReadString(byte('\n'))
+		if err != nil && err != io.EOF {
+			return nil, fmt.Errorf("Failure while reading the next object type: %q - %v", nameLine, err)
+		}
+		typeLine = strings.TrimSuffix(typeLine, "\n")
+		if typeLine == "commit" {
+			isCommit[nameLine] = true
+		}
+	}
+}
+
+// splitBatchCatFileOutput parses the output of a 'git cat-file --batch=...' command.
+//
+// The output is expected to be formatted as a series of entries, with each
+// entry consisting of:
+// 1. The SHA1 hash of the git object being output, followed by a newline.
+// 2. The size of the object's contents in bytes, followed by a newline.
+// 3. The objects contents.
+//
+// To generate this format, make sure that the 'git cat-file' command includes
+// the argument '--batch=%(objectname)\n%(objectsize)'.
+func splitBatchCatFileOutput(out *bytes.Buffer) (map[string][]byte, error) {
+	contentsMap := make(map[string][]byte)
+	reader := bufio.NewReader(out)
+	for {
+		nameLine, err := reader.ReadString(byte('\n'))
+		if strings.HasSuffix(nameLine, "\n") {
+			nameLine = strings.TrimSuffix(nameLine, "\n")
+		}
+		if err == io.EOF {
+			return contentsMap, nil
+		}
+		if err != nil {
+			return nil, fmt.Errorf("Failure while reading the next object name: %v", err)
+		}
+		sizeLine, err := reader.ReadString(byte('\n'))
+		if strings.HasSuffix(sizeLine, "\n") {
+			sizeLine = strings.TrimSuffix(sizeLine, "\n")
+		}
+		if err != nil {
+			return nil, fmt.Errorf("Failure while reading the next object size: %q - %v", nameLine, err)
+		}
+		size, err := strconv.Atoi(sizeLine)
+		if err != nil {
+			return nil, fmt.Errorf("Failure while parsing the next object size: %q - %v", nameLine, err)
+		}
+		contentBytes := make([]byte, size, size)
+		readDest := contentBytes
+		len := 0
+		err = nil
+		for err == nil && len < size {
+			nextLen := 0
+			nextLen, err = reader.Read(readDest)
+			len += nextLen
+			readDest = contentBytes[len:]
+		}
+		contentsMap[nameLine] = contentBytes
+		if err == io.EOF {
+			return contentsMap, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		for bs, err := reader.Peek(1); err == nil && bs[0] == byte('\n'); bs, err = reader.Peek(1) {
+			reader.ReadByte()
+		}
+	}
+}
+
+// GetAllNotes reads the contents of the notes under the given ref for every commit.
+//
+// The returned value is a mapping from commit hash to the list of notes for that commit.
+//
+// This is the batch version of the corresponding GetNotes(...) method.
+func (repo *GitRepo) GetAllNotes(notesRef string) (map[string][]Note, error) {
+	// This code is unfortunately quite complicated, but it needs to be so.
+	//
+	// Conceptually, this is equivalent to:
+	//   result := make(map[string][]Note)
+	//   for _, commit := range repo.ListNotedRevisions(notesRef) {
+	//     result[commit] = repo.GetNotes(notesRef, commit)
+	//   }
+	//   return result, nil
+	//
+	// However, that logic would require separate executions of the 'git'
+	// command for every annotated commit. For a repo with 10s of thousands
+	// of reviews, that would mean calling Cmd.Run(...) 10s of thousands of
+	// times. That, in turn, would take so long that the tool would be unusable.
+	//
+	// This method avoids that by taking advantage of the 'git cat-file --batch="..."'
+	// command. That allows us to use a single invocation of Cmd.Run(...) to
+	// inspect multiple git objects at once.
+	//
+	// As such, regardless of the number of reviews in a repo, we can get all
+	// of the notes using a total of three invocations of Cmd.Run(...):
+	//  1. One to list all the annotated objects (and their notes hash)
+	//  2. A second one to filter out all of the annotated objects that are not commits.
+	//  3. A final one to get the contents of all of the notes blobs.
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if err := repo.runGitCommandWithIO(nil, &stdout, &stderr, "notes", "--ref", notesRef, "list"); err != nil {
+		return nil, err
+	}
+
+	var cn []*struct {
+		ObjectHash *string
+		NotesHash  *string
+	}
+	var objHashes []*string
+	var noteBlobs []*string
+	outScanner := bufio.NewScanner(&stdout)
+	for outScanner.Scan() {
+		line := outScanner.Text()
+		lineParts := strings.Split(line, " ")
+		if len(lineParts) != 2 {
+			return nil, fmt.Errorf("Malformed output line from 'git-notes list': %q", line)
+		}
+		objHash := &lineParts[1]
+		notesHash := &lineParts[0]
+		cn = append(cn, &struct {
+			ObjectHash *string
+			NotesHash  *string
+		}{
+			objHash,
+			notesHash,
+		})
+		objHashes = append(objHashes, objHash)
+		noteBlobs = append(noteBlobs, notesHash)
+	}
+	err := outScanner.Err()
+	if err != nil && err != io.EOF {
+		return nil, fmt.Errorf("Failure parsing the output of 'git-notes list': %v", err)
+	}
+
+	objHashesReader := stringsReader(objHashes)
+	var objTypes bytes.Buffer
+	if err := repo.runGitCommandWithIO(objHashesReader, &objTypes, &stderr, "cat-file", "--batch-check=%(objectname) %(objecttype)"); err != nil {
+		return nil, fmt.Errorf("Failure performing a batch file check: %v", err)
+	}
+	isCommit, err := splitBatchCheckOutput(&objTypes)
+	if err != nil {
+		return nil, fmt.Errorf("Failure parsing the output of a batch file check: %v", err)
+	}
+
+	noteBlobsReader := stringsReader(noteBlobs)
+	var notesContents bytes.Buffer
+	if err := repo.runGitCommandWithIO(noteBlobsReader, &notesContents, &stderr, "cat-file", "--batch=%(objectname)\n%(objectsize)"); err != nil {
+		return nil, fmt.Errorf("Failure performing a batch file read: %v", err)
+	}
+	noteContentsMap, err := splitBatchCatFileOutput(&notesContents)
+	if err != nil {
+		return nil, fmt.Errorf("Failure parsing the output of a batch file read: %v", err)
+	}
+
+	commitNotesMap := make(map[string][]Note)
+	for _, c := range cn {
+		if !isCommit[*c.ObjectHash] {
+			continue
+		}
+		noteBytes := noteContentsMap[*c.NotesHash]
+		byteSlices := bytes.Split(noteBytes, []byte("\n"))
+		var notes []Note
+		for _, slice := range byteSlices {
+			notes = append(notes, Note(slice))
+		}
+		commitNotesMap[*c.ObjectHash] = notes
+	}
+
+	return commitNotesMap, nil
 }
 
 // AppendNote appends a note to a revision under the given ref.
