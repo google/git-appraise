@@ -96,6 +96,17 @@ func (requests requestsByTimestamp) Less(i, j int) bool {
 	return requests[i].Timestamp < requests[j].Timestamp
 }
 
+type summariesWithNewestRequestsFirst []Summary
+
+// Interface methods for sorting review summaries in reverse chronological order
+func (summaries summariesWithNewestRequestsFirst) Len() int { return len(summaries) }
+func (summaries summariesWithNewestRequestsFirst) Swap(i, j int) {
+	summaries[i], summaries[j] = summaries[j], summaries[i]
+}
+func (summaries summariesWithNewestRequestsFirst) Less(i, j int) bool {
+	return summaries[i].Request.Timestamp > summaries[j].Request.Timestamp
+}
+
 // updateThreadsStatus calculates the aggregate status of a sequence of comment threads.
 //
 // The aggregate status is the conjunction of all of the non-nil child statuses.
@@ -284,8 +295,7 @@ func getIsSubmittedCheck(repo repository.Repo) func(ref, commit string) bool {
 	}
 }
 
-// ListAll returns all reviews stored in the git-notes.
-func ListAll(repo repository.Repo) []Summary {
+func unsortedListAll(repo repository.Repo) []Summary {
 	reviewNotesMap, err := repo.GetAllNotes(request.Ref)
 	if err != nil {
 		return nil
@@ -308,14 +318,22 @@ func ListAll(repo repository.Repo) []Summary {
 	return reviews
 }
 
+// ListAll returns all reviews stored in the git-notes.
+func ListAll(repo repository.Repo) []Summary {
+	reviews := unsortedListAll(repo)
+	sort.Stable(summariesWithNewestRequestsFirst(reviews))
+	return reviews
+}
+
 // ListOpen returns all reviews that are not yet incorporated into their target refs.
 func ListOpen(repo repository.Repo) []Summary {
 	var openReviews []Summary
-	for _, review := range ListAll(repo) {
+	for _, review := range unsortedListAll(repo) {
 		if !review.Submitted {
 			openReviews = append(openReviews, review)
 		}
 	}
+	sort.Stable(summariesWithNewestRequestsFirst(openReviews))
 	return openReviews
 }
 
