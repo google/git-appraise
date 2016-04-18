@@ -315,6 +315,20 @@ func (r *Review) GetBuildStatusMessage() string {
 	return statusMessage
 }
 
+// GetBuildStatusOutput returns a string of the current build-and-test output
+// of the review, or "unknown" if the build-and-test output cannot be determined.
+func (r *Review) GetBuildStatusOutput() string {
+	statusOutput := ""
+	ciReport, err := ci.GetLatestCIReport(r.Reports)
+	if err != nil {
+		return fmt.Sprintf("unknown: %s", err)
+	}
+	if ciReport != nil {
+		statusOutput = ciReport.Output
+	}
+	return statusOutput
+}
+
 // GetAnalysesNotes returns all of the notes from the most recent static
 // analysis run recorded in the git notes.
 func (r *Review) GetAnalysesNotes() ([]analyses.Note, error) {

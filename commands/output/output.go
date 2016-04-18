@@ -20,6 +20,7 @@ package output
 import (
 	"fmt"
 	"github.com/google/git-appraise/review"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -152,6 +153,13 @@ func printAnalyses(r *review.Review) {
 	fmt.Println("  analyses: ", r.GetAnalysesMessage())
 }
 
+// printBuildStatusOutput prints the static analysis results for the latest commit in the review.
+func printBuildStatusOutput(r *review.Review) {
+	indent := "    "
+	indentRegex := regexp.MustCompile("\n")
+	fmt.Println(indent + indentRegex.ReplaceAllString(r.GetBuildStatusOutput(), "\n"+indent))
+}
+
 // printComments prints all of the comments for the review, with snippets of the preceding source code.
 func printComments(r *review.Review) error {
 	fmt.Printf(commentSummaryTemplate, len(r.Comments))
@@ -170,6 +178,7 @@ func PrintDetails(r *review.Review) error {
 	fmt.Printf(reviewDetailsTemplate, r.Request.ReviewRef, r.Request.TargetRef,
 		strings.Join(r.Request.Reviewers, ", "),
 		r.Request.Requester, r.GetBuildStatusMessage())
+	printBuildStatusOutput(r)
 	printAnalyses(r)
 	if err := printComments(r); err != nil {
 		return err

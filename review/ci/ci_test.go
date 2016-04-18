@@ -51,6 +51,12 @@ const testCINote5 = `{
 	"Status": "success"
 }`
 
+const testCINote6 = `{
+	"Timestamp": "27",
+	"Status": "success"
+	"Output": "biz\nbaz"
+}`
+
 func TestCIReport(t *testing.T) {
 	latestReport, err := GetLatestCIReport(ParseAllValid([]repository.Note{
 		repository.Note(testCINote1),
@@ -71,6 +77,7 @@ func TestCIReport(t *testing.T) {
 		repository.Note(testCINote2),
 		repository.Note(testCINote3),
 		repository.Note(testCINote4),
+		repository.Note(testCINote6),
 	}))
 	if err != nil {
 		t.Fatal("Failed to properly fetch the latest report", err)
