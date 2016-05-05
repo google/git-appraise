@@ -369,7 +369,20 @@ func (r mockRepoForTest) RebaseRef(ref string) error { return nil }
 // merge base of the two is used as the starting point.
 //
 // The generated list is in chronological order (with the oldest commit first).
-func (r mockRepoForTest) ListCommitsBetween(from, to string) ([]string, error) { return nil, nil }
+func (r mockRepoForTest) ListCommitsBetween(from, to string) ([]string, error) {
+	commits := []string{to}
+	potentialCommits, _ := r.ancestors(to)
+	for _, commit := range potentialCommits {
+		blocked, err := r.IsAncestor(commit, from)
+		if err != nil {
+			return nil, err
+		}
+		if !blocked {
+			commits = append(commits, commit)
+		}
+	}
+	return commits, nil
+}
 
 // GetNotes reads the notes from the given ref that annotate the given revision.
 func (r mockRepoForTest) GetNotes(notesRef, revision string) []Note {
