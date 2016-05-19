@@ -296,10 +296,16 @@ func (repo *GitRepo) RebaseRef(ref string) error {
 
 // ListCommitsBetween returns the list of commits between the two given revisions.
 //
-// The "from" parameter is the starting point (exclusive), and the "to" parameter
-// is the ending point (inclusive). If the commit pointed to by the "from" parameter
-// is not an ancestor of the commit pointed to by the "to" parameter, then the
-// merge base of the two is used as the starting point.
+// The "from" parameter is the starting point (exclusive), and the "to"
+// parameter is the ending point (inclusive).
+//
+// The "from" commit does not need to be an ancestor of the "to" commit. If it
+// is not, then the merge base of the two is used as the starting point.
+// Admittedly, this makes calling these the "between" commits is a bit of a
+// misnomer, but it also makes the method easier to use when you want to
+// generate the list of changes in a feature branch, as it eliminates the need
+// to explicitly calculate the merge base. This also makes the semantics of the
+// method compatible with git's built-in "rev-list" command.
 //
 // The generated list is in chronological order (with the oldest commit first).
 func (repo *GitRepo) ListCommitsBetween(from, to string) ([]string, error) {
