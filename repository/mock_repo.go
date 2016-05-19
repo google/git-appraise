@@ -363,13 +363,32 @@ func (r mockRepoForTest) RebaseRef(ref string) error { return nil }
 
 // ListCommitsBetween returns the list of commits between the two given revisions.
 //
-// The "from" parameter is the starting point (exclusive), and the "to" parameter
-// is the ending point (inclusive). If the commit pointed to by the "from" parameter
-// is not an ancestor of the commit pointed to by the "to" parameter, then the
-// merge base of the two is used as the starting point.
+// The "from" parameter is the starting point (exclusive), and the "to"
+// parameter is the ending point (inclusive).
+//
+// The "from" commit does not need to be an ancestor of the "to" commit. If it
+// is not, then the merge base of the two is used as the starting point.
+// Admittedly, this makes calling these the "between" commits is a bit of a
+// misnomer, but it also makes the method easier to use when you want to
+// generate the list of changes in a feature branch, as it eliminates the need
+// to explicitly calculate the merge base. This also makes the semantics of the
+// method compatible with git's built-in "rev-list" command.
 //
 // The generated list is in chronological order (with the oldest commit first).
-func (r mockRepoForTest) ListCommitsBetween(from, to string) ([]string, error) { return nil, nil }
+func (r mockRepoForTest) ListCommitsBetween(from, to string) ([]string, error) {
+	commits := []string{to}
+	potentialCommits, _ := r.ancestors(to)
+	for _, commit := range potentialCommits {
+		blocked, err := r.IsAncestor(commit, from)
+		if err != nil {
+			return nil, err
+		}
+		if !blocked {
+			commits = append(commits, commit)
+		}
+	}
+	return commits, nil
+}
 
 // GetNotes reads the notes from the given ref that annotate the given revision.
 func (r mockRepoForTest) GetNotes(notesRef, revision string) []Note {
