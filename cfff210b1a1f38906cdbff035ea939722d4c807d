@@ -1,0 +1,1 @@
+{"timestamp":"1463780947","author":"jonjohnson@google.com","location":{"commit":"d4ad3be9ff4f2d08e883025774de4e4e5e8f68e8","path":"repository/git.go","range":{"startLine":528}},"description":"Did you try using the --buffer option? https://git-scm.com/docs/git-cat-file\nsays this makes --batch-check much more efficient for lots of objects.\n"}
