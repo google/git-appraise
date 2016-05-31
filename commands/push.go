@@ -38,7 +38,7 @@ func push(repo repository.Repo, args []string) error {
 
 var pushCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s push [<remote>]", arg0)
+		fmt.Printf("Usage: %s push [<remote>]\n", arg0)
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {
 		return push(repo, args)

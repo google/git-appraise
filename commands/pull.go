@@ -39,7 +39,7 @@ func pull(repo repository.Repo, args []string) error {
 
 var pullCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s pull [<remote>]", arg0)
+		fmt.Printf("Usage: %s pull [<remote>]\n", arg0)
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {
 		return pull(repo, args)
