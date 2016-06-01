@@ -1,3 +1,5 @@
 {"timestamp":"1463780947","author":"jonjohnson@google.com","location":{"commit":"d4ad3be9ff4f2d08e883025774de4e4e5e8f68e8","path":"repository/git.go","range":{"startLine":528}},"description":"Did you try using the --buffer option? https://git-scm.com/docs/git-cat-file\nsays this makes --batch-check much more efficient for lots of objects.\n"}
 
 {"timestamp":"1463782710","author":"ojarjur@google.com","parent":"ff4fd233cdb3ad8ba8361ba8364c90be5ab13cb1","location":{"commit":"d4ad3be9ff4f2d08e883025774de4e4e5e8f68e8"},"description":"Thanks for the suggestion; I was not aware of that option.\n\nI tried it out with my large test repo, but it unfortunately\ndid not seem to have any performance impact. Either with or\nwithout that option, the command still took the same amount\nof time."}
+
+{"timestamp":"1464815058","author":"jonjohnson@google.com","location":{"commit":"d4ad3be9ff4f2d08e883025774de4e4e5e8f68e8","path":"repository/git.go","range":{"startLine":466}},"description":"Any way you could split this method up (or just comments to break it into sections)? There's a lot happening so it's hard to follow."}
