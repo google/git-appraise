@@ -5,3 +5,5 @@
 {"timestamp":"1464815058","author":"jonjohnson@google.com","location":{"commit":"d4ad3be9ff4f2d08e883025774de4e4e5e8f68e8","path":"repository/git.go","range":{"startLine":466}},"description":"Any way you could split this method up (or just comments to break it into sections)? There's a lot happening so it's hard to follow."}
 
 {"timestamp":"1464815132","author":"jonjohnson@google.com","location":{"commit":"d4ad3be9ff4f2d08e883025774de4e4e5e8f68e8","path":"repository/git.go","range":{"startLine":496}},"description":"This name doesn't help me much. Does cn = 'commit-note tuple'?"}
+
+{"timestamp":"1464815209","author":"jonjohnson@google.com","location":{"commit":"d4ad3be9ff4f2d08e883025774de4e4e5e8f68e8","path":"repository/git.go","range":{"startLine":501}},"description":"Why the inconsistent naming between objHashes and noteBlobs?"}
