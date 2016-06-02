@@ -333,7 +333,7 @@ func (repo *GitRepo) ListCommits(ref string) []string {
 //
 // The generated list is in chronological order (with the oldest commit first).
 func (repo *GitRepo) ListCommitsBetween(from, to string) ([]string, error) {
-	out, err := repo.runGitCommand("rev-list", "--reverse", "--ancestry-path", from+".."+to)
+	out, err := repo.runGitCommand("rev-list", "--reverse", from+".."+to)
 	if err != nil {
 		return nil, err
 	}
