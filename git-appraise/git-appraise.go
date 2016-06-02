@@ -68,14 +68,6 @@ func help() {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		usage()
-		return
-	}
-	if os.Args[1] == "help" {
-		help()
-		return
-	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		fmt.Printf("Unable to get the current working directory: %q\n", err)
@@ -84,6 +76,19 @@ func main() {
 	repo, err := repository.NewGitRepo(cwd)
 	if err != nil {
 		fmt.Printf("%s must be run from within a git repo.\n", os.Args[0])
+		return
+	}
+	if len(os.Args) < 2 {
+		subcommand, ok := commands.CommandMap["list"]
+		if !ok {
+			fmt.Printf("Unable to list reviews")
+			return
+		}
+		subcommand.Run(repo, []string{})
+		return
+	}
+	if os.Args[1] == "help" {
+		help()
 		return
 	}
 	subcommand, ok := commands.CommandMap[os.Args[1]]
