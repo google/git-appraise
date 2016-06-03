@@ -1,3 +1,5 @@
 {"timestamp":"1464985939","author":"ojarjur","description":"Thanks for putting this together. I like where this is headed so far.\r\n\r\nI also like the proposal to be consistent with git's stderr message before trying to read from stdin. I think that will make things a lot more clear to the end user.\r\n\r\nDid you want to get this submitted with just the current scope, or did you want to add the other functionality too? I'm happy with either approach, so just let me know.\r\n\r\nThanks."}
 
 {"timestamp":"1464990052","author":"hazbo","description":"After receiving feedback on this first commit I was planning on working on the rest and then just have it all merged as one. But I think it might be better if we submit this one now, figure out the stdin related stuff in a separate request, then once we're happy with that, it'd just be a case of applying this work to the other subcommands.\r\n\r\nHow does this sound to you?"}
+
+{"timestamp":"1464990291","author":"ojarjur","description":"That sounds good to me. The only caveat for that approach is that we'll need to remove the bit in the help text about using `-` for reading from stdin."}
