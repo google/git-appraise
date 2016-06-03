@@ -70,6 +70,15 @@ func LaunchEditor(repo repository.Repo, fileName string) (string, error) {
 	return string(output), err
 }
 
+// FromFile loads and returns the contents of a given file.
+func FromFile(fileName string) (string, error) {
+	output, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return "", fmt.Errorf("Error reading file: %v\n", err)
+	}
+	return string(output), err
+}
+
 func startInlineCommand(command string, args ...string) (*exec.Cmd, error) {
 	cmd := exec.Command(command, args...)
 	cmd.Stdin = os.Stdin
