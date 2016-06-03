@@ -25,3 +25,5 @@
 {"timestamp":"1454017808","author":"googlebot","description":"CLAs look good, thanks!\n\n\u003c!-- ok --\u003e"}
 
 {"timestamp":"1454065126","author":"hazbo","description":"@ojarjur thanks for the feedback on this. As you can see I have made some amendments in my latest commit. However I was unable to find your inline comment using git-appraise this time. I did a pull and then a list, but didn't see the review there."}
+
+{"timestamp":"1454066246","author":"jishi9","description":"@hazbo It's hidden in `git appraise show 708d7c2846d8`, took me a while to find!\r\n\r\nLook for `a35b23b2737594d793d42b7ede04b8f068145384` in the output, where it says \"This should only be done if the user has not set one of the command line flags\"\r\n\r\n"}
