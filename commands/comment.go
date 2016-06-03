@@ -30,7 +30,7 @@ import (
 var commentFlagSet = flag.NewFlagSet("comment", flag.ExitOnError)
 
 var (
-	commentMessageFile = commentFlagSet.String("F", "", "Take the comment from the given file. se - to read the message from the standard input")
+	commentMessageFile = commentFlagSet.String("F", "", "Take the comment from the given file. Use - to read the message from the standard input")
 	commentMessage     = commentFlagSet.String("m", "", "Message to attach to the review")
 	commentParent      = commentFlagSet.String("p", "", "Parent comment")
 	commentFile        = commentFlagSet.String("f", "", "File being commented upon")
