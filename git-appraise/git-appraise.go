@@ -68,6 +68,10 @@ func help() {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "help" {
+		help()
+		return
+	}
 	cwd, err := os.Getwd()
 	if err != nil {
 		fmt.Printf("Unable to get the current working directory: %q\n", err)
@@ -85,10 +89,6 @@ func main() {
 			return
 		}
 		subcommand.Run(repo, []string{})
-		return
-	}
-	if os.Args[1] == "help" {
-		help()
 		return
 	}
 	subcommand, ok := commands.CommandMap[os.Args[1]]
