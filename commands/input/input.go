@@ -88,7 +88,7 @@ func FromFile(fileName string) (string, error) {
 			return string(output), err
 		}
 
-		fmt.Printf("(reading log message from standard input)\n")
+		fmt.Printf("(reading comment from standard input)\n")
 		var output bytes.Buffer
 		s := bufio.NewScanner(os.Stdin)
 		for s.Scan() {
