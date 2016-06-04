@@ -5,3 +5,5 @@
 {"timestamp":"1464990291","author":"ojarjur","description":"That sounds good to me. The only caveat for that approach is that we'll need to remove the bit in the help text about using `-` for reading from stdin."}
 
 {"timestamp":"1464990349","author":"hazbo","description":"Feel free to assign #56 to me if you'd like. I'm more than happy to hack away at this tonight, and probably the rest tomorrow :)"}
+
+{"timestamp":"1465041308","author":"hazbo","description":"I branched off from hazbo/unix-filter to create #58 "}
