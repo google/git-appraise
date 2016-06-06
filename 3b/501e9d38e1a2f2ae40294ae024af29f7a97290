@@ -7,3 +7,5 @@
 {"timestamp":"1464990349","author":"hazbo","description":"Feel free to assign #56 to me if you'd like. I'm more than happy to hack away at this tonight, and probably the rest tomorrow :)"}
 
 {"timestamp":"1465041308","author":"hazbo","description":"I branched off from hazbo/unix-filter to create #58 "}
+
+{"timestamp":"1465232534","author":"ojarjur@google.com","location":{"commit":"9fe6acaf58e22fbdb98024321ae2e920bdea18a4"},"resolved":true}
