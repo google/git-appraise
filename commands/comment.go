@@ -30,12 +30,13 @@ import (
 var commentFlagSet = flag.NewFlagSet("comment", flag.ExitOnError)
 
 var (
-	commentMessage = commentFlagSet.String("m", "", "Message to attach to the review")
-	commentParent  = commentFlagSet.String("p", "", "Parent comment")
-	commentFile    = commentFlagSet.String("f", "", "File being commented upon")
-	commentLine    = commentFlagSet.Uint("l", 0, "Line being commented upon; requires that the -f flag also be set")
-	commentLgtm    = commentFlagSet.Bool("lgtm", false, "'Looks Good To Me'. Set this to express your approval. This cannot be combined with nmw")
-	commentNmw     = commentFlagSet.Bool("nmw", false, "'Needs More Work'. Set this to express your disapproval. This cannot be combined with lgtm")
+	commentMessageFile = commentFlagSet.String("F", "", "Take the comment from the given file.")
+	commentMessage     = commentFlagSet.String("m", "", "Message to attach to the review")
+	commentParent      = commentFlagSet.String("p", "", "Parent comment")
+	commentFile        = commentFlagSet.String("f", "", "File being commented upon")
+	commentLine        = commentFlagSet.Uint("l", 0, "Line being commented upon; requires that the -f flag also be set")
+	commentLgtm        = commentFlagSet.Bool("lgtm", false, "'Looks Good To Me'. Set this to express your approval. This cannot be combined with nmw")
+	commentNmw         = commentFlagSet.Bool("nmw", false, "'Needs More Work'. Set this to express your disapproval. This cannot be combined with lgtm")
 )
 
 // commentHashExists checks if the given comment hash exists in the given comment threads.
@@ -98,7 +99,13 @@ func commentOnReview(repo repository.Repo, args []string) error {
 		return errors.New("There is no matching parent comment.")
 	}
 
-	if *commentMessage == "" {
+	if *commentMessageFile != "" && *commentMessage == "" {
+		*commentMessage, err = input.FromFile(*commentMessageFile)
+		if err != nil {
+			return err
+		}
+	}
+	if *commentMessageFile == "" && *commentMessage == "" {
 		*commentMessage, err = input.LaunchEditor(repo, commentFilename)
 		if err != nil {
 			return err
