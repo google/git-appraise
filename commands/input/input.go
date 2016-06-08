@@ -93,6 +93,7 @@ func FromFile(fileName string) (string, error) {
 		s := bufio.NewScanner(os.Stdin)
 		for s.Scan() {
 			output.Write(s.Bytes())
+			output.WriteRune('\n')
 		}
 		return output.String(), nil
 	}
