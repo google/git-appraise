@@ -1,3 +1,5 @@
 {"timestamp":"1465239143","author":"ojarjur","location":{"commit":"40dd6bc463093bb679ff9ff0f3f57b1ff1d10288","path":"commands/input/input.go","range":{"startLine":96}},"description":"I think we need to add a newline to what is written in order to compensate for s.Scan() trimming the separator (which defaults to newline)."}
 
 {"timestamp":"1465239208","author":"ojarjur","description":"Thanks for putting this together.\r\n\r\nOverall, I think it looks good. The only feedback I have is the inline comment about `Scan()` dropping newlines that it encounters."}
+
+{"timestamp":"1465426091","author":"hazbo","description":"Hey Omar! Sorry this took me so long to get back to. This seems to do the trick.\r\n\r\nIf this seems okay with you, would it be a good idea to now implement this among the other relevant subcommands?"}
