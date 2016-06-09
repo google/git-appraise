@@ -3,3 +3,5 @@
 {"timestamp":"1465239208","author":"ojarjur","description":"Thanks for putting this together.\r\n\r\nOverall, I think it looks good. The only feedback I have is the inline comment about `Scan()` dropping newlines that it encounters."}
 
 {"timestamp":"1465426091","author":"hazbo","description":"Hey Omar! Sorry this took me so long to get back to. This seems to do the trick.\r\n\r\nIf this seems okay with you, would it be a good idea to now implement this among the other relevant subcommands?"}
+
+{"timestamp":"1465454903","author":"ojarjur","description":"\u003e Sorry this took me so long to get back to.\r\n\r\nNo need to apologize. I really appreciate the amount of work you've put in to this.\r\n\r\n\u003e If this seems okay with you, would it be a good idea to now implement this among the other relevant subcommands?\r\n\r\nYes, I think this looks really good now. I'll get this submitted tomorrow unless you want me to wait. The other commands can always go in a later PR.\r\n\r\nThanks again for all of your help."}
