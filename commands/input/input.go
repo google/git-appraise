@@ -17,6 +17,8 @@ limitations under the License.
 package input
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"github.com/google/git-appraise/repository"
 	"io/ioutil"
@@ -70,8 +72,32 @@ func LaunchEditor(repo repository.Repo, fileName string) (string, error) {
 	return string(output), err
 }
 
-// FromFile loads and returns the contents of a given file.
+// FromFile loads and returns the contents of a given file. If - is passed
+// through, much like git, it will read from stdin. This can be piped data,
+// unless there is a tty in which case the user will be prompted to enter a
+// message.
 func FromFile(fileName string) (string, error) {
+	if fileName == "-" {
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			// There is no tty. This will allow us to read piped data instead.
+			output, err := ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				return "", fmt.Errorf("Error reading from stdin: %v\n", err)
+			}
+			return string(output), err
+		}
+
+		fmt.Printf("(reading comment from standard input)\n")
+		var output bytes.Buffer
+		s := bufio.NewScanner(os.Stdin)
+		for s.Scan() {
+			output.Write(s.Bytes())
+			output.WriteRune('\n')
+		}
+		return output.String(), nil
+	}
+
 	output, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return "", fmt.Errorf("Error reading file: %v\n", err)

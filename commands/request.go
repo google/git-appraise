@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/request"
 	"strings"
@@ -36,6 +37,7 @@ Message: "%s"
 var requestFlagSet = flag.NewFlagSet("request", flag.ExitOnError)
 
 var (
+	requestMessageFile      = requestFlagSet.String("F", "", "Take the comment from the given file. Use - to read the message from the standard input")
 	requestMessage          = requestFlagSet.String("m", "", "Message to attach to the review")
 	requestReviewers        = requestFlagSet.String("r", "", "Comma-separated list of reviewers")
 	requestSource           = requestFlagSet.String("source", "HEAD", "Revision to review")
@@ -45,15 +47,22 @@ var (
 )
 
 // Build the template review request based solely on the parsed flag values.
-func buildRequestFromFlags(requester string) request.Request {
+func buildRequestFromFlags(requester string) (request.Request, error) {
 	var reviewers []string
 	if len(*requestReviewers) > 0 {
 		for _, reviewer := range strings.Split(*requestReviewers, ",") {
 			reviewers = append(reviewers, strings.TrimSpace(reviewer))
 		}
 	}
+	if *requestMessageFile != "" && *requestMessage == "" {
+		var err error
+		*requestMessage, err = input.FromFile(*requestMessageFile)
+		if err != nil {
+			return request.Request{}, err
+		}
+	}
 
-	return request.New(requester, reviewers, *requestSource, *requestTarget, *requestMessage)
+	return request.New(requester, reviewers, *requestSource, *requestTarget, *requestMessage), nil
 }
 
 // Create a new code review request.
@@ -78,7 +87,10 @@ func requestReview(repo repository.Repo, args []string) error {
 	if err != nil {
 		return err
 	}
-	r := buildRequestFromFlags(userEmail)
+	r, err := buildRequestFromFlags(userEmail)
+	if err != nil {
+		return err
+	}
 	if r.ReviewRef == "HEAD" {
 		headRef, err := repo.GetHeadRef()
 		if err != nil {
