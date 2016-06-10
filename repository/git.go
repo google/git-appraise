@@ -458,6 +458,85 @@ func splitBatchCatFileOutput(out *bytes.Buffer) (map[string][]byte, error) {
 	}
 }
 
+// notesMapping represents the association between a git object and the notes for that object.
+type notesMapping struct {
+	ObjectHash *string
+	NotesHash  *string
+}
+
+// notesOverview represents a high-level overview of all the notes under a single notes ref.
+type notesOverview struct {
+	NotesMappings      []*notesMapping
+	ObjectHashesReader io.Reader
+	NotesHashesReader  io.Reader
+}
+
+// notesOverview returns an overview of the git notes stored under the given ref.
+func (repo *GitRepo) notesOverview(notesRef string) (*notesOverview, error) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if err := repo.runGitCommandWithIO(nil, &stdout, &stderr, "notes", "--ref", notesRef, "list"); err != nil {
+		return nil, err
+	}
+
+	var notesMappings []*notesMapping
+	var objHashes []*string
+	var notesHashes []*string
+	outScanner := bufio.NewScanner(&stdout)
+	for outScanner.Scan() {
+		line := outScanner.Text()
+		lineParts := strings.Split(line, " ")
+		if len(lineParts) != 2 {
+			return nil, fmt.Errorf("Malformed output line from 'git-notes list': %q", line)
+		}
+		objHash := &lineParts[1]
+		notesHash := &lineParts[0]
+		notesMappings = append(notesMappings, &notesMapping{
+			ObjectHash: objHash,
+			NotesHash:  notesHash,
+		})
+		objHashes = append(objHashes, objHash)
+		notesHashes = append(notesHashes, notesHash)
+	}
+	err := outScanner.Err()
+	if err != nil && err != io.EOF {
+		return nil, fmt.Errorf("Failure parsing the output of 'git-notes list': %v", err)
+	}
+	return &notesOverview{
+		NotesMappings:      notesMappings,
+		ObjectHashesReader: stringsReader(objHashes),
+		NotesHashesReader:  stringsReader(notesHashes),
+	}, nil
+}
+
+// getIsCommitMap returns a mapping of all the annotated objects that are commits.
+func (overview *notesOverview) getIsCommitMap(repo *GitRepo) (map[string]bool, error) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if err := repo.runGitCommandWithIO(overview.ObjectHashesReader, &stdout, &stderr, "cat-file", "--batch-check=%(objectname) %(objecttype)"); err != nil {
+		return nil, fmt.Errorf("Failure performing a batch file check: %v", err)
+	}
+	isCommit, err := splitBatchCheckOutput(&stdout)
+	if err != nil {
+		return nil, fmt.Errorf("Failure parsing the output of a batch file check: %v", err)
+	}
+	return isCommit, nil
+}
+
+// getNoteContentsMap returns a mapping from all the notes hashes to their contents.
+func (overview *notesOverview) getNoteContentsMap(repo *GitRepo) (map[string][]byte, error) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if err := repo.runGitCommandWithIO(overview.NotesHashesReader, &stdout, &stderr, "cat-file", "--batch=%(objectname)\n%(objectsize)"); err != nil {
+		return nil, fmt.Errorf("Failure performing a batch file read: %v", err)
+	}
+	noteContentsMap, err := splitBatchCatFileOutput(&stdout)
+	if err != nil {
+		return nil, fmt.Errorf("Failure parsing the output of a batch file read: %v", err)
+	}
+	return noteContentsMap, nil
+}
+
 // GetAllNotes reads the contents of the notes under the given ref for every commit.
 //
 // The returned value is a mapping from commit hash to the list of notes for that commit.
@@ -487,74 +566,30 @@ func (repo *GitRepo) GetAllNotes(notesRef string) (map[string][]Note, error) {
 	//  1. One to list all the annotated objects (and their notes hash)
 	//  2. A second one to filter out all of the annotated objects that are not commits.
 	//  3. A final one to get the contents of all of the notes blobs.
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	if err := repo.runGitCommandWithIO(nil, &stdout, &stderr, "notes", "--ref", notesRef, "list"); err != nil {
+	overview, err := repo.notesOverview(notesRef)
+	if err != nil {
 		return nil, err
 	}
-
-	var cn []*struct {
-		ObjectHash *string
-		NotesHash  *string
-	}
-	var objHashes []*string
-	var noteBlobs []*string
-	outScanner := bufio.NewScanner(&stdout)
-	for outScanner.Scan() {
-		line := outScanner.Text()
-		lineParts := strings.Split(line, " ")
-		if len(lineParts) != 2 {
-			return nil, fmt.Errorf("Malformed output line from 'git-notes list': %q", line)
-		}
-		objHash := &lineParts[1]
-		notesHash := &lineParts[0]
-		cn = append(cn, &struct {
-			ObjectHash *string
-			NotesHash  *string
-		}{
-			objHash,
-			notesHash,
-		})
-		objHashes = append(objHashes, objHash)
-		noteBlobs = append(noteBlobs, notesHash)
-	}
-	err := outScanner.Err()
-	if err != nil && err != io.EOF {
-		return nil, fmt.Errorf("Failure parsing the output of 'git-notes list': %v", err)
-	}
-
-	objHashesReader := stringsReader(objHashes)
-	var objTypes bytes.Buffer
-	if err := repo.runGitCommandWithIO(objHashesReader, &objTypes, &stderr, "cat-file", "--batch-check=%(objectname) %(objecttype)"); err != nil {
-		return nil, fmt.Errorf("Failure performing a batch file check: %v", err)
-	}
-	isCommit, err := splitBatchCheckOutput(&objTypes)
+	isCommit, err := overview.getIsCommitMap(repo)
 	if err != nil {
-		return nil, fmt.Errorf("Failure parsing the output of a batch file check: %v", err)
+		return nil, fmt.Errorf("Failure building the set of commit objects: %v", err)
 	}
-
-	noteBlobsReader := stringsReader(noteBlobs)
-	var notesContents bytes.Buffer
-	if err := repo.runGitCommandWithIO(noteBlobsReader, &notesContents, &stderr, "cat-file", "--batch=%(objectname)\n%(objectsize)"); err != nil {
-		return nil, fmt.Errorf("Failure performing a batch file read: %v", err)
-	}
-	noteContentsMap, err := splitBatchCatFileOutput(&notesContents)
+	noteContentsMap, err := overview.getNoteContentsMap(repo)
 	if err != nil {
-		return nil, fmt.Errorf("Failure parsing the output of a batch file read: %v", err)
+		return nil, fmt.Errorf("Failure building the mapping from notes hash to contents: %v", err)
 	}
-
 	commitNotesMap := make(map[string][]Note)
-	for _, c := range cn {
-		if !isCommit[*c.ObjectHash] {
+	for _, notesMapping := range overview.NotesMappings {
+		if !isCommit[*notesMapping.ObjectHash] {
 			continue
 		}
-		noteBytes := noteContentsMap[*c.NotesHash]
+		noteBytes := noteContentsMap[*notesMapping.NotesHash]
 		byteSlices := bytes.Split(noteBytes, []byte("\n"))
 		var notes []Note
 		for _, slice := range byteSlices {
 			notes = append(notes, Note(slice))
 		}
-		commitNotesMap[*c.ObjectHash] = notes
+		commitNotesMap[*notesMapping.ObjectHash] = notes
 	}
 
 	return commitNotesMap, nil
