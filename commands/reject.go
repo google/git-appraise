@@ -29,7 +29,8 @@ import (
 var rejectFlagSet = flag.NewFlagSet("reject", flag.ExitOnError)
 
 var (
-	rejectMessage = rejectFlagSet.String("m", "", "Message to attach to the review")
+	rejectMessageFile = rejectFlagSet.String("F", "", "Take the comment from the given file. Use - to read the message from the standard input")
+	rejectMessage     = rejectFlagSet.String("m", "", "Message to attach to the review")
 )
 
 // rejectReview adds an NMW comment to the current code review.
@@ -56,7 +57,13 @@ func rejectReview(repo repository.Repo, args []string) error {
 		return errors.New("There is no matching review.")
 	}
 
-	if *rejectMessage == "" {
+	if *rejectMessageFile != "" && *rejectMessage == "" {
+		*rejectMessage, err = input.FromFile(*rejectMessageFile)
+		if err != nil {
+			return err
+		}
+	}
+	if *rejectMessageFile == "" && *rejectMessage == "" {
 		*rejectMessage, err = input.LaunchEditor(repo, commentFilename)
 		if err != nil {
 			return err
