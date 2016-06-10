@@ -78,7 +78,10 @@ func LaunchEditor(repo repository.Repo, fileName string) (string, error) {
 // message.
 func FromFile(fileName string) (string, error) {
 	if fileName == "-" {
-		stat, _ := os.Stdin.Stat()
+		stat, err := os.Stdin.Stat()
+		if err != nil {
+			return "", fmt.Errorf("Error reading from stdin: %v\n", err)
+		}
 		if (stat.Mode() & os.ModeCharDevice) == 0 {
 			// There is no tty. This will allow us to read piped data instead.
 			output, err := ioutil.ReadAll(os.Stdin)
