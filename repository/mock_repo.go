@@ -361,6 +361,13 @@ func (r mockRepoForTest) MergeRef(ref string, fastForward bool, messages ...stri
 // RebaseRef rebases the given ref into the current one.
 func (r mockRepoForTest) RebaseRef(ref string) error { return nil }
 
+// ListCommits returns the list of commits reachable from the given ref.
+//
+// The generated list is in chronological order (with the oldest commit first).
+//
+// If the specified ref does not exist, then this method returns an empty result.
+func (r mockRepoForTest) ListCommits(ref string) []string { return nil }
+
 // ListCommitsBetween returns the list of commits between the two given revisions.
 //
 // The "from" parameter is the starting point (exclusive), and the "to"
@@ -398,6 +405,19 @@ func (r mockRepoForTest) GetNotes(notesRef, revision string) []Note {
 		notes = append(notes, Note(line))
 	}
 	return notes
+}
+
+// GetAllNotes reads the contents of the notes under the given ref for every commit.
+//
+// The returned value is a mapping from commit hash to the list of notes for that commit.
+//
+// This is the batch version of the corresponding GetNotes(...) method.
+func (r mockRepoForTest) GetAllNotes(notesRef string) (map[string][]Note, error) {
+	notesMap := make(map[string][]Note)
+	for _, commit := range r.ListNotedRevisions(notesRef) {
+		notesMap[commit] = r.GetNotes(notesRef, commit)
+	}
+	return notesMap, nil
 }
 
 // AppendNote appends a note to a revision under the given ref.

@@ -96,6 +96,17 @@ func (requests requestsByTimestamp) Less(i, j int) bool {
 	return requests[i].Timestamp < requests[j].Timestamp
 }
 
+type summariesWithNewestRequestsFirst []Summary
+
+// Interface methods for sorting review summaries in reverse chronological order
+func (summaries summariesWithNewestRequestsFirst) Len() int { return len(summaries) }
+func (summaries summariesWithNewestRequestsFirst) Swap(i, j int) {
+	summaries[i], summaries[j] = summaries[j], summaries[i]
+}
+func (summaries summariesWithNewestRequestsFirst) Less(i, j int) bool {
+	return summaries[i].Request.Timestamp > summaries[j].Request.Timestamp
+}
+
 // updateThreadsStatus calculates the aggregate status of a sequence of comment threads.
 //
 // The aggregate status is the conjunction of all of the non-nil child statuses.
@@ -196,17 +207,12 @@ func buildCommentThreads(commentsByHash map[string]comment.Comment) []CommentThr
 
 // loadComments reads in the log-structured sequence of comments for a review,
 // and then builds the corresponding tree-structured comment threads.
-func (r *Summary) loadComments() []CommentThread {
-	commentNotes := r.Repo.GetNotes(comment.Ref, r.Revision)
+func (r *Summary) loadComments(commentNotes []repository.Note) []CommentThread {
 	commentsByHash := comment.ParseAllValid(commentNotes)
 	return buildCommentThreads(commentsByHash)
 }
 
-// GetSummary returns the summary of the specified code review.
-//
-// If no review request exists, the returned review summary is nil.
-func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
-	requestNotes := repo.GetNotes(request.Ref, revision)
+func getSummaryFromNotes(repo repository.Repo, revision string, requestNotes, commentNotes []repository.Note) (*Summary, error) {
 	requests := request.ParseAllValid(requestNotes)
 	if requests == nil {
 		return nil, nil
@@ -218,14 +224,27 @@ func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
 		Request:     requests[len(requests)-1],
 		AllRequests: requests,
 	}
-	reviewSummary.Comments = reviewSummary.loadComments()
+	reviewSummary.Comments = reviewSummary.loadComments(commentNotes)
 	reviewSummary.Resolved = updateThreadsStatus(reviewSummary.Comments)
-	submitted, err := repo.IsAncestor(revision, reviewSummary.Request.TargetRef)
+	return &reviewSummary, nil
+}
+
+// GetSummary returns the summary of the specified code review.
+//
+// If no review request exists, the returned review summary is nil.
+func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
+	requestNotes := repo.GetNotes(request.Ref, revision)
+	commentNotes := repo.GetNotes(comment.Ref, revision)
+	summary, err := getSummaryFromNotes(repo, revision, requestNotes, commentNotes)
 	if err != nil {
 		return nil, err
 	}
-	reviewSummary.Submitted = submitted
-	return &reviewSummary, nil
+	submitted, err := repo.IsAncestor(revision, summary.Request.TargetRef)
+	if err != nil {
+		return nil, err
+	}
+	summary.Submitted = submitted
+	return summary, nil
 }
 
 // Details returns the detailed review for the given summary.
@@ -255,26 +274,66 @@ func Get(repo repository.Repo, revision string) (*Review, error) {
 	return summary.Details()
 }
 
+func getIsSubmittedCheck(repo repository.Repo) func(ref, commit string) bool {
+	refCommitsMap := make(map[string]map[string]bool)
+
+	getRefCommitsMap := func(ref string) map[string]bool {
+		commitsMap, ok := refCommitsMap[ref]
+		if ok {
+			return commitsMap
+		}
+		commitsMap = make(map[string]bool)
+		for _, commit := range repo.ListCommits(ref) {
+			commitsMap[commit] = true
+		}
+		refCommitsMap[ref] = commitsMap
+		return commitsMap
+	}
+
+	return func(ref, commit string) bool {
+		return getRefCommitsMap(ref)[commit]
+	}
+}
+
+func unsortedListAll(repo repository.Repo) []Summary {
+	reviewNotesMap, err := repo.GetAllNotes(request.Ref)
+	if err != nil {
+		return nil
+	}
+	discussNotesMap, err := repo.GetAllNotes(comment.Ref)
+	if err != nil {
+		return nil
+	}
+
+	isSubmittedCheck := getIsSubmittedCheck(repo)
+	var reviews []Summary
+	for commit, notes := range reviewNotesMap {
+		summary, err := getSummaryFromNotes(repo, commit, notes, discussNotesMap[commit])
+		if err != nil {
+			continue
+		}
+		summary.Submitted = isSubmittedCheck(summary.Request.TargetRef, summary.Revision)
+		reviews = append(reviews, *summary)
+	}
+	return reviews
+}
+
 // ListAll returns all reviews stored in the git-notes.
 func ListAll(repo repository.Repo) []Summary {
-	var reviews []Summary
-	for _, revision := range repo.ListNotedRevisions(request.Ref) {
-		review, err := GetSummary(repo, revision)
-		if err == nil && review != nil {
-			reviews = append(reviews, *review)
-		}
-	}
+	reviews := unsortedListAll(repo)
+	sort.Stable(summariesWithNewestRequestsFirst(reviews))
 	return reviews
 }
 
 // ListOpen returns all reviews that are not yet incorporated into their target refs.
 func ListOpen(repo repository.Repo) []Summary {
 	var openReviews []Summary
-	for _, review := range ListAll(repo) {
+	for _, review := range unsortedListAll(repo) {
 		if !review.Submitted {
 			openReviews = append(openReviews, review)
 		}
 	}
+	sort.Stable(summariesWithNewestRequestsFirst(openReviews))
 	return openReviews
 }
 
