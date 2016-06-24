@@ -13,3 +13,5 @@
 {"timestamp":"1465602258","author":"ojarjur@google.com","parent":"dcea5c05170a7a8072e84420cbecc1dee626c42d","location":{"commit":"eb19a653cb426593c815093e2884e1be8d6b16c8"},"description":"Done","resolved":true}
 
 {"timestamp":"1465602276","author":"ojarjur@google.com","parent":"159026d85300509388a28275b6080f2551813de0","location":{"commit":"eb19a653cb426593c815093e2884e1be8d6b16c8"},"description":"Done","resolved":true}
+
+{"timestamp":"1466803830","author":"jonjohnson@google.com","location":{"commit":"8157ccaf57016467366154be60e76ada35013567"},"resolved":true}
