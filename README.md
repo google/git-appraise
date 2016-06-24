@@ -127,10 +127,26 @@ machine. These are stored in the "refs/notes/devtools/discuss" ref, and
 annotate the first revision in the review. They must conform to the
 [comment schema](schema/comment.json).
 
-## Plugins
+## Integrations
+
+### Libraries
+
+  - [Go (use git-appraise itself)](https://github.com/google/git-appraise/blob/master/review/review.go)
+  - [Rust](https://github.com/Nemo157/git-appraise-rs)
+
+### Graphical User Interfaces
+
+  - [Git-Appraise-Web](https://github.com/google/git-appraise-web)
+
+### Plugins
 
   - [Eclipse](https://github.com/google/git-appraise-eclipse)
   - [Jenkins](https://github.com/jenkinsci/google-git-notes-publisher-plugin)
+
+### Mirrors to other systems
+
+  - [GitHub Pull Requests](https://github.com/google/git-pull-request-mirror)
+  - [Phabricator Revisions](https://github.com/google/git-phabricator-mirror)
 
 ## Contributing
 
