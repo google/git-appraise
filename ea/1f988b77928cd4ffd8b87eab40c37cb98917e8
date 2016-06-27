@@ -1,1 +1,3 @@
 {"timestamp":"1466858002","author":"linquize","location":{"commit":"ea1f988b77928cd4ffd8b87eab40c37cb98917e8","path":"README.md","range":{"startLine":140}},"description":"Could you enable github issue tracker of Git-Appraise-Web repository?"}
+
+{"timestamp":"1467047454","author":"ojarjur","location":{"commit":"ea1f988b77928cd4ffd8b87eab40c37cb98917e8","path":"README.md","range":{"startLine":140}},"description":"Sorry I forgot to do that, and thanks for pointing it out.\r\n\r\nIt seems like I had a bunch of repositories where I forgot to enable the issue tracker, so catching that really helped me out."}
