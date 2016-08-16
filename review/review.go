@@ -239,7 +239,11 @@ func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
 	if err != nil {
 		return nil, err
 	}
-	submitted, err := repo.IsAncestor(revision, summary.Request.TargetRef)
+	currentCommit := revision
+	if summary.Request.Alias != "" {
+		currentCommit = summary.Request.Alias
+	}
+	submitted, err := repo.IsAncestor(currentCommit, summary.Request.TargetRef)
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +316,7 @@ func unsortedListAll(repo repository.Repo) []Summary {
 		if err != nil {
 			continue
 		}
-		summary.Submitted = isSubmittedCheck(summary.Request.TargetRef, summary.Revision)
+		summary.Submitted = isSubmittedCheck(summary.Request.TargetRef, summary.getCurrentCommit())
 		reviews = append(reviews, *summary)
 	}
 	return reviews
@@ -480,16 +484,24 @@ func (r *Review) findLastCommit(latestCommit string, commentThreads []CommentThr
 	return latestCommit
 }
 
+func (r *Summary) getCurrentCommit() string {
+	if r.Request.Alias != "" {
+		return r.Request.Alias
+	}
+	return r.Revision
+}
+
 // GetHeadCommit returns the latest commit in a review.
 func (r *Review) GetHeadCommit() (string, error) {
+	currentCommit := r.getCurrentCommit()
 	if r.Request.ReviewRef == "" {
-		return r.Revision, nil
+		return currentCommit, nil
 	}
 
 	if r.Submitted {
 		// The review has already been submitted.
 		// Go through the list of comments and find the last commented upon commit.
-		return r.findLastCommit(r.Revision, r.Comments), nil
+		return r.findLastCommit(currentCommit, r.Comments), nil
 	}
 
 	return r.Repo.ResolveRefCommit(r.Request.ReviewRef)

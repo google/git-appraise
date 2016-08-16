@@ -43,6 +43,11 @@
     "v": {
       "type": "integer",
       "enum": [0]
+    },
+
+    "alias": {
+      "description": "used to specify a post-rebase commit hash for the review",
+      "type": "string"
     }
   },
 
