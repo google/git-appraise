@@ -462,4 +462,6 @@ func (r mockRepoForTest) PullNotes(remote, notesRefPattern string) error { retur
 func (r mockRepoForTest) PushArchive(remote, localArchiveRef string) error { return nil }
 
 // PullArchive pulls the given "archive" ref from a remote repo.
-func (r mockRepoForTest) PullArchive(remote, localArchiveRef string) error { return nil }
+func (r mockRepoForTest) PullArchive(remote, localArchiveRef, archiveRefPattern string) error {
+	return nil
+}

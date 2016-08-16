@@ -22,6 +22,7 @@ import (
 )
 
 const notesRefPattern = "refs/notes/devtools/*"
+const archiveRefPattern = "refs/archives/*"
 const archiveRef = "refs/archives/devtools"
 const commentFilename = "APPRAISE_COMMENT_EDITMSG"
 

@@ -276,12 +276,18 @@ func (repo *GitRepo) SwitchToRef(ref string) error {
 func (repo *GitRepo) mergeArchives(archive, remoteArchive string) error {
 	remoteHash, err := repo.GetCommitHash(remoteArchive)
 	if err != nil {
+		return err
+	}
+	if remoteHash == "" {
 		// The remote archive does not exist, so we have nothing to do
 		return nil
 	}
 
 	archiveHash, err := repo.GetCommitHash(archive)
 	if err != nil {
+		return err
+	}
+	if archiveHash == "" {
 		// The local archive does not exist, so we merely need to set it
 		_, err := repo.runGitCommand("update-ref", archive, remoteHash)
 		return err
@@ -717,8 +723,8 @@ func (repo *GitRepo) PushNotes(remote, notesRefPattern string) error {
 }
 
 // PushArchive pushes the given "archive" ref to a remote repo.
-func (repo *GitRepo) PushArchive(remote, localArchiveRef string) error {
-	refspec := fmt.Sprintf("%s:%s", localArchiveRef, localArchiveRef)
+func (repo *GitRepo) PushArchive(remote, archiveRefPattern string) error {
+	refspec := fmt.Sprintf("%s:%s", archiveRefPattern, archiveRefPattern)
 	err := repo.runGitCommandInline("push", remote, refspec)
 	if err != nil {
 		return fmt.Errorf("Failed to push the local archive to the remote '%s': %v", remote, err)
@@ -760,8 +766,8 @@ func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 	return nil
 }
 
-func getRemoteArchiveRef(remote, localArchiveRef string) string {
-	relativeArchiveRef := strings.TrimPrefix(localArchiveRef, "refs/archives/")
+func getRemoteArchiveRef(remote, archiveRefPattern string) string {
+	relativeArchiveRef := strings.TrimPrefix(archiveRefPattern, "refs/archives/")
 	return "refs/remoteArchives/" + remote + "/" + relativeArchiveRef
 }
 
@@ -774,9 +780,9 @@ func getRemoteArchiveRef(remote, localArchiveRef string) string {
 // so we do not maintain any consistency with their tree objects. Instead,
 // we merely ensure that their history graph includes every commit that we
 // intend to keep.
-func (repo *GitRepo) PullArchive(remote, localArchiveRef string) error {
-	remoteArchiveRef := getRemoteArchiveRef(remote, localArchiveRef)
-	fetchRefSpec := fmt.Sprintf("+%s:%s", localArchiveRef, remoteArchiveRef)
+func (repo *GitRepo) PullArchive(remote, localArchiveRef, archiveRefPattern string) error {
+	remoteArchiveRef := getRemoteArchiveRef(remote, archiveRefPattern)
+	fetchRefSpec := fmt.Sprintf("+%s:%s", archiveRefPattern, remoteArchiveRef)
 	err := repo.runGitCommandInline("fetch", remote, fetchRefSpec)
 	if err != nil {
 		return err

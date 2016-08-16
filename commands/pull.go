@@ -36,7 +36,7 @@ func pull(repo repository.Repo, args []string) error {
 	if err := repo.PullNotes(remote, notesRefPattern); err != nil {
 		return err
 	}
-	if err := repo.PullArchive(remote, archiveRef); err != nil {
+	if err := repo.PullArchive(remote, archiveRef, archiveRefPattern); err != nil {
 		return err
 	}
 	return nil

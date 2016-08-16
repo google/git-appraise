@@ -181,5 +181,5 @@ type Repo interface {
 	// so we do not maintain any consistency with their tree objects. Instead,
 	// we merely ensure that their history graph includes every commit that we
 	// intend to keep.
-	PullArchive(remote, localArchiveRef string) error
+	PullArchive(remote, localArchiveRef, archiveRefPattern string) error
 }
