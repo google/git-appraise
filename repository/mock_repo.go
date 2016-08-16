@@ -352,13 +352,24 @@ func (r mockRepoForTest) SwitchToRef(ref string) error {
 	return nil
 }
 
+// ArchiveRef adds the current commit pointed to by the 'ref' argument
+// under the ref specified in the 'archive' argument.
+//
+// Both the 'ref' and 'archive' arguments are expected to be the fully
+// qualified names of git refs (e.g. 'refs/heads/my-change' or
+// 'refs/archive/devtools').
+//
+// If the ref pointed to by the 'archive' argument does not exist
+// yet, then it will be created.
+func (r mockRepoForTest) ArchiveRef(ref, archive string) error { return nil }
+
 // MergeRef merges the given ref into the current one.
 //
 // The ref argument is the ref to merge, and fastForward indicates that the
 // current ref should only move forward, as opposed to creating a bubble merge.
 func (r mockRepoForTest) MergeRef(ref string, fastForward bool, messages ...string) error { return nil }
 
-// RebaseRef rebases the given ref into the current one.
+// RebaseRef rebases the current ref onto the given one.
 func (r mockRepoForTest) RebaseRef(ref string) error { return nil }
 
 // ListCommits returns the list of commits reachable from the given ref.
@@ -446,3 +457,9 @@ func (r mockRepoForTest) PushNotes(remote, notesRefPattern string) error { retur
 // and then merges them with the corresponding local notes using the
 // "cat_sort_uniq" strategy.
 func (r mockRepoForTest) PullNotes(remote, notesRefPattern string) error { return nil }
+
+// PushArchive pushes the given "archive" ref to a remote repo.
+func (r mockRepoForTest) PushArchive(remote, localArchiveRef string) error { return nil }
+
+// PullArchive pulls the given "archive" ref from a remote repo.
+func (r mockRepoForTest) PullArchive(remote, localArchiveRef string) error { return nil }

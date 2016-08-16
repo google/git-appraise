@@ -272,6 +272,85 @@ func (repo *GitRepo) SwitchToRef(ref string) error {
 	return err
 }
 
+// mergeArchives merges two archive refs.
+func (repo *GitRepo) mergeArchives(archive, remoteArchive string) error {
+	remoteHash, err := repo.GetCommitHash(remoteArchive)
+	if err != nil {
+		// The remote archive does not exist, so we have nothing to do
+		return nil
+	}
+
+	archiveHash, err := repo.GetCommitHash(archive)
+	if err != nil {
+		// The local archive does not exist, so we merely need to set it
+		_, err := repo.runGitCommand("update-ref", archive, remoteHash)
+		return err
+	}
+
+	isAncestor, err := repo.IsAncestor(archiveHash, remoteHash)
+	if err != nil {
+		return err
+	}
+	if isAncestor {
+		// The archive can simply be fast-forwarded
+		_, err := repo.runGitCommand("update-ref", archive, remoteHash, archiveHash)
+		return err
+	}
+
+	// Create a merge commit of the two archives
+	refDetails, err := repo.GetCommitDetails(remoteArchive)
+	if err != nil {
+		return err
+	}
+	newArchiveHash, err := repo.runGitCommand("commit-tree", "-p", remoteHash, "-p", archiveHash, "-m", "Merge local and remote archives", refDetails.Tree)
+	if err != nil {
+		return err
+	}
+	newArchiveHash = strings.TrimSpace(newArchiveHash)
+	_, err = repo.runGitCommand("update-ref", archive, newArchiveHash, archiveHash)
+	return err
+}
+
+// ArchiveRef adds the current commit pointed to by the 'ref' argument
+// under the ref specified in the 'archive' argument.
+//
+// Both the 'ref' and 'archive' arguments are expected to be the fully
+// qualified names of git refs (e.g. 'refs/heads/my-change' or
+// 'refs/archive/devtools').
+//
+// If the ref pointed to by the 'archive' argument does not exist
+// yet, then it will be created.
+func (repo *GitRepo) ArchiveRef(ref, archive string) error {
+	refHash, err := repo.GetCommitHash(ref)
+	if err != nil {
+		return err
+	}
+	refDetails, err := repo.GetCommitDetails(ref)
+	if err != nil {
+		return err
+	}
+
+	commitTreeArgs := []string{"commit-tree"}
+	archiveHash, err := repo.GetCommitHash(archive)
+	if err != nil {
+		archiveHash = ""
+	} else {
+		commitTreeArgs = append(commitTreeArgs, "-p", archiveHash)
+	}
+	commitTreeArgs = append(commitTreeArgs, "-p", refHash, "-m", fmt.Sprintf("Archive %s", refHash), refDetails.Tree)
+	newArchiveHash, err := repo.runGitCommand(commitTreeArgs...)
+	if err != nil {
+		return err
+	}
+	newArchiveHash = strings.TrimSpace(newArchiveHash)
+	updateRefArgs := []string{"update-ref", archive, newArchiveHash}
+	if archiveHash != "" {
+		updateRefArgs = append(updateRefArgs, archiveHash)
+	}
+	_, err = repo.runGitCommand(updateRefArgs...)
+	return err
+}
+
 // MergeRef merges the given ref into the current one.
 //
 // The ref argument is the ref to merge, and fastForward indicates that the
@@ -293,7 +372,7 @@ func (repo *GitRepo) MergeRef(ref string, fastForward bool, messages ...string) 
 	return repo.runGitCommandInline(args...)
 }
 
-// RebaseRef rebases the given ref into the current one.
+// RebaseRef rebases the current ref onto the given one.
 func (repo *GitRepo) RebaseRef(ref string) error {
 	return repo.runGitCommandInline("rebase", "-i", ref)
 }
@@ -637,6 +716,16 @@ func (repo *GitRepo) PushNotes(remote, notesRefPattern string) error {
 	return nil
 }
 
+// PushArchive pushes the given "archive" ref to a remote repo.
+func (repo *GitRepo) PushArchive(remote, localArchiveRef string) error {
+	refspec := fmt.Sprintf("%s:%s", localArchiveRef, localArchiveRef)
+	err := repo.runGitCommandInline("push", remote, refspec)
+	if err != nil {
+		return fmt.Errorf("Failed to push the local archive to the remote '%s': %v", remote, err)
+	}
+	return nil
+}
+
 func getRemoteNotesRef(remote, localNotesRef string) string {
 	relativeNotesRef := strings.TrimPrefix(localNotesRef, "refs/notes/")
 	return "refs/notes/" + remote + "/" + relativeNotesRef
@@ -669,4 +758,28 @@ func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 		}
 	}
 	return nil
+}
+
+func getRemoteArchiveRef(remote, localArchiveRef string) string {
+	relativeArchiveRef := strings.TrimPrefix(localArchiveRef, "refs/archives/")
+	return "refs/remoteArchives/" + remote + "/" + relativeArchiveRef
+}
+
+// PullArchive fetches the contents of the given "archive" ref from a remote
+// repo, and ensures that every commit reachable from that archive is also
+// reachable from the local archive.
+//
+// These "archive" refs are expected to be used solely for maintaining
+// reachability of commits that are part of the history of any reviews,
+// so we do not maintain any consistency with their tree objects. Instead,
+// we merely ensure that their history graph includes every commit that we
+// intend to keep.
+func (repo *GitRepo) PullArchive(remote, localArchiveRef string) error {
+	remoteArchiveRef := getRemoteArchiveRef(remote, localArchiveRef)
+	fetchRefSpec := fmt.Sprintf("+%s:%s", localArchiveRef, remoteArchiveRef)
+	err := repo.runGitCommandInline("fetch", remote, fetchRefSpec)
+	if err != nil {
+		return err
+	}
+	return repo.mergeArchives(localArchiveRef, remoteArchiveRef)
 }

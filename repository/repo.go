@@ -100,6 +100,17 @@ type Repo interface {
 	// SwitchToRef changes the currently-checked-out ref.
 	SwitchToRef(ref string) error
 
+	// ArchiveRef adds the current commit pointed to by the 'ref' argument
+	// under the ref specified in the 'archive' argument.
+	//
+	// Both the 'ref' and 'archive' arguments are expected to be the fully
+	// qualified names of git refs (e.g. 'refs/heads/my-change' or
+	// 'refs/archive/devtools').
+	//
+	// If the ref pointed to by the 'archive' argument does not exist
+	// yet, then it will be created.
+	ArchiveRef(ref, archive string) error
+
 	// MergeRef merges the given ref into the current one.
 	//
 	// The ref argument is the ref to merge, and fastForward indicates that the
@@ -108,7 +119,7 @@ type Repo interface {
 	// merge commit message (separated by blank lines).
 	MergeRef(ref string, fastForward bool, messages ...string) error
 
-	// RebaseRef rebases the given ref into the current one.
+	// RebaseRef rebases the current ref onto the given one.
 	RebaseRef(ref string) error
 
 	// ListCommits returns the list of commits reachable from the given ref.
@@ -157,4 +168,18 @@ type Repo interface {
 	// and then merges them with the corresponding local notes using the
 	// "cat_sort_uniq" strategy.
 	PullNotes(remote, notesRefPattern string) error
+
+	// PushArchive pushes the given "archive" ref to a remote repo.
+	PushArchive(remote, localArchiveRef string) error
+
+	// PullArchive fetches the contents of the given "archive" ref from a remote
+	// repo, and ensures that every commit reachable from that archive is also
+	// reachable from the local archive.
+	//
+	// These "archive" refs are expected to be used solely for maintaining
+	// reachability of commits that are part of the history of any reviews,
+	// so we do not maintain any consistency with their tree objects. Instead,
+	// we merely ensure that their history graph includes every commit that we
+	// intend to keep.
+	PullArchive(remote, localArchiveRef string) error
 }
