@@ -1,0 +1,1 @@
+{"timestamp":"1471494032","author":"jonjohnson@google.com","location":{"commit":"e6b23ceb23feb981fe8c7eaf2872bb3ce9c6ae46","path":"commands/rebase.go","range":{"startLine":43}},"description":"Can you pull this validation code out into a helper function?"}
