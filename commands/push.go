@@ -33,10 +33,7 @@ func push(repo repository.Repo, args []string) error {
 		remote = args[0]
 	}
 
-	if err := repo.PushNotes(remote, notesRefPattern); err != nil {
-		return err
-	}
-	if err := repo.PushArchive(remote, archiveRefPattern); err != nil {
+	if err := repo.PushNotesAndArchive(remote, notesRefPattern, archiveRefPattern); err != nil {
 		return err
 	}
 	return nil

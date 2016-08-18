@@ -458,10 +458,23 @@ func (r mockRepoForTest) PushNotes(remote, notesRefPattern string) error { retur
 // "cat_sort_uniq" strategy.
 func (r mockRepoForTest) PullNotes(remote, notesRefPattern string) error { return nil }
 
-// PushArchive pushes the given "archive" ref to a remote repo.
-func (r mockRepoForTest) PushArchive(remote, localArchiveRef string) error { return nil }
+// PushNotesAndArchive pushes the given notes and archive refs to a remote repo.
+func (r mockRepoForTest) PushNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
+	return nil
+}
 
-// PullArchive pulls the given "archive" ref from a remote repo.
-func (r mockRepoForTest) PullArchive(remote, localArchiveRef, archiveRefPattern string) error {
+// PullNotesAndArchive fetches the contents of the notes and archives refs from
+// a remote repo, and merges them with the corresponding local refs.
+//
+// For notes refs, we assume that every note can be automatically merged using
+// the 'cat_sort_uniq' strategy (the git-appraise schemas fit that requirement),
+// so we automatically merge the remote notes into the local notes.
+//
+// For "archive" refs, they are expected to be used solely for maintaining
+// reachability of commits that are part of the history of any reviews,
+// so we do not maintain any consistency with their tree objects. Instead,
+// we merely ensure that their history graph includes every commit that we
+// intend to keep.
+func (r mockRepoForTest) PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
 	return nil
 }

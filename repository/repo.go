@@ -169,17 +169,20 @@ type Repo interface {
 	// "cat_sort_uniq" strategy.
 	PullNotes(remote, notesRefPattern string) error
 
-	// PushArchive pushes the given "archive" ref to a remote repo.
-	PushArchive(remote, localArchiveRef string) error
+	// PushNotesAndArchive pushes the given notes and archive refs to a remote repo.
+	PushNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error
 
-	// PullArchive fetches the contents of the given "archive" ref from a remote
-	// repo, and ensures that every commit reachable from that archive is also
-	// reachable from the local archive.
+	// PullNotesAndArchive fetches the contents of the notes and archives refs from
+	// a remote repo, and merges them with the corresponding local refs.
 	//
-	// These "archive" refs are expected to be used solely for maintaining
+	// For notes refs, we assume that every note can be automatically merged using
+	// the 'cat_sort_uniq' strategy (the git-appraise schemas fit that requirement),
+	// so we automatically merge the remote notes into the local notes.
+	//
+	// For "archive" refs, they are expected to be used solely for maintaining
 	// reachability of commits that are part of the history of any reviews,
 	// so we do not maintain any consistency with their tree objects. Instead,
 	// we merely ensure that their history graph includes every commit that we
 	// intend to keep.
-	PullArchive(remote, localArchiveRef, archiveRefPattern string) error
+	PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error
 }
