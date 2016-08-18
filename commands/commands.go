@@ -22,8 +22,8 @@ import (
 )
 
 const notesRefPattern = "refs/notes/devtools/*"
-const archiveRefPattern = "refs/archives/*"
-const archiveRef = "refs/archives/devtools"
+const archiveRefPattern = "refs/devtools/archives/*"
+const archiveRef = "refs/devtools/archives/reviews"
 const commentFilename = "APPRAISE_COMMENT_EDITMSG"
 
 // Command represents the definition of a single command.

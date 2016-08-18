@@ -322,7 +322,7 @@ func (repo *GitRepo) mergeArchives(archive, remoteArchive string) error {
 //
 // Both the 'ref' and 'archive' arguments are expected to be the fully
 // qualified names of git refs (e.g. 'refs/heads/my-change' or
-// 'refs/archive/devtools').
+// 'refs/devtools/archives/reviews').
 //
 // If the ref pointed to by the 'archive' argument does not exist
 // yet, then it will be created.
@@ -772,8 +772,8 @@ func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 }
 
 func getRemoteArchiveRef(remote, archiveRefPattern string) string {
-	relativeArchiveRef := strings.TrimPrefix(archiveRefPattern, "refs/archives/")
-	return "refs/remoteArchives/" + remote + "/" + relativeArchiveRef
+	relativeArchiveRef := strings.TrimPrefix(archiveRefPattern, "refs/devtools/archives/")
+	return "refs/devtools/remoteArchives/" + remote + "/" + relativeArchiveRef
 }
 
 func (repo *GitRepo) mergeRemoteArchives(remote, archiveRefPattern string) error {
