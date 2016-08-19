@@ -81,7 +81,7 @@ func rebaseReview(repo repository.Repo, args []string) error {
 // rebaseCmd defines the "rebase" subcommand.
 var rebaseCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s rebase [<option>...]\n\nOptions:\n", arg0)
+		fmt.Printf("Usage: %s rebase [<option>...] [<review-hash>]\n\nOptions:\n", arg0)
 		rebaseFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {
