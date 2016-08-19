@@ -1,7 +1,4 @@
-{"timestamp":"1471570701","url":"https://travis-ci.org/google/git-appraise/builds/153446976","agent":"continuous-integration/travis-ci/push"}
-
-{"timestamp":"1471570690","url":"https://travis-ci.org/google/git-appraise/builds/153446980","agent":"continuous-integration/travis-ci/pr"}
-
-{"timestamp":"1471570689","status":"success","agent":"cla/google"}
-
 {"timestamp":"1471570688","url":"https://travis-ci.org/google/git-appraise/builds/153446976","agent":"continuous-integration/travis-ci/push"}
+{"timestamp":"1471570689","status":"success","agent":"cla/google"}
+{"timestamp":"1471570690","url":"https://travis-ci.org/google/git-appraise/builds/153446980","agent":"continuous-integration/travis-ci/pr"}
+{"timestamp":"1471570701","url":"https://travis-ci.org/google/git-appraise/builds/153446976","agent":"continuous-integration/travis-ci/push"}
