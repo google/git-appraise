@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
-	"github.com/google/git-appraise/review/request"
 )
 
 var rebaseFlagSet = flag.NewFlagSet("rebase", flag.ExitOnError)
@@ -31,6 +30,40 @@ var (
 	rebaseArchive = rebaseFlagSet.Bool("archive", true, "Prevent the original commit from being garbage collected.")
 )
 
+// Validate that the user's request to rebase a review makes sense.
+//
+// This checks both that the request is well formed, and that the
+// corresponding review is in a state where rebasing is appropriate.
+func validateRebaseRequest(repo repository.Repo, args []string) (*review.Review, error) {
+	var r *review.Review
+	var err error
+	if len(args) > 1 {
+		return nil, errors.New("Only rebasing a single review is supported.")
+	}
+	if len(args) == 1 {
+		r, err = review.Get(repo, args[0])
+	} else {
+		r, err = review.GetCurrent(repo)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("Failed to load the review: %v\n", err)
+	}
+	if r == nil {
+		return nil, errors.New("There is no matching review.")
+	}
+
+	if r.Submitted {
+		return nil, errors.New("The review has already been submitted.")
+	}
+
+	target := r.Request.TargetRef
+	if err := repo.VerifyGitRef(target); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
 // Rebase the current code review.
 //
 // The "args" parameter contains all of the command line arguments that followed the subcommand.
@@ -38,56 +71,11 @@ func rebaseReview(repo repository.Repo, args []string) error {
 	rebaseFlagSet.Parse(args)
 	args = rebaseFlagSet.Args()
 
-	var r *review.Review
-	var err error
-	if len(args) > 1 {
-		return errors.New("Only rebasing a single review is supported.")
-	}
-	if len(args) == 1 {
-		r, err = review.Get(repo, args[0])
-	} else {
-		r, err = review.GetCurrent(repo)
-	}
-
-	if err != nil {
-		return fmt.Errorf("Failed to load the review: %v\n", err)
-	}
-	if r == nil {
-		return errors.New("There is no matching review.")
-	}
-
-	if r.Submitted {
-		return errors.New("The review has already been submitted.")
-	}
-
-	target := r.Request.TargetRef
-	if err := repo.VerifyGitRef(target); err != nil {
-		return err
-	}
-	source, err := r.GetHeadCommit()
+	r, err := validateRebaseRequest(repo, args)
 	if err != nil {
 		return err
 	}
-	if *rebaseArchive {
-		if err := repo.ArchiveRef(source, archiveRef); err != nil {
-			return err
-		}
-	}
-	if err := repo.RebaseRef(target); err != nil {
-		return err
-	}
-	source, err = r.GetHeadCommit()
-	if err != nil {
-		return err
-	}
-
-	r.Request.Alias = source
-	newNote, err := r.Request.Write()
-	if err != nil {
-		return err
-	}
-	repo.AppendNote(request.Ref, r.Revision, newNote)
-	return nil
+	return r.Rebase(*submitArchive)
 }
 
 // rebaseCmd defines the "rebase" subcommand.

@@ -29,6 +29,8 @@ import (
 	"sort"
 )
 
+const archiveRef = "refs/devtools/archives/reviews"
+
 // CommentThread represents the tree-based hierarchy of comments.
 //
 // The Resolved field represents the aggregate status of the entire thread. If
@@ -559,4 +561,35 @@ func (r *Review) AddComment(c comment.Comment) error {
 
 	r.Repo.AppendNote(comment.Ref, r.Revision, commentNote)
 	return nil
+}
+
+// Rebase performs an interactive rebase of the review onto its target ref.
+//
+// If the 'archivePrevious' argument is true, then the previous head of the
+// review will be added to the 'refs/devtools/archives/reviews' ref prior
+// to being rewritten. That ensures the review history is kept from being
+// garbage collected.
+func (r *Review) Rebase(archivePrevious bool) error {
+	if archivePrevious {
+		orig, err := r.GetHeadCommit()
+		if err != nil {
+			return err
+		}
+		if err := r.Repo.ArchiveRef(orig, archiveRef); err != nil {
+			return err
+		}
+	}
+	if err := r.Repo.RebaseRef(r.Request.TargetRef); err != nil {
+		return err
+	}
+	alias, err := r.GetHeadCommit()
+	if err != nil {
+		return err
+	}
+	r.Request.Alias = alias
+	newNote, err := r.Request.Write()
+	if err != nil {
+		return err
+	}
+	return r.Repo.AppendNote(request.Ref, r.Revision, newNote)
 }

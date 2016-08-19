@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
-	"github.com/google/git-appraise/review/request"
 )
 
 var submitFlagSet = flag.NewFlagSet("submit", flag.ExitOnError)
@@ -106,25 +105,13 @@ func submitReview(repo repository.Repo, args []string) error {
 	}
 
 	if *submitRebase {
-		if *submitArchive {
-			if err := repo.ArchiveRef(source, archiveRef); err != nil {
-				return err
-			}
-		}
-		if err := repo.RebaseRef(target); err != nil {
+		if err := r.Rebase(*submitArchive); err != nil {
 			return err
 		}
 		source, err = r.GetHeadCommit()
 		if err != nil {
 			return err
 		}
-
-		r.Request.Alias = source
-		newNote, err := r.Request.Write()
-		if err != nil {
-			return err
-		}
-		repo.AppendNote(request.Ref, r.Revision, newNote)
 	}
 
 	if err := repo.SwitchToRef(target); err != nil {
