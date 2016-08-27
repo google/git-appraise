@@ -665,3 +665,129 @@ func TestGetRequests(t *testing.T) {
 		t.Fatal("Unexpected requests for a pending review: ", pendingReview.AllRequests, pendingReview.Request)
 	}
 }
+
+func TestRebase(t *testing.T) {
+	repo := repository.NewMockRepoForTest()
+	pendingReview, err := Get(repo, repository.TestCommitG)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Rebase the review and then confirm that it has been updated correctly.
+	if err := pendingReview.Rebase(true); err != nil {
+		t.Fatal(err)
+	}
+	reviewJSON, err := pendingReview.GetJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	headRef, err := repo.GetHeadRef()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if headRef != pendingReview.Request.ReviewRef {
+		t.Fatal("Failed to switch to the review ref during a rebase")
+	}
+	isAncestor, err := repo.IsAncestor(pendingReview.Revision, archiveRef)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !isAncestor {
+		t.Fatalf("Commit %q is not archived", pendingReview.Revision)
+	}
+	reviewCommit, err := repo.GetCommitHash(pendingReview.Request.ReviewRef)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reviewAlias := pendingReview.Request.Alias
+	if reviewAlias == "" || reviewAlias == pendingReview.Revision || reviewCommit != reviewAlias {
+		t.Fatalf("Failed to set the review alias: %q", reviewJSON)
+	}
+
+	// Submit the review.
+	if err := repo.SwitchToRef(pendingReview.Request.TargetRef); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.MergeRef(pendingReview.Request.ReviewRef, true); err != nil {
+		t.Fatal(err)
+	}
+
+	// Reread the review and confirm that it has been submitted.
+	submittedReview, err := Get(repo, pendingReview.Revision)
+	if err != nil {
+		t.Fatal(err)
+	}
+	submittedReviewJSON, err := submittedReview.GetJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !submittedReview.Submitted {
+		t.Fatalf("Failed to submit the review: %q", submittedReviewJSON)
+	}
+}
+
+func TestRebaseDetachedHead(t *testing.T) {
+	repo := repository.NewMockRepoForTest()
+	pendingReview, err := Get(repo, repository.TestCommitG)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Switch the review to having a review ref that is not a branch.
+	pendingReview.Request.ReviewRef = repository.TestAlternateReviewRef
+	newNote, err := pendingReview.Request.Write()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.AppendNote(request.Ref, pendingReview.Revision, newNote); err != nil {
+		t.Fatal(err)
+	}
+	pendingReview, err = Get(repo, repository.TestCommitG)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Rebase the review and then confirm that it has been updated correctly.
+	if err := pendingReview.Rebase(true); err != nil {
+		t.Fatal(err)
+	}
+	headRef, err := repo.GetHeadRef()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if headRef != pendingReview.Request.Alias {
+		t.Fatal("Failed to switch to a detached head during a rebase")
+	}
+	isAncestor, err := repo.IsAncestor(pendingReview.Revision, archiveRef)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !isAncestor {
+		t.Fatalf("Commit %q is not archived", pendingReview.Revision)
+	}
+
+	// Submit the review.
+	if err := repo.SwitchToRef(pendingReview.Request.TargetRef); err != nil {
+		t.Fatal(err)
+	}
+	reviewHead, err := pendingReview.GetHeadCommit()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.MergeRef(reviewHead, true); err != nil {
+		t.Fatal(err)
+	}
+
+	// Reread the review and confirm that it has been submitted.
+	submittedReview, err := Get(repo, pendingReview.Revision)
+	if err != nil {
+		t.Fatal(err)
+	}
+	submittedReviewJSON, err := submittedReview.GetJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !submittedReview.Submitted {
+		t.Fatalf("Failed to submit the review: %q", submittedReviewJSON)
+	}
+}

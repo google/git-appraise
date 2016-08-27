@@ -36,10 +36,11 @@ import (
 // Where commits "B" and "D" represent reviews that have been submitted, and "G"
 // is a pending review.
 const (
-	TestTargetRef   = "refs/heads/master"
-	TestReviewRef   = "refs/heads/ojarjur/mychange"
-	TestRequestsRef = "refs/notes/devtools/reviews"
-	TestCommentsRef = "refs/notes/devtools/discuss"
+	TestTargetRef          = "refs/heads/master"
+	TestReviewRef          = "refs/heads/ojarjur/mychange"
+	TestAlternateReviewRef = "refs/review/mychange"
+	TestRequestsRef        = "refs/notes/devtools/reviews"
+	TestCommentsRef        = "refs/notes/devtools/discuss"
 
 	TestCommitA = "A"
 	TestCommitB = "B"
@@ -76,6 +77,21 @@ type mockRepoForTest struct {
 	Refs    map[string]string            `json:"refs,omitempty"`
 	Commits map[string]mockCommit        `json:"commits,omitempty"`
 	Notes   map[string]map[string]string `json:"notes,omitempty"`
+}
+
+func (r *mockRepoForTest) createCommit(message string, time string, parents []string) (string, error) {
+	newCommit := mockCommit{
+		Message: message,
+		Time:    time,
+		Parents: parents,
+	}
+	newCommitJSON, err := json.Marshal(newCommit)
+	if err != nil {
+		return "", err
+	}
+	newCommitHash := fmt.Sprintf("%x", sha1.Sum([]byte(newCommitJSON)))
+	r.Commits[newCommitHash] = newCommit
+	return newCommitHash, nil
 }
 
 // NewMockRepoForTest returns a mocked-out instance of the Repo interface that has been pre-populated with test data.
@@ -130,11 +146,12 @@ func NewMockRepoForTest() Repo {
 		Time:    "6",
 		Parents: []string{TestCommitF},
 	}
-	return mockRepoForTest{
+	return &mockRepoForTest{
 		Head: TestTargetRef,
 		Refs: map[string]string{
-			TestTargetRef: TestCommitJ,
-			TestReviewRef: TestCommitI,
+			TestTargetRef:          TestCommitJ,
+			TestReviewRef:          TestCommitI,
+			TestAlternateReviewRef: TestCommitI,
 		},
 		Commits: map[string]mockCommit{
 			TestCommitA: commitA,
@@ -163,10 +180,10 @@ func NewMockRepoForTest() Repo {
 }
 
 // GetPath returns the path to the repo.
-func (r mockRepoForTest) GetPath() string { return "~/mockRepo/" }
+func (r *mockRepoForTest) GetPath() string { return "~/mockRepo/" }
 
 // GetRepoStateHash returns a hash which embodies the entire current state of a repository.
-func (r mockRepoForTest) GetRepoStateHash() (string, error) {
+func (r *mockRepoForTest) GetRepoStateHash() (string, error) {
 	repoJSON, err := json.Marshal(r)
 	if err != nil {
 		return "", err
@@ -175,18 +192,21 @@ func (r mockRepoForTest) GetRepoStateHash() (string, error) {
 }
 
 // GetUserEmail returns the email address that the user has used to configure git.
-func (r mockRepoForTest) GetUserEmail() (string, error) { return "user@example.com", nil }
+func (r *mockRepoForTest) GetUserEmail() (string, error) { return "user@example.com", nil }
 
 // GetCoreEditor returns the name of the editor that the user has used to configure git.
-func (r mockRepoForTest) GetCoreEditor() (string, error) { return "vi", nil }
+func (r *mockRepoForTest) GetCoreEditor() (string, error) { return "vi", nil }
 
 // GetSubmitStrategy returns the way in which a review is submitted
-func (r mockRepoForTest) GetSubmitStrategy() (string, error) { return "merge", nil }
+func (r *mockRepoForTest) GetSubmitStrategy() (string, error) { return "merge", nil }
 
 // HasUncommittedChanges returns true if there are local, uncommitted changes.
-func (r mockRepoForTest) HasUncommittedChanges() (bool, error) { return false, nil }
+func (r *mockRepoForTest) HasUncommittedChanges() (bool, error) { return false, nil }
 
-func (r mockRepoForTest) resolveLocalRef(ref string) (string, error) {
+func (r *mockRepoForTest) resolveLocalRef(ref string) (string, error) {
+	if ref == "HEAD" {
+		ref = r.Head
+	}
 	if commit, ok := r.Refs[ref]; ok {
 		return commit, nil
 	}
@@ -197,7 +217,7 @@ func (r mockRepoForTest) resolveLocalRef(ref string) (string, error) {
 }
 
 // VerifyCommit verifies that the supplied hash points to a known commit.
-func (r mockRepoForTest) VerifyCommit(hash string) error {
+func (r *mockRepoForTest) VerifyCommit(hash string) error {
 	if _, ok := r.Commits[hash]; !ok {
 		return fmt.Errorf("The given hash %q is not a known commit", hash)
 	}
@@ -205,21 +225,21 @@ func (r mockRepoForTest) VerifyCommit(hash string) error {
 }
 
 // VerifyGitRef verifies that the supplied ref points to a known commit.
-func (r mockRepoForTest) VerifyGitRef(ref string) error {
+func (r *mockRepoForTest) VerifyGitRef(ref string) error {
 	_, err := r.resolveLocalRef(ref)
 	return err
 }
 
 // GetHeadRef returns the ref that is the current HEAD.
-func (r mockRepoForTest) GetHeadRef() (string, error) { return r.Head, nil }
+func (r *mockRepoForTest) GetHeadRef() (string, error) { return r.Head, nil }
 
 // GetCommitHash returns the hash of the commit pointed to by the given ref.
-func (r mockRepoForTest) GetCommitHash(ref string) (string, error) {
+func (r *mockRepoForTest) GetCommitHash(ref string) (string, error) {
 	err := r.VerifyGitRef(ref)
 	if err != nil {
 		return "", err
 	}
-	return r.Refs[ref], nil
+	return r.resolveLocalRef(ref)
 }
 
 // ResolveRefCommit returns the commit pointed to by the given ref, which may be a remote ref.
@@ -231,20 +251,20 @@ func (r mockRepoForTest) GetCommitHash(ref string) (string, error) {
 // This method should be used when a command may be performed by either the reviewer or the
 // reviewee, while GetCommitHash should be used when the encompassing command should only be
 // performed by the reviewee.
-func (r mockRepoForTest) ResolveRefCommit(ref string) (string, error) {
+func (r *mockRepoForTest) ResolveRefCommit(ref string) (string, error) {
 	if commit, err := r.resolveLocalRef(ref); err == nil {
 		return commit, err
 	}
 	return r.resolveLocalRef(strings.Replace(ref, "refs/heads/", "refs/remotes/origin/", 1))
 }
 
-func (r mockRepoForTest) getCommit(ref string) (mockCommit, error) {
+func (r *mockRepoForTest) getCommit(ref string) (mockCommit, error) {
 	commit, err := r.resolveLocalRef(ref)
 	return r.Commits[commit], err
 }
 
 // GetCommitMessage returns the message stored in the commit pointed to by the given ref.
-func (r mockRepoForTest) GetCommitMessage(ref string) (string, error) {
+func (r *mockRepoForTest) GetCommitMessage(ref string) (string, error) {
 	commit, err := r.getCommit(ref)
 	if err != nil {
 		return "", err
@@ -253,7 +273,7 @@ func (r mockRepoForTest) GetCommitMessage(ref string) (string, error) {
 }
 
 // GetCommitTime returns the commit time of the commit pointed to by the given ref.
-func (r mockRepoForTest) GetCommitTime(ref string) (string, error) {
+func (r *mockRepoForTest) GetCommitTime(ref string) (string, error) {
 	commit, err := r.getCommit(ref)
 	if err != nil {
 		return "", err
@@ -262,7 +282,7 @@ func (r mockRepoForTest) GetCommitTime(ref string) (string, error) {
 }
 
 // GetLastParent returns the last parent of the given commit (as ordered by git).
-func (r mockRepoForTest) GetLastParent(ref string) (string, error) {
+func (r *mockRepoForTest) GetLastParent(ref string) (string, error) {
 	commit, err := r.getCommit(ref)
 	if len(commit.Parents) > 0 {
 		return commit.Parents[len(commit.Parents)-1], err
@@ -271,7 +291,7 @@ func (r mockRepoForTest) GetLastParent(ref string) (string, error) {
 }
 
 // GetCommitDetails returns the details of a commit's metadata.
-func (r mockRepoForTest) GetCommitDetails(ref string) (*CommitDetails, error) {
+func (r *mockRepoForTest) GetCommitDetails(ref string) (*CommitDetails, error) {
 	commit, err := r.getCommit(ref)
 	if err != nil {
 		return nil, err
@@ -286,7 +306,7 @@ func (r mockRepoForTest) GetCommitDetails(ref string) (*CommitDetails, error) {
 }
 
 // ancestors returns the breadth-first traversal of a commit's ancestors
-func (r mockRepoForTest) ancestors(commit string) ([]string, error) {
+func (r *mockRepoForTest) ancestors(commit string) ([]string, error) {
 	queue := []string{commit}
 	var ancestors []string
 	for queue != nil {
@@ -306,7 +326,16 @@ func (r mockRepoForTest) ancestors(commit string) ([]string, error) {
 }
 
 // IsAncestor determines if the first argument points to a commit that is an ancestor of the second.
-func (r mockRepoForTest) IsAncestor(ancestor, descendant string) (bool, error) {
+func (r *mockRepoForTest) IsAncestor(ancestor, descendant string) (bool, error) {
+	var err error
+	ancestor, err = r.resolveLocalRef(ancestor)
+	if err != nil {
+		return false, err
+	}
+	descendant, err = r.resolveLocalRef(descendant)
+	if err != nil {
+		return false, err
+	}
 	if ancestor == descendant {
 		return true, nil
 	}
@@ -323,7 +352,7 @@ func (r mockRepoForTest) IsAncestor(ancestor, descendant string) (bool, error) {
 }
 
 // MergeBase determines if the first commit that is an ancestor of the two arguments.
-func (r mockRepoForTest) MergeBase(a, b string) (string, error) {
+func (r *mockRepoForTest) MergeBase(a, b string) (string, error) {
 	ancestors, err := r.ancestors(a)
 	if err != nil {
 		return "", err
@@ -337,17 +366,17 @@ func (r mockRepoForTest) MergeBase(a, b string) (string, error) {
 }
 
 // Diff computes the diff between two given commits.
-func (r mockRepoForTest) Diff(left, right string, diffArgs ...string) (string, error) {
+func (r *mockRepoForTest) Diff(left, right string, diffArgs ...string) (string, error) {
 	return fmt.Sprintf("Diff between %q and %q", left, right), nil
 }
 
 // Show returns the contents of the given file at the given commit.
-func (r mockRepoForTest) Show(commit, path string) (string, error) {
+func (r *mockRepoForTest) Show(commit, path string) (string, error) {
 	return fmt.Sprintf("%s:%s", commit, path), nil
 }
 
 // SwitchToRef changes the currently-checked-out ref.
-func (r mockRepoForTest) SwitchToRef(ref string) error {
+func (r *mockRepoForTest) SwitchToRef(ref string) error {
 	r.Head = ref
 	return nil
 }
@@ -361,23 +390,82 @@ func (r mockRepoForTest) SwitchToRef(ref string) error {
 //
 // If the ref pointed to by the 'archive' argument does not exist
 // yet, then it will be created.
-func (r mockRepoForTest) ArchiveRef(ref, archive string) error { return nil }
+func (r *mockRepoForTest) ArchiveRef(ref, archive string) error {
+	commitToArchive, err := r.resolveLocalRef(ref)
+	if err != nil {
+		return err
+	}
+	var archiveParents []string
+	if archiveCommit, err := r.resolveLocalRef(archive); err == nil {
+		archiveParents = []string{archiveCommit, commitToArchive}
+	} else {
+		archiveParents = []string{commitToArchive}
+	}
+	archiveCommit, err := r.createCommit("Archiving", "Nowish", archiveParents)
+	if err != nil {
+		return err
+	}
+	r.Refs[archive] = archiveCommit
+	return nil
+}
 
 // MergeRef merges the given ref into the current one.
 //
 // The ref argument is the ref to merge, and fastForward indicates that the
 // current ref should only move forward, as opposed to creating a bubble merge.
-func (r mockRepoForTest) MergeRef(ref string, fastForward bool, messages ...string) error { return nil }
+func (r *mockRepoForTest) MergeRef(ref string, fastForward bool, messages ...string) error {
+	newCommitHash, err := r.resolveLocalRef(ref)
+	if err != nil {
+		return err
+	}
+	if !fastForward {
+		origCommit, err := r.resolveLocalRef(r.Head)
+		if err != nil {
+			return err
+		}
+		newCommit, err := r.getCommit(ref)
+		if err != nil {
+			return err
+		}
+		message := strings.Join(messages, "\n\n")
+		time := newCommit.Time
+		parents := []string{origCommit, newCommitHash}
+		newCommitHash, err = r.createCommit(message, time, parents)
+		if err != nil {
+			return err
+		}
+	}
+	r.Refs[r.Head] = newCommitHash
+	return nil
+}
 
 // RebaseRef rebases the current ref onto the given one.
-func (r mockRepoForTest) RebaseRef(ref string) error { return nil }
+func (r *mockRepoForTest) RebaseRef(ref string) error {
+	parentHash := r.Refs[ref]
+	origCommit, err := r.getCommit(r.Head)
+	if err != nil {
+		return err
+	}
+	newCommitHash, err := r.createCommit(origCommit.Message, origCommit.Time, []string{parentHash})
+	if err != nil {
+		return err
+	}
+	if strings.HasPrefix(r.Head, "refs/heads/") {
+		r.Refs[r.Head] = newCommitHash
+	} else {
+		// The current head is not a branch, so updating
+		// it should leave us in a detached-head state.
+		r.Head = newCommitHash
+	}
+	return nil
+}
 
 // ListCommits returns the list of commits reachable from the given ref.
 //
 // The generated list is in chronological order (with the oldest commit first).
 //
 // If the specified ref does not exist, then this method returns an empty result.
-func (r mockRepoForTest) ListCommits(ref string) []string { return nil }
+func (r *mockRepoForTest) ListCommits(ref string) []string { return nil }
 
 // ListCommitsBetween returns the list of commits between the two given revisions.
 //
@@ -393,7 +481,7 @@ func (r mockRepoForTest) ListCommits(ref string) []string { return nil }
 // method compatible with git's built-in "rev-list" command.
 //
 // The generated list is in chronological order (with the oldest commit first).
-func (r mockRepoForTest) ListCommitsBetween(from, to string) ([]string, error) {
+func (r *mockRepoForTest) ListCommitsBetween(from, to string) ([]string, error) {
 	commits := []string{to}
 	potentialCommits, _ := r.ancestors(to)
 	for _, commit := range potentialCommits {
@@ -409,7 +497,7 @@ func (r mockRepoForTest) ListCommitsBetween(from, to string) ([]string, error) {
 }
 
 // GetNotes reads the notes from the given ref that annotate the given revision.
-func (r mockRepoForTest) GetNotes(notesRef, revision string) []Note {
+func (r *mockRepoForTest) GetNotes(notesRef, revision string) []Note {
 	notesText := r.Notes[notesRef][revision]
 	var notes []Note
 	for _, line := range strings.Split(notesText, "\n") {
@@ -423,7 +511,7 @@ func (r mockRepoForTest) GetNotes(notesRef, revision string) []Note {
 // The returned value is a mapping from commit hash to the list of notes for that commit.
 //
 // This is the batch version of the corresponding GetNotes(...) method.
-func (r mockRepoForTest) GetAllNotes(notesRef string) (map[string][]Note, error) {
+func (r *mockRepoForTest) GetAllNotes(notesRef string) (map[string][]Note, error) {
 	notesMap := make(map[string][]Note)
 	for _, commit := range r.ListNotedRevisions(notesRef) {
 		notesMap[commit] = r.GetNotes(notesRef, commit)
@@ -432,7 +520,7 @@ func (r mockRepoForTest) GetAllNotes(notesRef string) (map[string][]Note, error)
 }
 
 // AppendNote appends a note to a revision under the given ref.
-func (r mockRepoForTest) AppendNote(ref, revision string, note Note) error {
+func (r *mockRepoForTest) AppendNote(ref, revision string, note Note) error {
 	existingNotes := r.Notes[ref][revision]
 	newNotes := existingNotes + "\n" + string(note)
 	r.Notes[ref][revision] = newNotes
@@ -440,7 +528,7 @@ func (r mockRepoForTest) AppendNote(ref, revision string, note Note) error {
 }
 
 // ListNotedRevisions returns the collection of revisions that are annotated by notes in the given ref.
-func (r mockRepoForTest) ListNotedRevisions(notesRef string) []string {
+func (r *mockRepoForTest) ListNotedRevisions(notesRef string) []string {
 	var revisions []string
 	for revision := range r.Notes[notesRef] {
 		if _, ok := r.Commits[revision]; ok {
@@ -451,15 +539,15 @@ func (r mockRepoForTest) ListNotedRevisions(notesRef string) []string {
 }
 
 // PushNotes pushes git notes to a remote repo.
-func (r mockRepoForTest) PushNotes(remote, notesRefPattern string) error { return nil }
+func (r *mockRepoForTest) PushNotes(remote, notesRefPattern string) error { return nil }
 
 // PullNotes fetches the contents of the given notes ref from a remote repo,
 // and then merges them with the corresponding local notes using the
 // "cat_sort_uniq" strategy.
-func (r mockRepoForTest) PullNotes(remote, notesRefPattern string) error { return nil }
+func (r *mockRepoForTest) PullNotes(remote, notesRefPattern string) error { return nil }
 
 // PushNotesAndArchive pushes the given notes and archive refs to a remote repo.
-func (r mockRepoForTest) PushNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
+func (r *mockRepoForTest) PushNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
 	return nil
 }
 
@@ -475,6 +563,6 @@ func (r mockRepoForTest) PushNotesAndArchive(remote, notesRefPattern, archiveRef
 // so we do not maintain any consistency with their tree objects. Instead,
 // we merely ensure that their history graph includes every commit that we
 // intend to keep.
-func (r mockRepoForTest) PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
+func (r *mockRepoForTest) PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
 	return nil
 }

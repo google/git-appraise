@@ -318,7 +318,7 @@ func unsortedListAll(repo repository.Repo) []Summary {
 		if err != nil {
 			continue
 		}
-		summary.Submitted = isSubmittedCheck(summary.Request.TargetRef, summary.getCurrentCommit())
+		summary.Submitted = isSubmittedCheck(summary.Request.TargetRef, summary.getStartingCommit())
 		reviews = append(reviews, *summary)
 	}
 	return reviews
@@ -447,13 +447,16 @@ func (r *Review) GetJSON() (string, error) {
 
 // findLastCommit returns the later (newest) commit from the union of the provided commit
 // and all of the commits that are referenced in the given comment threads.
-func (r *Review) findLastCommit(latestCommit string, commentThreads []CommentThread) string {
+func (r *Review) findLastCommit(startingCommit, latestCommit string, commentThreads []CommentThread) string {
 	isLater := func(commit string) bool {
 		if err := r.Repo.VerifyCommit(commit); err != nil {
 			return false
 		}
 		if t, e := r.Repo.IsAncestor(latestCommit, commit); e == nil && t {
 			return true
+		}
+		if t, e := r.Repo.IsAncestor(startingCommit, commit); e == nil && !t {
+			return false
 		}
 		if t, e := r.Repo.IsAncestor(commit, latestCommit); e == nil && t {
 			return false
@@ -481,12 +484,12 @@ func (r *Review) findLastCommit(latestCommit string, commentThreads []CommentThr
 		if comment.Location != nil {
 			updateLatest(comment.Location.Commit)
 		}
-		updateLatest(r.findLastCommit(latestCommit, commentThread.Children))
+		updateLatest(r.findLastCommit(startingCommit, latestCommit, commentThread.Children))
 	}
 	return latestCommit
 }
 
-func (r *Summary) getCurrentCommit() string {
+func (r *Summary) getStartingCommit() string {
 	if r.Request.Alias != "" {
 		return r.Request.Alias
 	}
@@ -495,7 +498,7 @@ func (r *Summary) getCurrentCommit() string {
 
 // GetHeadCommit returns the latest commit in a review.
 func (r *Review) GetHeadCommit() (string, error) {
-	currentCommit := r.getCurrentCommit()
+	currentCommit := r.getStartingCommit()
 	if r.Request.ReviewRef == "" {
 		return currentCommit, nil
 	}
@@ -503,10 +506,21 @@ func (r *Review) GetHeadCommit() (string, error) {
 	if r.Submitted {
 		// The review has already been submitted.
 		// Go through the list of comments and find the last commented upon commit.
-		return r.findLastCommit(currentCommit, r.Comments), nil
+		return r.findLastCommit(currentCommit, currentCommit, r.Comments), nil
 	}
 
-	return r.Repo.ResolveRefCommit(r.Request.ReviewRef)
+	// It is possible that the review ref is no longer an ancestor of the starting
+	// commit (e.g. if a rebase left us in a detached head), in which case we have to
+	// find the head commit without using it.
+	useReviewRef, err := r.Repo.IsAncestor(currentCommit, r.Request.ReviewRef)
+	if err != nil {
+		return "", err
+	}
+	if useReviewRef {
+		return r.Repo.ResolveRefCommit(r.Request.ReviewRef)
+	}
+
+	return r.findLastCommit(currentCommit, currentCommit, r.Comments), nil
 }
 
 // GetBaseCommit returns the commit against which a review should be compared.
@@ -579,10 +593,13 @@ func (r *Review) Rebase(archivePrevious bool) error {
 			return err
 		}
 	}
+	if err := r.Repo.SwitchToRef(r.Request.ReviewRef); err != nil {
+		return err
+	}
 	if err := r.Repo.RebaseRef(r.Request.TargetRef); err != nil {
 		return err
 	}
-	alias, err := r.GetHeadCommit()
+	alias, err := r.Repo.GetCommitHash("HEAD")
 	if err != nil {
 		return err
 	}
