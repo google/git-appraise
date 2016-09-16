@@ -15,3 +15,5 @@
 {"timestamp":"1472262252","author":"ojarjur@google.com","parent":"d104a652be86b4f2306ffba7b6724e40a6dc48d9","location":{"commit":"e6b23ceb23feb981fe8c7eaf2872bb3ce9c6ae46"},"description":"Tests have been added"}
 
 {"timestamp":"1474067285","author":"jonjohnson@google.com","location":{"commit":"599e028962480323461bbed5c62eaa12048b3081","path":"commands/rebase.go","range":{"startLine":78}},"description":"Should this be \"rebaseArchive\"?\n"}
+
+{"timestamp":"1474068763","author":"ojarjur@google.com","parent":"9778dded24368c2c5de4e4974f11566fd9cac169","location":{"commit":"ce5d467e64de34a95157e0ae77a3919509c09109"},"description":"Done","resolved":true}
