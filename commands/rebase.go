@@ -75,7 +75,7 @@ func rebaseReview(repo repository.Repo, args []string) error {
 	if err != nil {
 		return err
 	}
-	return r.Rebase(*submitArchive)
+	return r.Rebase(*rebaseArchive)
 }
 
 // rebaseCmd defines the "rebase" subcommand.
