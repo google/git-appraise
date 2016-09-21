@@ -31,6 +31,7 @@ var (
 	submitRebase      = submitFlagSet.Bool("rebase", false, "Rebase the source ref onto the target ref.")
 	submitFastForward = submitFlagSet.Bool("fast-forward", false, "Create a merge using the default fast-forward mode.")
 	submitTBR         = submitFlagSet.Bool("tbr", false, "(To be reviewed) Force the submission of a review that has not been accepted.")
+	submitArchive     = submitFlagSet.Bool("archive", true, "Prevent the original commit from being garbage collected; only affects rebased submits.")
 )
 
 // Submit the current code review request.
@@ -87,10 +88,6 @@ func submitReview(repo repository.Repo, args []string) error {
 		return errors.New("Refusing to submit a non-fast-forward review. First merge the target ref.")
 	}
 
-	if err := repo.SwitchToRef(target); err != nil {
-		return err
-	}
-
 	if !(*submitRebase || *submitMerge || *submitFastForward) {
 		submitStrategy, err := repo.GetSubmitStrategy()
 		if err != nil {
@@ -107,11 +104,22 @@ func submitReview(repo repository.Repo, args []string) error {
 		}
 	}
 
+	if *submitRebase {
+		if err := r.Rebase(*submitArchive); err != nil {
+			return err
+		}
+		source, err = r.GetHeadCommit()
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := repo.SwitchToRef(target); err != nil {
+		return err
+	}
 	if *submitMerge {
 		submitMessage := fmt.Sprintf("Submitting review %.12s", r.Revision)
 		return repo.MergeRef(source, false, submitMessage, r.Request.Description)
-	} else if *submitRebase {
-		return repo.RebaseRef(source)
 	} else {
 		return repo.MergeRef(source, true)
 	}
@@ -120,7 +128,7 @@ func submitReview(repo repository.Repo, args []string) error {
 // submitCmd defines the "submit" subcommand.
 var submitCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s submit [<option>...]\n\nOptions:\n", arg0)
+		fmt.Printf("Usage: %s submit [<option>...] [<review-hash>]\n\nOptions:\n", arg0)
 		submitFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {

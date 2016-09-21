@@ -33,7 +33,10 @@ func push(repo repository.Repo, args []string) error {
 		remote = args[0]
 	}
 
-	return repo.PushNotes(remote, notesRefPattern)
+	if err := repo.PushNotesAndArchive(remote, notesRefPattern, archiveRefPattern); err != nil {
+		return err
+	}
+	return nil
 }
 
 var pushCmd = &Command{

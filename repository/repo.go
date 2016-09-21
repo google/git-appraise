@@ -100,6 +100,17 @@ type Repo interface {
 	// SwitchToRef changes the currently-checked-out ref.
 	SwitchToRef(ref string) error
 
+	// ArchiveRef adds the current commit pointed to by the 'ref' argument
+	// under the ref specified in the 'archive' argument.
+	//
+	// Both the 'ref' and 'archive' arguments are expected to be the fully
+	// qualified names of git refs (e.g. 'refs/heads/my-change' or
+	// 'refs/archive/devtools').
+	//
+	// If the ref pointed to by the 'archive' argument does not exist
+	// yet, then it will be created.
+	ArchiveRef(ref, archive string) error
+
 	// MergeRef merges the given ref into the current one.
 	//
 	// The ref argument is the ref to merge, and fastForward indicates that the
@@ -108,7 +119,7 @@ type Repo interface {
 	// merge commit message (separated by blank lines).
 	MergeRef(ref string, fastForward bool, messages ...string) error
 
-	// RebaseRef rebases the given ref into the current one.
+	// RebaseRef rebases the current ref onto the given one.
 	RebaseRef(ref string) error
 
 	// ListCommits returns the list of commits reachable from the given ref.
@@ -157,4 +168,21 @@ type Repo interface {
 	// and then merges them with the corresponding local notes using the
 	// "cat_sort_uniq" strategy.
 	PullNotes(remote, notesRefPattern string) error
+
+	// PushNotesAndArchive pushes the given notes and archive refs to a remote repo.
+	PushNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error
+
+	// PullNotesAndArchive fetches the contents of the notes and archives refs from
+	// a remote repo, and merges them with the corresponding local refs.
+	//
+	// For notes refs, we assume that every note can be automatically merged using
+	// the 'cat_sort_uniq' strategy (the git-appraise schemas fit that requirement),
+	// so we automatically merge the remote notes into the local notes.
+	//
+	// For "archive" refs, they are expected to be used solely for maintaining
+	// reachability of commits that are part of the history of any reviews,
+	// so we do not maintain any consistency with their tree objects. Instead,
+	// we merely ensure that their history graph includes every commit that we
+	// intend to keep.
+	PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error
 }

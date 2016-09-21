@@ -272,6 +272,91 @@ func (repo *GitRepo) SwitchToRef(ref string) error {
 	return err
 }
 
+// mergeArchives merges two archive refs.
+func (repo *GitRepo) mergeArchives(archive, remoteArchive string) error {
+	remoteHash, err := repo.GetCommitHash(remoteArchive)
+	if err != nil {
+		return err
+	}
+	if remoteHash == "" {
+		// The remote archive does not exist, so we have nothing to do
+		return nil
+	}
+
+	archiveHash, err := repo.GetCommitHash(archive)
+	if err != nil {
+		return err
+	}
+	if archiveHash == "" {
+		// The local archive does not exist, so we merely need to set it
+		_, err := repo.runGitCommand("update-ref", archive, remoteHash)
+		return err
+	}
+
+	isAncestor, err := repo.IsAncestor(archiveHash, remoteHash)
+	if err != nil {
+		return err
+	}
+	if isAncestor {
+		// The archive can simply be fast-forwarded
+		_, err := repo.runGitCommand("update-ref", archive, remoteHash, archiveHash)
+		return err
+	}
+
+	// Create a merge commit of the two archives
+	refDetails, err := repo.GetCommitDetails(remoteArchive)
+	if err != nil {
+		return err
+	}
+	newArchiveHash, err := repo.runGitCommand("commit-tree", "-p", remoteHash, "-p", archiveHash, "-m", "Merge local and remote archives", refDetails.Tree)
+	if err != nil {
+		return err
+	}
+	newArchiveHash = strings.TrimSpace(newArchiveHash)
+	_, err = repo.runGitCommand("update-ref", archive, newArchiveHash, archiveHash)
+	return err
+}
+
+// ArchiveRef adds the current commit pointed to by the 'ref' argument
+// under the ref specified in the 'archive' argument.
+//
+// Both the 'ref' and 'archive' arguments are expected to be the fully
+// qualified names of git refs (e.g. 'refs/heads/my-change' or
+// 'refs/devtools/archives/reviews').
+//
+// If the ref pointed to by the 'archive' argument does not exist
+// yet, then it will be created.
+func (repo *GitRepo) ArchiveRef(ref, archive string) error {
+	refHash, err := repo.GetCommitHash(ref)
+	if err != nil {
+		return err
+	}
+	refDetails, err := repo.GetCommitDetails(ref)
+	if err != nil {
+		return err
+	}
+
+	commitTreeArgs := []string{"commit-tree"}
+	archiveHash, err := repo.GetCommitHash(archive)
+	if err != nil {
+		archiveHash = ""
+	} else {
+		commitTreeArgs = append(commitTreeArgs, "-p", archiveHash)
+	}
+	commitTreeArgs = append(commitTreeArgs, "-p", refHash, "-m", fmt.Sprintf("Archive %s", refHash), refDetails.Tree)
+	newArchiveHash, err := repo.runGitCommand(commitTreeArgs...)
+	if err != nil {
+		return err
+	}
+	newArchiveHash = strings.TrimSpace(newArchiveHash)
+	updateRefArgs := []string{"update-ref", archive, newArchiveHash}
+	if archiveHash != "" {
+		updateRefArgs = append(updateRefArgs, archiveHash)
+	}
+	_, err = repo.runGitCommand(updateRefArgs...)
+	return err
+}
+
 // MergeRef merges the given ref into the current one.
 //
 // The ref argument is the ref to merge, and fastForward indicates that the
@@ -293,7 +378,7 @@ func (repo *GitRepo) MergeRef(ref string, fastForward bool, messages ...string) 
 	return repo.runGitCommandInline(args...)
 }
 
-// RebaseRef rebases the given ref into the current one.
+// RebaseRef rebases the current ref onto the given one.
 func (repo *GitRepo) RebaseRef(ref string) error {
 	return repo.runGitCommandInline("rebase", "-i", ref)
 }
@@ -637,22 +722,23 @@ func (repo *GitRepo) PushNotes(remote, notesRefPattern string) error {
 	return nil
 }
 
+// PushNotesAndArchive pushes the given notes and archive refs to a remote repo.
+func (repo *GitRepo) PushNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
+	notesRefspec := fmt.Sprintf("%s:%s", notesRefPattern, notesRefPattern)
+	archiveRefspec := fmt.Sprintf("%s:%s", archiveRefPattern, archiveRefPattern)
+	err := repo.runGitCommandInline("push", remote, notesRefspec, archiveRefspec)
+	if err != nil {
+		return fmt.Errorf("Failed to push the local archive to the remote '%s': %v", remote, err)
+	}
+	return nil
+}
+
 func getRemoteNotesRef(remote, localNotesRef string) string {
 	relativeNotesRef := strings.TrimPrefix(localNotesRef, "refs/notes/")
 	return "refs/notes/" + remote + "/" + relativeNotesRef
 }
 
-// PullNotes fetches the contents of the given notes ref from a remote repo,
-// and then merges them with the corresponding local notes using the
-// "cat_sort_uniq" strategy.
-func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
-	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
-	fetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
-	err := repo.runGitCommandInline("fetch", remote, fetchRefSpec)
-	if err != nil {
-		return err
-	}
-
+func (repo *GitRepo) mergeRemoteNotes(remote, notesRefPattern string) error {
 	remoteRefs, err := repo.runGitCommand("ls-remote", remote, notesRefPattern)
 	if err != nil {
 		return err
@@ -667,6 +753,76 @@ func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 				return err
 			}
 		}
+	}
+	return nil
+}
+
+// PullNotes fetches the contents of the given notes ref from a remote repo,
+// and then merges them with the corresponding local notes using the
+// "cat_sort_uniq" strategy.
+func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
+	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
+	fetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
+	err := repo.runGitCommandInline("fetch", remote, fetchRefSpec)
+	if err != nil {
+		return err
+	}
+
+	return repo.mergeRemoteNotes(remote, notesRefPattern)
+}
+
+func getRemoteArchiveRef(remote, archiveRefPattern string) string {
+	relativeArchiveRef := strings.TrimPrefix(archiveRefPattern, "refs/devtools/archives/")
+	return "refs/devtools/remoteArchives/" + remote + "/" + relativeArchiveRef
+}
+
+func (repo *GitRepo) mergeRemoteArchives(remote, archiveRefPattern string) error {
+	remoteRefs, err := repo.runGitCommand("ls-remote", remote, archiveRefPattern)
+	if err != nil {
+		return err
+	}
+	for _, line := range strings.Split(remoteRefs, "\n") {
+		lineParts := strings.Split(line, "\t")
+		if len(lineParts) == 2 {
+			ref := lineParts[1]
+			remoteRef := getRemoteArchiveRef(remote, ref)
+			if err := repo.mergeArchives(ref, remoteRef); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// PullNotesAndArchive fetches the contents of the notes and archives refs from
+// a remote repo, and merges them with the corresponding local refs.
+//
+// For notes refs, we assume that every note can be automatically merged using
+// the 'cat_sort_uniq' strategy (the git-appraise schemas fit that requirement),
+// so we automatically merge the remote notes into the local notes.
+//
+// For "archive" refs, they are expected to be used solely for maintaining
+// reachability of commits that are part of the history of any reviews,
+// so we do not maintain any consistency with their tree objects. Instead,
+// we merely ensure that their history graph includes every commit that we
+// intend to keep.
+func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
+	remoteArchiveRef := getRemoteArchiveRef(remote, archiveRefPattern)
+	archiveFetchRefSpec := fmt.Sprintf("+%s:%s", archiveRefPattern, remoteArchiveRef)
+
+	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
+	notesFetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
+
+	err := repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, archiveFetchRefSpec)
+	if err != nil {
+		return err
+	}
+
+	if err := repo.mergeRemoteNotes(remote, notesRefPattern); err != nil {
+		return err
+	}
+	if err := repo.mergeRemoteArchives(remote, archiveRefPattern); err != nil {
+		return err
 	}
 	return nil
 }

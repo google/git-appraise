@@ -65,11 +65,39 @@ func buildRequestFromFlags(requester string) (request.Request, error) {
 	return request.New(requester, reviewers, *requestSource, *requestTarget, *requestMessage), nil
 }
 
+// Get the commit at which the review request should be anchored.
+func getReviewCommit(repo repository.Repo, r request.Request, args []string) (string, string, error) {
+	if len(args) > 1 {
+		return "", "", errors.New("Only updating a single review is supported.")
+	}
+	if len(args) == 1 {
+		base, err := repo.MergeBase(r.TargetRef, args[0])
+		if err != nil {
+			return "", "", err
+		}
+		return args[0], base, nil
+	}
+
+	base, err := repo.MergeBase(r.TargetRef, r.ReviewRef)
+	if err != nil {
+		return "", "", err
+	}
+	reviewCommits, err := repo.ListCommitsBetween(base, r.ReviewRef)
+	if err != nil {
+		return "", "", err
+	}
+	if reviewCommits == nil {
+		return "", "", errors.New("There are no commits included in the review request")
+	}
+	return reviewCommits[0], base, nil
+}
+
 // Create a new code review request.
 //
 // The "args" parameter is all of the command line arguments that followed the subcommand.
 func requestReview(repo repository.Repo, args []string) error {
 	requestFlagSet.Parse(args)
+	args = requestFlagSet.Args()
 
 	if !*requestAllowUncommitted {
 		// Requesting a code review with uncommited local changes is usually a mistake, so
@@ -104,22 +132,14 @@ func requestReview(repo repository.Repo, args []string) error {
 	if err := repo.VerifyGitRef(r.ReviewRef); err != nil {
 		return err
 	}
-	base, err := repo.MergeBase(r.TargetRef, r.ReviewRef)
+
+	reviewCommit, baseCommit, err := getReviewCommit(repo, r, args)
 	if err != nil {
 		return err
 	}
-	r.BaseCommit = base
-
-	reviewCommits, err := repo.ListCommitsBetween(base, r.ReviewRef)
-	if err != nil {
-		return err
-	}
-	if reviewCommits == nil {
-		return errors.New("There are no commits included in the review request")
-	}
-
+	r.BaseCommit = baseCommit
 	if r.Description == "" {
-		description, err := repo.GetCommitMessage(reviewCommits[0])
+		description, err := repo.GetCommitMessage(reviewCommit)
 		if err != nil {
 			return err
 		}
@@ -130,9 +150,9 @@ func requestReview(repo repository.Repo, args []string) error {
 	if err != nil {
 		return err
 	}
-	repo.AppendNote(request.Ref, reviewCommits[0], note)
+	repo.AppendNote(request.Ref, reviewCommit, note)
 	if !*requestQuiet {
-		fmt.Printf(requestSummaryTemplate, reviewCommits[0], r.TargetRef, r.ReviewRef, r.Description)
+		fmt.Printf(requestSummaryTemplate, reviewCommit, r.TargetRef, r.ReviewRef, r.Description)
 	}
 	return nil
 }
@@ -140,7 +160,7 @@ func requestReview(repo repository.Repo, args []string) error {
 // requestCmd defines the "request" subcommand.
 var requestCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s request [<option>...]\n\nOptions:\n", arg0)
+		fmt.Printf("Usage: %s request [<option>...] [<review-hash>]\n\nOptions:\n", arg0)
 		requestFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {

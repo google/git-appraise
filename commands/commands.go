@@ -22,6 +22,7 @@ import (
 )
 
 const notesRefPattern = "refs/notes/devtools/*"
+const archiveRefPattern = "refs/devtools/archives/*"
 const commentFilename = "APPRAISE_COMMENT_EDITMSG"
 
 // Command represents the definition of a single command.
@@ -45,6 +46,7 @@ var CommandMap = map[string]*Command{
 	"list":    listCmd,
 	"pull":    pullCmd,
 	"push":    pushCmd,
+	"rebase":  rebaseCmd,
 	"reject":  rejectCmd,
 	"request": requestCmd,
 	"show":    showCmd,
