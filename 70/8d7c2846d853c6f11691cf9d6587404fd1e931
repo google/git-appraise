@@ -55,3 +55,5 @@
 {"timestamp":"1454066246","author":"jishi9","description":"@hazbo It's hidden in `git appraise show 708d7c2846d8`, took me a while to find!\n\nLook for `a35b23b2737594d793d42b7ede04b8f068145384` in the output, where it says \"This should only be done if the user has not set one of the command line flags\"\n"}
 
 {"timestamp":"1454066485","author":"hazbo","description":"@jishi9 thanks a lot! :)\n"}
+
+{"timestamp":"1454095133","author":"ojarjur","description":"@hazbo @jishi9 OK, I see what happened with the comment disappearing; it was a bug in the script to mirror pull requests into git-appraise.\n\nApparently when the base moved forward, that tool thought it should create a new review, instead of just detecting the existing review.\n\nI've turned off the script for now, will fix the bug, and then turn it back on.\n\nSorry for the confusion.\n"}
