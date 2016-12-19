@@ -9,3 +9,5 @@
 {"timestamp":"1465461451","author":"hazbo","description":"Alright! Sounds good to me. I'll get the other commands done soon as I can in a separate PR."}
 
 {"timestamp":"1465503469","author":"ojarjur@google.com","location":{"commit":"014b3863e18628d6fda6488c72c3371d724b1bec"},"resolved":true}
+
+{"timestamp":"1465239208","author":"ojarjur","description":"Thanks for putting this together.\n\nOverall, I think it looks good. The only feedback I have is the inline comment about `Scan()` dropping newlines that it encounters.\n"}
