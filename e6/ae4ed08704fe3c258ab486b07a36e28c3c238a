@@ -1,3 +1,5 @@
 {"timestamp":"1457460958","author":"ojarjur","description":"Thanks for doing this!\r\n\r\nThis fixes part of issue #20 "}
 
 {"timestamp":"1457461513","author":"ojarjur@google.com","location":{"commit":"a26d673a3806ef2f3439825a07e278d810e48fdc"},"resolved":true}
+
+{"timestamp":"1457460958","author":"ojarjur","description":"Thanks for doing this!\n\nThis fixes part of issue #20 \n"}
