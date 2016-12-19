@@ -90,3 +90,5 @@
 {"timestamp":"1456173845","author":"ojarjur","description":"Thanks again for all of the feedback @andreineculau. I've gone through (I think) all of the inline comments and either created an issue to track the corresponding changes, or added a comment about why I don't think something will work.\n\nIf I missed anything, then please call that out.\n\nAs for the other tools named \"git-review\", Harry found the biggest one, but there is also a tool called [\"git-codereview\"](https://godoc.org/golang.org/x/review/git-codereview), and hundreds of smaller projects on github that use the name \"git-review\".\n"}
 
 {"timestamp":"1456493596","author":"andreineculau","description":"Thanks for all the effort and time\n"}
+
+{"timestamp":"1455456876","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":58}},"description":"my suggestions are in line with the builtin `git branch` and `git tag` for instance\n\nNOTE: should also support the short `-l`\n"}
