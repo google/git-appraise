@@ -17,3 +17,5 @@
 {"timestamp":"1451164604","author":"googlebot","description":"CLAs look good, thanks!\n\n\u003c!-- ok --\u003e\n"}
 
 {"timestamp":"1451230197","author":"barbastan","description":"Omar will look at this when he returns on Jan. 4th.\n\nThanks!\nBarbara\n\nOn Sat, Dec 26, 2015 at 1:16 PM, googlebot notifications@github.com wrote:\n\n\u003e CLAs look good, thanks!\n\u003e \n\u003e —\n\u003e Reply to this email directly or view it on GitHub\n\u003e https://github.com/google/git-appraise/pull/27#issuecomment-167363884.\n"}
+
+{"timestamp":"1451164469","author":"jishi9","location":{"commit":"df324616ea2bc9bf6fc7025fc80a373ecec687b6","path":"commands/comment.go","range":{"startLine":117}},"description":"Should this message mention the string `*commentParent` provided? For example:\n`There is no matching parent comment: 11223344abcdef`\n"}
