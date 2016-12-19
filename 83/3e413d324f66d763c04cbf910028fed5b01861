@@ -11,3 +11,5 @@
 {"timestamp":"1465503469","author":"ojarjur@google.com","location":{"commit":"014b3863e18628d6fda6488c72c3371d724b1bec"},"resolved":true}
 
 {"timestamp":"1465239208","author":"ojarjur","description":"Thanks for putting this together.\n\nOverall, I think it looks good. The only feedback I have is the inline comment about `Scan()` dropping newlines that it encounters.\n"}
+
+{"timestamp":"1465426091","author":"hazbo","description":"Hey Omar! Sorry this took me so long to get back to. This seems to do the trick.\n\nIf this seems okay with you, would it be a good idea to now implement this among the other relevant subcommands?\n"}
