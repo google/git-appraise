@@ -9,3 +9,5 @@
 {"timestamp":"1465041308","author":"hazbo","description":"I branched off from hazbo/unix-filter to create #58 "}
 
 {"timestamp":"1465232534","author":"ojarjur@google.com","location":{"commit":"9fe6acaf58e22fbdb98024321ae2e920bdea18a4"},"resolved":true}
+
+{"timestamp":"1464985939","author":"ojarjur","description":"Thanks for putting this together. I like where this is headed so far.\n\nI also like the proposal to be consistent with git's stderr message before trying to read from stdin. I think that will make things a lot more clear to the end user.\n\nDid you want to get this submitted with just the current scope, or did you want to add the other functionality too? I'm happy with either approach, so just let me know.\n\nThanks.\n"}
