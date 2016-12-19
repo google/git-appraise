@@ -17,3 +17,5 @@
 {"timestamp":"1455651261","author":"andreineculau","description":"@ojarjur I hope the new commit solves everything.\nbut take it easy on yourself, carpe diem :) this will still be here years from now :)\n"}
 
 {"timestamp":"1455638502","author":"ojarjur","location":{"commit":"951857bf15ca79bc251d8888faecd44bd37d90a4","path":"schema/analysis.json","range":{"startLine":39}},"description":"The 'status' field is a good optimization (since it potentially saves the client from having to download the linked results), but we shouldn't mark it as required.\n\nIn particular, the git-appraise repo itself does not always have that field (it was only recently added).\n"}
+
+{"timestamp":"1455638639","author":"ojarjur","location":{"commit":"951857bf15ca79bc251d8888faecd44bd37d90a4","path":"schema/ci.json","range":{"startLine":43}},"description":"The \"status\" and \"url\" fields should not be required.\n\nWe don't have a \"status\" field when mirroring some Travis commit statuses (the ones written at the beginning of a test run), and it sometimes makes sense to omit \"url\" if the tests all passed.\n"}
