@@ -15,3 +15,5 @@
 {"timestamp":"1455639008","author":"ojarjur","description":"Thanks so much for doing this; this looks like a major improvement in the documentation of the spec!\n\nI've posted some feedback about the required fields, but overall this looks really good.\n\nFYI, I'm not at my computer much this week, so I may be slow to respond (or unavailable) until next Monday. Sorry for that delay, and thanks again for the help.\n"}
 
 {"timestamp":"1455651261","author":"andreineculau","description":"@ojarjur I hope the new commit solves everything.\nbut take it easy on yourself, carpe diem :) this will still be here years from now :)\n"}
+
+{"timestamp":"1455638502","author":"ojarjur","location":{"commit":"951857bf15ca79bc251d8888faecd44bd37d90a4","path":"schema/analysis.json","range":{"startLine":39}},"description":"The 'status' field is a good optimization (since it potentially saves the client from having to download the linked results), but we shouldn't mark it as required.\n\nIn particular, the git-appraise repo itself does not always have that field (it was only recently added).\n"}
