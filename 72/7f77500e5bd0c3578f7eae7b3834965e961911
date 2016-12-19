@@ -108,3 +108,5 @@
 {"timestamp":"1455457435","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"docs/tutorial.md","range":{"startLine":67}},"description":"\"Request a review: `git appraise request`\"\nvs\n\"Request a review: `git review request`\"\n"}
 
 {"timestamp":"1455457467","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"docs/tutorial.md","range":{"startLine":97}},"description":"my suggestion is in line with `git log`\n"}
+
+{"timestamp":"1455457534","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"docs/tutorial.md","range":{"startLine":139}},"description":"scratch this. Should have been\n\n```\ngit review [-l | --list]\n```\n"}
