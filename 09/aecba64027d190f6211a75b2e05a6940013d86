@@ -12,3 +12,5 @@
 {"timestamp":"1450364829","author":"hazbo","description":"I initially thought about abstracting the exec stuff out a little bit as it could easily be used elsewhere in the codebase, to use an editor for writing a message, but it's really not that much code as of now I just left it in the comment file.\n"}
 
 {"timestamp":"1450378254","author":"ojarjur","description":"Thanks for doing this. Overall this LGTM, but I've left a (minor) comment using git-appraise, so please take a look and see what you think.\n"}
+
+{"timestamp":"1450381228","author":"hazbo","description":"You're right, this is a better approach for getting the editor. Is this kind of code in general worth thinking about in regards to adding a message to an initial request?\n"}
