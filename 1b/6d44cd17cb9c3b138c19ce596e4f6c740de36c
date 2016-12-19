@@ -10,3 +10,5 @@
 {"timestamp":"1457556748","author":"ojarjur@google.com","location":{"commit":"1b6d44cd17cb9c3b138c19ce596e4f6c740de36c"},"resolved":true}
 
 {"timestamp":"1457460458","author":"ojarjur","location":{"commit":"de9ebcdf2a1e93365eefc2739f73f2c68a280c11","path":"commands/comment.go","range":{"startLine":62}},"description":"First off, good catch on the upper-bound checking being wrong; it should use a \u003e rather than a \u003e=.\n\nThe lowerbound, however, needs to be a 0 rather than a 1, as leaving off the \"-l\" flag (i.e. commenting on the entire file) will result in the `line` variable having a value of 0, and that's a valid use case.\n\nThat being said, thanks for finding this issue and fixing it.\n"}
+
+{"timestamp":"1457484365","author":"mattn","location":{"commit":"de9ebcdf2a1e93365eefc2739f73f2c68a280c11","path":"commands/comment.go","range":{"startLine":62}},"description":"@ojarjur Sorry, I don't understand what you mean. -l can be taken from 1 to count of lines. So 1 to len(lines).\n"}
