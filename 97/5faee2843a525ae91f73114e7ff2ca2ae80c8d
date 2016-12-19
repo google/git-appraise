@@ -1,2 +1,4 @@
 {"timestamp":"1465582458","author":"ojarjur@google.com","location":{"commit":"975faee2843a525ae91f73114e7ff2ca2ae80c8d"},"resolved":true}
 {"timestamp":"1465582507","author":"ojarjur","description":"Good catch!\r\n\r\nThanks for the fix."}
+
+{"timestamp":"1465582507","author":"ojarjur","description":"Good catch!\n\nThanks for the fix.\n"}
