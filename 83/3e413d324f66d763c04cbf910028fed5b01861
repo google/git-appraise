@@ -17,3 +17,5 @@
 {"timestamp":"1465454903","author":"ojarjur","description":"\u003e Sorry this took me so long to get back to.\n\nNo need to apologize. I really appreciate the amount of work you've put in to this.\n\n\u003e If this seems okay with you, would it be a good idea to now implement this among the other relevant subcommands?\n\nYes, I think this looks really good now. I'll get this submitted tomorrow unless you want me to wait. The other commands can always go in a later PR.\n\nThanks again for all of your help.\n"}
 
 {"timestamp":"1465461451","author":"hazbo","description":"Alright! Sounds good to me. I'll get the other commands done soon as I can in a separate PR.\n"}
+
+{"timestamp":"1465239143","author":"ojarjur","location":{"commit":"40dd6bc463093bb679ff9ff0f3f57b1ff1d10288","path":"commands/input/input.go","range":{"startLine":96}},"description":"I think we need to add a newline to what is written in order to compensate for s.Scan() trimming the separator (which defaults to newline).\n"}
