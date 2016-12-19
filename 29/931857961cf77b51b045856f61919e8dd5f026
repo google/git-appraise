@@ -35,3 +35,5 @@
 {"timestamp":"1450877794","author":"hazbo","description":"@jishi9 I've made some changes here based on what you suggested, in regards to doing various checks. Is this what you had in mind?\n"}
 
 {"timestamp":"1450878141","author":"jishi9","description":"@hazbo yeah exactly. LGTM :+1:\n\nI just noticed that the message is actually persisted to a file, and hence the user would not have to re-type the message (I think). I still think it's better to do all validations first anyway.\n"}
+
+{"timestamp":"1450878489","author":"hazbo","description":"\u003e  I still think it's better to do all validations first anyway.\n\nAgreed! :smile:\n\nThanks for the feedback on this.\n"}
