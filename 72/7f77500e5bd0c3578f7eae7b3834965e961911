@@ -94,3 +94,5 @@
 {"timestamp":"1455456876","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":58}},"description":"my suggestions are in line with the builtin `git branch` and `git tag` for instance\n\nNOTE: should also support the short `-l`\n"}
 
 {"timestamp":"1455456895","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":66}},"description":"my suggestion is in line with `git log`\n"}
+
+{"timestamp":"1455457175","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":79}},"description":"the goal of a \"pull request\", \"merge request\", \"review\", etc is to be \"merged\" (not necessarily ad-literam with git-merge, but to make its way into the targetRef)\n\npoint is that the phrase \"submit\" has no equivalent in the git world, but there are merge/rebase equivalents.\n"}
