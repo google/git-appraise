@@ -10,3 +10,5 @@
 {"timestamp":"1450390235","author":"hazbo","Parent":"163313dffd95e9700542049ab53f0f40d015afc1","description":"Yes that makes sense, given that the user would / could of most likely just used that editor to write the commit message in the first place. I think a flag would be nice but I wouldn't consider it massively important at this stage - the default message (commit) is reasonable I think."}
 
 {"timestamp":"1450364829","author":"hazbo","description":"I initially thought about abstracting the exec stuff out a little bit as it could easily be used elsewhere in the codebase, to use an editor for writing a message, but it's really not that much code as of now I just left it in the comment file.\n"}
+
+{"timestamp":"1450378254","author":"ojarjur","description":"Thanks for doing this. Overall this LGTM, but I've left a (minor) comment using git-appraise, so please take a look and see what you think.\n"}
