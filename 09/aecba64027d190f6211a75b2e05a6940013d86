@@ -16,3 +16,5 @@
 {"timestamp":"1450381228","author":"hazbo","description":"You're right, this is a better approach for getting the editor. Is this kind of code in general worth thinking about in regards to adding a message to an initial request?\n"}
 
 {"timestamp":"1450385360","author":"ojarjur","description":"\u003e Is this kind of code in general worth thinking about in regards to adding a message to an initial request?\n\nI don't know. There is a reasonable default for request messages (the message from the corresponding commit), but it could be useful to have the editor pop up with that default pre-populated.\n\nAt the very least, I would not want to pop up the editor by default for the request command (i.e. there could be a flag to turn that on).\n"}
+
+{"timestamp":"1450390235","author":"hazbo","description":"Yes that makes sense, given that the user would / could of most likely just used that editor to write the commit message in the first place. I think a flag would be nice but I wouldn't consider it massively important at this stage - the default message (commit) is reasonable I think.\n"}
