@@ -15,3 +15,5 @@
 {"timestamp":"1464990052","author":"hazbo","description":"After receiving feedback on this first commit I was planning on working on the rest and then just have it all merged as one. But I think it might be better if we submit this one now, figure out the stdin related stuff in a separate request, then once we're happy with that, it'd just be a case of applying this work to the other subcommands.\n\nHow does this sound to you?\n"}
 
 {"timestamp":"1464990291","author":"ojarjur","description":"That sounds good to me. The only caveat for that approach is that we'll need to remove the bit in the help text about using `-` for reading from stdin.\n"}
+
+{"timestamp":"1464990349","author":"hazbo","description":"Feel free to assign #56 to me if you'd like. I'm more than happy to hack away at this tonight, and probably the rest tomorrow :)\n"}
