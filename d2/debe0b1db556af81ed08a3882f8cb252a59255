@@ -13,3 +13,5 @@
 {"timestamp":"1456157181","author":"ojarjur@google.com","location":{"commit":"2671e063db77baaee9425bee4960365625801b4e"},"resolved":true}
 
 {"timestamp":"1455639008","author":"ojarjur","description":"Thanks so much for doing this; this looks like a major improvement in the documentation of the spec!\n\nI've posted some feedback about the required fields, but overall this looks really good.\n\nFYI, I'm not at my computer much this week, so I may be slow to respond (or unavailable) until next Monday. Sorry for that delay, and thanks again for the help.\n"}
+
+{"timestamp":"1455651261","author":"andreineculau","description":"@ojarjur I hope the new commit solves everything.\nbut take it easy on yourself, carpe diem :) this will still be here years from now :)\n"}
