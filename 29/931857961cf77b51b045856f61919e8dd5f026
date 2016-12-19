@@ -37,3 +37,5 @@
 {"timestamp":"1450878141","author":"jishi9","description":"@hazbo yeah exactly. LGTM :+1:\n\nI just noticed that the message is actually persisted to a file, and hence the user would not have to re-type the message (I think). I still think it's better to do all validations first anyway.\n"}
 
 {"timestamp":"1450878489","author":"hazbo","description":"\u003e  I still think it's better to do all validations first anyway.\n\nAgreed! :smile:\n\nThanks for the feedback on this.\n"}
+
+{"timestamp":"1450823123","author":"jishi9","location":{"commit":"29931857961cf77b51b045856f61919e8dd5f026","path":"commands/reject.go","range":{"startLine":78}},"description":"Should this (and the other checks below) not be done _before_ obtaining the reject message ~~(which may possibly prompt the user to enter a message)~~?\n\n_Edited to avoid confusion_\n"}
