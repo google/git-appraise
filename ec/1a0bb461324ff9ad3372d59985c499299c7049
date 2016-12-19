@@ -15,3 +15,5 @@
 {"timestamp":"1451164388","author":"googlebot","description":"We found a Contributor License Agreement for you (the sender of this pull request), but were unable to find agreements for the commit author(s).  If you authored these, maybe you used a different email address in the git commits than was used to sign the CLA ([login here](https://cla.developers.google.com/) to double check)?  If these were authored by someone else, then they will need to sign a CLA as well, and confirm that they're okay with these being contributed to Google.\n\n\u003c!-- need_author_cla --\u003e\n"}
 
 {"timestamp":"1451164604","author":"googlebot","description":"CLAs look good, thanks!\n\n\u003c!-- ok --\u003e\n"}
+
+{"timestamp":"1451230197","author":"barbastan","description":"Omar will look at this when he returns on Jan. 4th.\n\nThanks!\nBarbara\n\nOn Sat, Dec 26, 2015 at 1:16 PM, googlebot notifications@github.com wrote:\n\n\u003e CLAs look good, thanks!\n\u003e \n\u003e —\n\u003e Reply to this email directly or view it on GitHub\n\u003e https://github.com/google/git-appraise/pull/27#issuecomment-167363884.\n"}
