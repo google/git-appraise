@@ -1,1 +1,3 @@
 {"timestamp":"1485263370","reviewRef":"refs/pull/68/head","targetRef":"refs/heads/master","requester":"sokolovstas","description":"Added abandon command\n\nThis commit resolve #17","baseCommit":"4a3502c80637eab79d6cb699a550abe9b6a1c158"}
+
+{"timestamp":"1485264072","reviewRef":"refs/pull/68/head","targetRef":"refs/heads/master","requester":"sokolovstas","description":"Added abandon command\n\nThis commit resolve #17\r\n\r\nAdded abandon command that add comment with **resolve = false** and remove TargetRef from Request.\r\nAdded edit note command to `git.go` repository to update existing note.\r\nAdded abandon status to `output.go` when Request.TargetRef is empty.","baseCommit":"4a3502c80637eab79d6cb699a550abe9b6a1c158"}
