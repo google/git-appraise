@@ -1,0 +1,1 @@
+{"timestamp":"1485263370","reviewRef":"refs/pull/68/head","targetRef":"refs/heads/master","requester":"sokolovstas","description":"Added abandon command\n\nThis commit resolve #17","baseCommit":"4a3502c80637eab79d6cb699a550abe9b6a1c158"}
