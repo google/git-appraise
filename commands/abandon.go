@@ -20,7 +20,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 
 	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
@@ -103,9 +102,7 @@ func abandonReview(repo repository.Repo, args []string) error {
 		return err
 	}
 
-	log.Print(request.Ref, abandonedCommit, string(note))
-
-	return repo.EditNote(request.Ref, r.Revision, note)
+	return repo.AppendNote(request.Ref, r.Revision, note)
 }
 
 // abandonCmd defines the "abandon" subcommand.

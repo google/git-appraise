@@ -155,9 +155,6 @@ type Repo interface {
 	// This is the batch version of the corresponding GetNotes(...) method.
 	GetAllNotes(notesRef string) (map[string][]Note, error)
 
-	// EditNote edit a note to a revision under the given ref.
-	EditNote(ref, revision string, note Note) error
-
 	// AppendNote appends a note to a revision under the given ref.
 	AppendNote(ref, revision string, note Note) error
 
