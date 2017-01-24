@@ -680,6 +680,12 @@ func (repo *GitRepo) GetAllNotes(notesRef string) (map[string][]Note, error) {
 	return commitNotesMap, nil
 }
 
+// EditNote edit a note under the given ref.
+func (repo *GitRepo) EditNote(notesRef, revision string, note Note) error {
+	_, err := repo.runGitCommand("notes", "--ref", notesRef, "edit", "-m", string(note), revision)
+	return err
+}
+
 // AppendNote appends a note to a revision under the given ref.
 func (repo *GitRepo) AppendNote(notesRef, revision string, note Note) error {
 	_, err := repo.runGitCommand("notes", "--ref", notesRef, "append", "-m", string(note), revision)

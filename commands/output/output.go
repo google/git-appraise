@@ -70,6 +70,9 @@ func getStatusString(r *review.Summary) string {
 	if r.Submitted {
 		return "danger"
 	}
+	if r.Request.TargetRef == "" {
+		return "abandon"
+	}
 	return "rejected"
 }
 

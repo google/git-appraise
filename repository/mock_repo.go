@@ -519,6 +519,14 @@ func (r *mockRepoForTest) GetAllNotes(notesRef string) (map[string][]Note, error
 	return notesMap, nil
 }
 
+// EditNote appends a note to a revision under the given ref.
+func (r *mockRepoForTest) EditNote(ref, revision string, note Note) error {
+	existingNotes := r.Notes[ref][revision]
+	newNotes := existingNotes + "\n" + string(note)
+	r.Notes[ref][revision] = newNotes
+	return nil
+}
+
 // AppendNote appends a note to a revision under the given ref.
 func (r *mockRepoForTest) AppendNote(ref, revision string, note Note) error {
 	existingNotes := r.Notes[ref][revision]

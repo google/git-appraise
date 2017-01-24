@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 )
@@ -54,6 +55,10 @@ func validateRebaseRequest(repo repository.Repo, args []string) (*review.Review,
 
 	if r.Submitted {
 		return nil, errors.New("The review has already been submitted.")
+	}
+
+	if r.Request.TargetRef == "" {
+		return nil, errors.New("The review was abandoned.")
 	}
 
 	target := r.Request.TargetRef

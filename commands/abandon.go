@@ -20,29 +20,31 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 
 	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"github.com/google/git-appraise/review/comment"
+	"github.com/google/git-appraise/review/request"
 )
 
-var rejectFlagSet = flag.NewFlagSet("reject", flag.ExitOnError)
+var abandonFlagSet = flag.NewFlagSet("abandon", flag.ExitOnError)
 
 var (
-	rejectMessageFile = rejectFlagSet.String("F", "", "Take the comment from the given file. Use - to read the message from the standard input")
-	rejectMessage     = rejectFlagSet.String("m", "", "Message to attach to the review")
+	abandonMessageFile = abandonFlagSet.String("F", "", "Take the comment from the given file. Use - to read the message from the standard input")
+	abandonMessage     = abandonFlagSet.String("m", "", "Message to attach to the review")
 )
 
-// rejectReview adds an NMW comment to the current code review.
-func rejectReview(repo repository.Repo, args []string) error {
-	rejectFlagSet.Parse(args)
-	args = rejectFlagSet.Args()
+// abandonReview adds an NMW comment to the current code review.
+func abandonReview(repo repository.Repo, args []string) error {
+	abandonFlagSet.Parse(args)
+	args = abandonFlagSet.Args()
 
 	var r *review.Review
 	var err error
 	if len(args) > 1 {
-		return errors.New("Only rejecting a single review is supported.")
+		return errors.New("Only abandon a single review is supported.")
 	}
 
 	if len(args) == 1 {
@@ -58,29 +60,25 @@ func rejectReview(repo repository.Repo, args []string) error {
 		return errors.New("There is no matching review.")
 	}
 
-	if r.Request.TargetRef == "" {
-		return errors.New("The review was abandoned.")
-	}
-
-	if *rejectMessageFile != "" && *rejectMessage == "" {
-		*rejectMessage, err = input.FromFile(*rejectMessageFile)
+	if *abandonMessageFile != "" && *abandonMessage == "" {
+		*abandonMessage, err = input.FromFile(*abandonMessageFile)
 		if err != nil {
 			return err
 		}
 	}
-	if *rejectMessageFile == "" && *rejectMessage == "" {
-		*rejectMessage, err = input.LaunchEditor(repo, commentFilename)
+	if *abandonMessageFile == "" && *abandonMessage == "" {
+		*abandonMessage, err = input.LaunchEditor(repo, commentFilename)
 		if err != nil {
 			return err
 		}
 	}
 
-	rejectedCommit, err := r.GetHeadCommit()
+	abandonedCommit, err := r.GetHeadCommit()
 	if err != nil {
 		return err
 	}
 	location := comment.Location{
-		Commit: rejectedCommit,
+		Commit: abandonedCommit,
 	}
 	resolved := false
 	userEmail, err := repo.GetUserEmail()
@@ -90,16 +88,33 @@ func rejectReview(repo repository.Repo, args []string) error {
 	c := comment.New(userEmail, *rejectMessage)
 	c.Location = &location
 	c.Resolved = &resolved
-	return r.AddComment(c)
+
+	err = r.AddComment(c)
+
+	if err != nil {
+		return err
+	}
+
+	// Empty target ref indicates that request was abandoned
+	r.Request.TargetRef = ""
+
+	note, err := r.Request.Write()
+	if err != nil {
+		return err
+	}
+
+	log.Print(request.Ref, abandonedCommit, string(note))
+
+	return repo.EditNote(request.Ref, r.Revision, note)
 }
 
-// rejectCmd defines the "reject" subcommand.
-var rejectCmd = &Command{
+// abandonCmd defines the "abandon" subcommand.
+var abandonCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s reject [<option>...] [<commit>]\n\nOptions:\n", arg0)
-		rejectFlagSet.PrintDefaults()
+		fmt.Printf("Usage: %s abandon [<option>...] [<commit>]\n\nOptions:\n", arg0)
+		abandonFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {
-		return rejectReview(repo, args)
+		return abandonReview(repo, args)
 	},
 }

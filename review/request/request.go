@@ -86,7 +86,7 @@ func ParseAllValid(notes []repository.Note) []Request {
 	var requests []Request
 	for _, note := range notes {
 		request, err := Parse(note)
-		if err == nil && request.Version == FormatVersion && request.TargetRef != "" {
+		if err == nil && request.Version == FormatVersion {
 			requests = append(requests, request)
 		}
 	}
