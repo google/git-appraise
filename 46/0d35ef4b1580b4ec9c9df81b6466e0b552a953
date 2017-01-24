@@ -5,3 +5,5 @@
 {"timestamp":"1485285010","author":"ojarjur","location":{"commit":"460d35ef4b1580b4ec9c9df81b6466e0b552a953","path":"repository/repo.go","range":{"startLine":160}},"description":"The git-appraise formats are all based on the idea of an append-only log of events (rather than an editable view of the current state of the world).\r\n\r\nThat means we should only ever append new notes, not edit existing ones."}
 
 {"timestamp":"1485285720","author":"ojarjur","description":"Thanks for taking the time and putting in the effort to help improve the tool.\r\n\r\nI really appreciate it."}
+
+{"timestamp":"1485285874","author":"sokolovstas","description":"I fixed all comments! Thank you for you reviews!\r\n\r\nBut I have one problem and can't figure it out. Abandon comment is not saved to the note."}
