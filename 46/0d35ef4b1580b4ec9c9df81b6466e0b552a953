@@ -11,3 +11,5 @@
 {"timestamp":"1485286959","author":"ojarjur","location":{"commit":"ccbb972f52eea58cecd82345d00af3ae1d9f34d7","path":"commands/abandon.go","range":{"startLine":88}},"description":"This should be \"abandonMessage\" rather than \"rejectMessage\""}
 
 {"timestamp":"1485287005","author":"ojarjur","description":"@sokolovstas You're absolutely right. I overlooked the name of the flag in the abandon command.\r\n\r\nIf you fix that then it should work.\r\n\r\nThanks again for your help!"}
+
+{"timestamp":"1485322371","author":"sokolovstas","location":{"commit":"ccbb972f52eea58cecd82345d00af3ae1d9f34d7","path":"commands/abandon.go","range":{"startLine":88}},"description":"Thank you! Now it works!"}
