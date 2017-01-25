@@ -41,6 +41,7 @@ func (cmd *Command) Run(repo repository.Repo, args []string) error {
 
 // CommandMap defines all of the available (sub)commands.
 var CommandMap = map[string]*Command{
+	"abandon": abandonCmd,
 	"accept":  acceptCmd,
 	"comment": commentCmd,
 	"list":    listCmd,

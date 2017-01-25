@@ -335,7 +335,7 @@ func ListAll(repo repository.Repo) []Summary {
 func ListOpen(repo repository.Repo) []Summary {
 	var openReviews []Summary
 	for _, review := range unsortedListAll(repo) {
-		if !review.Submitted {
+		if !review.Submitted && review.Request.TargetRef != "" {
 			openReviews = append(openReviews, review)
 		}
 	}
