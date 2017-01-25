@@ -553,6 +553,19 @@ func (r *Review) GetBaseCommit() (string, error) {
 	return r.Repo.MergeBase(leftHandSide, rightHandSide)
 }
 
+// ListCommits lists the commits included in a review.
+func (r *Review) ListCommits() ([]string, error) {
+	baseCommit, err := r.GetBaseCommit()
+	if err != nil {
+		return nil, err
+	}
+	headCommit, err := r.GetHeadCommit()
+	if err != nil {
+		return nil, err
+	}
+	return r.Repo.ListCommitsBetween(baseCommit, headCommit)
+}
+
 // GetDiff returns the diff for a review.
 func (r *Review) GetDiff(diffArgs ...string) (string, error) {
 	var baseCommit, headCommit string
