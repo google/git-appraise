@@ -154,3 +154,5 @@
 {"timestamp":"1456501915","author":"andreineculau","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":66}},"description":"having many ways to do the same thing is like the road to hell paved with good intentions\n"}
 
 {"timestamp":"1456504316","author":"ojarjur","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911","path":"README.md","range":{"startLine":66}},"description":"\u003e having many ways to do the same thing is like the road to hell paved with good intentions\n\nI agree that is another downside to it; I'm still very much undecided about whether or not to make it into its own command.\n"}
+
+{"timestamp":"1485367579","author":"ojarjur@google.com","location":{"commit":"727f77500e5bd0c3578f7eae7b3834965e961911"},"description":"This review was just for discussion and not meant to be merged. The corresponding PR has been closed","resolved":false}
