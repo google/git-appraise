@@ -245,11 +245,14 @@ func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
 	if summary.Request.Alias != "" {
 		currentCommit = summary.Request.Alias
 	}
-	submitted, err := repo.IsAncestor(currentCommit, summary.Request.TargetRef)
-	if err != nil {
-		return nil, err
+
+	if summary.Request.TargetRef != "" {
+		submitted, err := repo.IsAncestor(currentCommit, summary.Request.TargetRef)
+		if err != nil {
+			return nil, err
+		}
+		summary.Submitted = submitted
 	}
-	summary.Submitted = submitted
 	return summary, nil
 }
 
@@ -264,6 +267,11 @@ func (r *Summary) Details() (*Review, error) {
 		review.Analyses = analyses.ParseAllValid(review.Repo.GetNotes(analyses.Ref, currentCommit))
 	}
 	return &review, nil
+}
+
+// IsOpen returns whether or not the given review is still open (neither submitted nor abandoned).
+func (r *Summary) IsOpen() bool {
+	return !r.Submitted && r.Request.TargetRef != ""
 }
 
 // Get returns the specified code review.
@@ -318,7 +326,9 @@ func unsortedListAll(repo repository.Repo) []Summary {
 		if err != nil {
 			continue
 		}
-		summary.Submitted = isSubmittedCheck(summary.Request.TargetRef, summary.getStartingCommit())
+		if summary.Request.TargetRef != "" {
+			summary.Submitted = isSubmittedCheck(summary.Request.TargetRef, summary.getStartingCommit())
+		}
 		reviews = append(reviews, *summary)
 	}
 	return reviews
@@ -335,7 +345,7 @@ func ListAll(repo repository.Repo) []Summary {
 func ListOpen(repo repository.Repo) []Summary {
 	var openReviews []Summary
 	for _, review := range unsortedListAll(repo) {
-		if !review.Submitted && review.Request.TargetRef != "" {
+		if review.IsOpen() {
 			openReviews = append(openReviews, review)
 		}
 	}
@@ -525,7 +535,7 @@ func (r *Review) GetHeadCommit() (string, error) {
 
 // GetBaseCommit returns the commit against which a review should be compared.
 func (r *Review) GetBaseCommit() (string, error) {
-	if r.Submitted {
+	if !r.IsOpen() {
 		if r.Request.BaseCommit != "" {
 			return r.Request.BaseCommit, nil
 		}
