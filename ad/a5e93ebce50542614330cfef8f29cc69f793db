@@ -1,0 +1,1 @@
+{"timestamp":"1485571040","author":"jonjohnson@google.com","location":{"commit":"ada5e93ebce50542614330cfef8f29cc69f793db","path":"review/review.go","range":{"startLine":273}},"description":"It might be worth adding IsAbandoned() as well. Mostly for readability, but\nthe expression `Request.TargetRef != \"\"` is in here a couple times.\n"}
