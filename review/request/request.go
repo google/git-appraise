@@ -32,7 +32,7 @@ const FormatVersion = 0
 
 // Request represents an initial request for a code review.
 //
-// Every field except for TargetRef is optional.
+// Every field is optional.
 type Request struct {
 	// Timestamp and Requester are optimizations that allows us to display reviews
 	// without having to run git-blame over the notes object. This is done because
