@@ -653,6 +653,30 @@ func TestGetBaseCommit(t *testing.T) {
 	if pendingReviewBase != repository.TestCommitF {
 		t.Fatal("Unexpected base commit computed for a pending review.")
 	}
+
+	abandonRequest := pendingReview.Request
+	abandonRequest.TargetRef = ""
+	abandonNote, err := abandonRequest.Write()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.AppendNote(request.Ref, repository.TestCommitG, abandonNote); err != nil {
+		t.Fatal(err)
+	}
+	abandonedReview, err := Get(repo, repository.TestCommitG)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if abandonedReview.IsOpen() {
+		t.Fatal("Failed to update a review to be abandoned")
+	}
+	abandonedReviewBase, err := abandonedReview.GetBaseCommit()
+	if err != nil {
+		t.Fatal("Unable to compute the base commit for an abandoned review: ", err)
+	}
+	if abandonedReviewBase != repository.TestCommitE {
+		t.Fatal("Unexpected base commit computed for an abandoned review.")
+	}
 }
 
 func TestGetRequests(t *testing.T) {
