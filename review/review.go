@@ -246,7 +246,7 @@ func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
 		currentCommit = summary.Request.Alias
 	}
 
-	if summary.Request.TargetRef != "" {
+	if !summary.IsAbandoned() {
 		submitted, err := repo.IsAncestor(currentCommit, summary.Request.TargetRef)
 		if err != nil {
 			return nil, err
@@ -269,9 +269,14 @@ func (r *Summary) Details() (*Review, error) {
 	return &review, nil
 }
 
+// IsAbandoned returns whether or not the given review has been abandoned.
+func (r *Summary) IsAbandoned() bool {
+	return r.Request.TargetRef == ""
+}
+
 // IsOpen returns whether or not the given review is still open (neither submitted nor abandoned).
 func (r *Summary) IsOpen() bool {
-	return !r.Submitted && r.Request.TargetRef != ""
+	return !r.Submitted && !r.IsAbandoned()
 }
 
 // Get returns the specified code review.
@@ -326,7 +331,7 @@ func unsortedListAll(repo repository.Repo) []Summary {
 		if err != nil {
 			continue
 		}
-		if summary.Request.TargetRef != "" {
+		if !summary.IsAbandoned() {
 			summary.Submitted = isSubmittedCheck(summary.Request.TargetRef, summary.getStartingCommit())
 		}
 		reviews = append(reviews, *summary)
