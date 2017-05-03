@@ -229,7 +229,7 @@ git appraise pull
 git appraise push
 ```
 
-The updated status of the review will visible in the output of "show":
+The updated status of the review will be visible in the output of "show":
 ```shell
 git appraise show 1e6eb14c8014
 ```
