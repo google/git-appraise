@@ -217,7 +217,7 @@ func (r *Summary) loadComments(commentNotes []repository.Note) []CommentThread {
 func getSummaryFromNotes(repo repository.Repo, revision string, requestNotes, commentNotes []repository.Note) (*Summary, error) {
 	requests := request.ParseAllValid(requestNotes)
 	if requests == nil {
-		return nil, nil
+		return nil, fmt.Errorf("Could not find any review requests for %q", revision)
 	}
 	sort.Stable(requestsByTimestamp(requests))
 	reviewSummary := Summary{
@@ -235,6 +235,9 @@ func getSummaryFromNotes(repo repository.Repo, revision string, requestNotes, co
 //
 // If no review request exists, the returned review summary is nil.
 func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
+	if err := repo.VerifyCommit(revision); err != nil {
+		return nil, fmt.Errorf("Could not find a commit named %q", revision)
+	}
 	requestNotes := repo.GetNotes(request.Ref, revision)
 	commentNotes := repo.GetNotes(comment.Ref, revision)
 	summary, err := getSummaryFromNotes(repo, revision, requestNotes, commentNotes)
