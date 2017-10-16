@@ -27,6 +27,8 @@ Then, either make sure that `${GOPATH}/bin` is in your PATH, or explicitly add t
 "appraise" git alias by running the following command.
 
     git config --global alias.appraise '!'"${GOPATH}/bin/git-appraise"
+    # Windows:
+    git config --global alias.appraise "!%GOPATH%/bin/git-appraise.exe"
 
 ## Requirements
 
