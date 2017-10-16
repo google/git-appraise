@@ -83,10 +83,10 @@ A more detailed getting started doc is available [here](docs/tutorial.md).
 
 ## Metadata
 
-The code review data is stored in git-notes, using the formats described below.
-Each item stored is written as a single line of JSON, and is written with at
-most one such item per line. This allows the git notes to be automatically
-merged using the "cat\_sort\_uniq" strategy.
+The code review data is stored in [git-notes](https://git-scm.com/docs/git-notes),
+using the formats described below. Each item stored is written as a single
+line of JSON, and is written with at most one such item per line. This allows
+the git notes to be automatically merged using the "cat\_sort\_uniq" strategy.
 
 Since these notes are not in a human-friendly form, all of the refs used to
 track them start with the prefix "refs/notes/devtools". This helps make it
