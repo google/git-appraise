@@ -10,3 +10,5 @@
 {"timestamp":"1508174521","author":"ojarjur","description":"Thanks for taking the time and putting in the effort to help improve the user experience here!\r\n\r\nThis overall looks good to me, but I think the markdown formatting is a little off due to the 4 spaces before the `Windows` subtitle.\r\n"}
 
 {"timestamp":"1508174584","author":"ojarjur","location":{"commit":"5b21ddc7def7807bb513457ca41898580c553ed3","path":"README.md","range":{"startLine":31}},"description":"I think this needs to be three lines like:\r\n\r\n```\r\n\r\n#Windows\r\n\r\n```\r\n\r\n... and then the subtitle will be formatted the way you want."}
+
+{"timestamp":"1508178548","author":"TomasHubelbauer","location":{"commit":"5b21ddc7def7807bb513457ca41898580c553ed3","path":"README.md","range":{"startLine":31}},"description":"I actually meant to make that display like a Bash comment not a MarkDown heading but I'm happy to change it to that!"}
