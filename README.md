@@ -1,4 +1,5 @@
 # Distributed Code Review For Git
+[![Build Status](https://travis-ci.org/google/git-appraise.svg?branch=master)](https://travis-ci.org/google/git-appraise)
 
 This repo contains a command line tool for performing code reviews on git
 repositories.
