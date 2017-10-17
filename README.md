@@ -18,6 +18,10 @@ is installing the client on your workstation.
 
 ## Installation
 
+macOS users can install using `brew`
+
+    brew install git-appraise
+
 Assuming you have the [Go tools installed](https://golang.org/doc/install), run
 the following command:
 
