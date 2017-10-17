@@ -5,3 +5,9 @@ before_install:
   - git fetch --unshallow
   - git fetch origin +refs/notes/devtools/*:refs/notes/devtools/*
   - git fetch origin +refs/heads/master:refs/heads/master
+matrix:
+  include:
+    - if: branch = master
+      os: osx
+      before_install:
+      script: brew install --HEAD git-appriase
