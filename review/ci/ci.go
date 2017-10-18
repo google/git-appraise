@@ -45,6 +45,7 @@ type Report struct {
 	URL       string `json:"url,omitempty"`
 	Status    string `json:"status,omitempty"`
 	Agent     string `json:"agent,omitempty"`
+	Output    string `json:"output,omitempty"`
 	// Version represents the version of the metadata format.
 	Version int `json:"v,omitempty"`
 }

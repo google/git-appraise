@@ -29,6 +29,10 @@
       "type": "string"
     },
 
+    "output": {
+      "type": "string"
+    },
+
     "v": {
       "type": "integer",
       "enum": [0]
