@@ -1,1 +1,3 @@
 {"timestamp":"1508353374","author":"ojarjur","description":"Nice!\r\n\r\nThanks for putting this together!"}
+
+{"timestamp":"1508358918","author":"ojarjur","location":{"commit":"1eb5cdea8400b2d818948eccc32a3a06a05dde8c","path":"README.md","range":{"startLine":22}},"description":"I think we definitely want to add this to the instructions, but it probably also needs to go with some sort of restructuring of this section of the doc to make the separation of topics more clear.\r\n\r\nI'll spend a bit of time thinking about that and then probably merge this change immediately followed by a change to restructure this section."}
