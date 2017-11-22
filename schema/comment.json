@@ -34,6 +34,15 @@
           "properties": {
             "startLine": {
               "type": "integer"
+            },
+            "startColumn": {
+              "type": "integer"
+            },
+            "endLine": {
+              "type": "integer"
+            },
+            "endColumn": {
+              "type": "integer"
             }
           }
         }
