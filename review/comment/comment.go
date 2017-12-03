@@ -199,6 +199,11 @@ func parseRangePart(s string) (uint32, uint32, error) {
 		return 0, 0, ErrInvalidRange
 	}
 
+	if line == 0 && col != 0 {
+		// line 0 represents the entire file
+		return 0, 0, ErrInvalidRange
+	}
+
 	return uint32(line), uint32(col), nil
 }
 
