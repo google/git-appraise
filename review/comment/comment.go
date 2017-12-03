@@ -37,7 +37,7 @@ const FormatVersion = 0
 
 // ErrInvalidRange inidcates an error during parsing of a user-defined file
 // range
-var ErrInvalidRange = errors.New("invalid file location range. The required form is SL[+SC][:EL[+EC]]")
+var ErrInvalidRange = errors.New("invalid file location range. The required form is StartLine[+StartColumn][:EndLine[+EndColumn]]. The first line in a file is considered to be line 1")
 
 // Range represents the range of text that is under discussion.
 type Range struct {
