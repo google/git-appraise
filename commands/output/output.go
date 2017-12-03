@@ -19,10 +19,11 @@ package output
 
 import (
 	"fmt"
-	"github.com/google/git-appraise/review"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/git-appraise/review"
 )
 
 const (
@@ -108,13 +109,27 @@ func showThread(r *review.Review, thread review.CommentThread) error {
 		}
 		lines := strings.Split(contents, "\n")
 		if comment.Location.Range.StartLine <= uint32(len(lines)) {
-			var firstLine uint32
-			lastLine := comment.Location.Range.StartLine
-			if lastLine > contextLineCount {
-				firstLine = lastLine - contextLineCount
+			firstLine := comment.Location.Range.StartLine
+			lastLine := comment.Location.Range.EndLine
+
+			if firstLine == 0 {
+				firstLine = 1
 			}
+
+			if lastLine == 0 {
+				lastLine = firstLine
+			}
+
+			if lastLine == firstLine {
+				minLine := int(lastLine) - int(contextLineCount)
+				if minLine <= 0 {
+					minLine = 1
+				}
+				firstLine = uint32(minLine)
+			}
+
 			fmt.Printf(commentLocationTemplate, indent, comment.Location.Path, comment.Location.Commit)
-			fmt.Println(indent + "|" + strings.Join(lines[firstLine:lastLine], "\n"+indent+"|"))
+			fmt.Println(indent + "|" + strings.Join(lines[firstLine-1:lastLine], "\n"+indent+"|"))
 		}
 	}
 	return showSubThread(r, thread, indent)
