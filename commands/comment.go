@@ -67,13 +67,13 @@ func checkCommentLocation(repo repository.Repo, commit, file string, location co
 	if location.StartLine > uint32(len(lines)) {
 		return fmt.Errorf("Line number %d does not exist in file %q", location.StartLine, file)
 	}
-	if location.StartColumn != 0 && location.StartColumn > uint32(len(lines[location.StartLine])) {
+	if location.StartColumn != 0 && location.StartColumn > uint32(len(lines[location.StartLine-1])) {
 		return fmt.Errorf("Line %d in %q is too short for column %d", location.StartLine, file, location.StartColumn)
 	}
 	if location.EndLine != 0 && location.EndLine > uint32(len(lines)) {
 		return fmt.Errorf("End line number %d does not exist in file %q", location.EndLine, file)
 	}
-	if location.EndColumn != 0 && location.EndColumn > uint32(len(lines[location.EndLine])) {
+	if location.EndColumn != 0 && location.EndColumn > uint32(len(lines[location.EndLine-1])) {
 		return fmt.Errorf("End line %d in %q is too short for column %d", location.EndLine, file, location.EndColumn)
 	}
 	return nil
