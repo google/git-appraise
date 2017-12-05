@@ -20,24 +20,28 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+
 	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"github.com/google/git-appraise/review/comment"
-	"strings"
 )
 
 var commentFlagSet = flag.NewFlagSet("comment", flag.ExitOnError)
+var commentLocation = comment.Range{}
 
 var (
 	commentMessageFile = commentFlagSet.String("F", "", "Take the comment from the given file. Use - to read the message from the standard input")
 	commentMessage     = commentFlagSet.String("m", "", "Message to attach to the review")
 	commentParent      = commentFlagSet.String("p", "", "Parent comment")
 	commentFile        = commentFlagSet.String("f", "", "File being commented upon")
-	commentLine        = commentFlagSet.Uint("l", 0, "Line being commented upon; requires that the -f flag also be set")
 	commentLgtm        = commentFlagSet.Bool("lgtm", false, "'Looks Good To Me'. Set this to express your approval. This cannot be combined with nmw")
 	commentNmw         = commentFlagSet.Bool("nmw", false, "'Needs More Work'. Set this to express your disapproval. This cannot be combined with lgtm")
 )
+
+func init() {
+	commentFlagSet.Var(&commentLocation, "l", "File location be commented upon; requires that the -f flag also be set")
+}
 
 // commentHashExists checks if the given comment hash exists in the given comment threads.
 func commentHashExists(hashToFind string, threads []review.CommentThread) bool {
@@ -50,19 +54,6 @@ func commentHashExists(hashToFind string, threads []review.CommentThread) bool {
 		}
 	}
 	return false
-}
-
-// checkCommentLocation verifies that the given location exists at the given commit.
-func checkCommentLocation(repo repository.Repo, commit, file string, line uint) error {
-	contents, err := repo.Show(commit, file)
-	if err != nil {
-		return err
-	}
-	lines := strings.Split(contents, "\n")
-	if line > uint(len(lines)) {
-		return fmt.Errorf("Line number %d does not exist in file %q", line, file)
-	}
-	return nil
 }
 
 // commentOnReview adds a comment to the current code review.
@@ -92,7 +83,7 @@ func commentOnReview(repo repository.Repo, args []string) error {
 	if *commentLgtm && *commentNmw {
 		return errors.New("You cannot combine the flags -lgtm and -nmw.")
 	}
-	if *commentLine != 0 && *commentFile == "" {
+	if commentLocation != (comment.Range{}) && *commentFile == "" {
 		return errors.New("Specifying a line number with the -l flag requires that you also specify a file name with the -f flag.")
 	}
 	if *commentParent != "" && !commentHashExists(*commentParent, r.Comments) {
@@ -120,14 +111,10 @@ func commentOnReview(repo repository.Repo, args []string) error {
 		Commit: commentedUponCommit,
 	}
 	if *commentFile != "" {
-		if err := checkCommentLocation(r.Repo, commentedUponCommit, *commentFile, *commentLine); err != nil {
-			return fmt.Errorf("Unable to comment on the given location: %v", err)
-		}
 		location.Path = *commentFile
-		if *commentLine != 0 {
-			location.Range = &comment.Range{
-				StartLine: uint32(*commentLine),
-			}
+		location.Range = &commentLocation
+		if err := location.Check(r.Repo); err != nil {
+			return fmt.Errorf("Unable to comment on the given location: %v", err)
 		}
 	}
 

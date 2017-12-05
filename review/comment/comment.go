@@ -20,10 +20,13 @@ package comment
 import (
 	"crypto/sha1"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/google/git-appraise/repository"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/google/git-appraise/repository"
 )
 
 // Ref defines the git-notes ref that we expect to contain review comments.
@@ -32,9 +35,16 @@ const Ref = "refs/notes/devtools/discuss"
 // FormatVersion defines the latest version of the comment format supported by the tool.
 const FormatVersion = 0
 
+// ErrInvalidRange inidcates an error during parsing of a user-defined file
+// range
+var ErrInvalidRange = errors.New("invalid file location range. The required form is StartLine[+StartColumn][:EndLine[+EndColumn]]. The first line in a file is considered to be line 1")
+
 // Range represents the range of text that is under discussion.
 type Range struct {
-	StartLine uint32 `json:"startLine"`
+	StartLine   uint32 `json:"startLine"`
+	StartColumn uint32 `json:"startColumn,omitempty"`
+	EndLine     uint32 `json:"endLine,omitempty"`
+	EndColumn   uint32 `json:"endColumn,omitempty"`
 }
 
 // Location represents the location of a comment within a commit.
@@ -44,6 +54,42 @@ type Location struct {
 	Path string `json:"path,omitempty"`
 	// If the range is omitted, then the location represents an entire file.
 	Range *Range `json:"range,omitempty"`
+}
+
+// Check verifies that this location is valid in the provided
+// repository.
+func (location *Location) Check(repo repository.Repo) error {
+	contents, err := repo.Show(location.Commit, location.Path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(contents, "\n")
+	if location.Range.StartLine > uint32(len(lines)) {
+		return fmt.Errorf("Line number %d does not exist in file %q",
+			location.Range.StartLine,
+			location.Path)
+	}
+	if location.Range.StartColumn != 0 &&
+		location.Range.StartColumn > uint32(len(lines[location.Range.StartLine-1])) {
+		return fmt.Errorf("Line %d in %q is too short for column %d",
+			location.Range.StartLine,
+			location.Path,
+			location.Range.StartColumn)
+	}
+	if location.Range.EndLine != 0 &&
+		location.Range.EndLine > uint32(len(lines)) {
+		return fmt.Errorf("End line number %d does not exist in file %q",
+			location.Range.EndLine,
+			location.Path)
+	}
+	if location.Range.EndColumn != 0 &&
+		location.Range.EndColumn > uint32(len(lines[location.Range.EndLine-1])) {
+		return fmt.Errorf("End line %d in %q is too short for column %d",
+			location.Range.EndLine,
+			location.Path,
+			location.Range.EndColumn)
+	}
+	return nil
 }
 
 // Comment represents a review comment, and can occur in any of the following contexts:
@@ -134,4 +180,82 @@ func (comment Comment) Write() (repository.Note, error) {
 func (comment Comment) Hash() (string, error) {
 	bytes, err := comment.serialize()
 	return fmt.Sprintf("%x", sha1.Sum(bytes)), err
+}
+
+// Set implenents flag.Value for the Range type
+func (r *Range) Set(s string) error {
+	var err error
+	*r = Range{}
+
+	if s == "" {
+		return nil
+	}
+	startEndParts := strings.Split(s, ":")
+	if len(startEndParts) > 2 {
+		return ErrInvalidRange
+	}
+
+	r.StartLine, r.StartColumn, err = parseRangePart(startEndParts[0])
+	if err != nil {
+		return err
+	}
+	if len(startEndParts) == 1 {
+		return nil
+	}
+
+	r.EndLine, r.EndColumn, err = parseRangePart(startEndParts[1])
+	if err != nil {
+		return err
+	}
+
+	if r.StartLine > r.EndLine {
+		return errors.New("start line cannot be greater than end line in range")
+	}
+
+	return nil
+}
+
+func parseRangePart(s string) (uint32, uint32, error) {
+	parts := strings.Split(s, "+")
+	if len(parts) > 2 {
+		return 0, 0, ErrInvalidRange
+	}
+
+	line, err := strconv.ParseUint(parts[0], 10, 32)
+	if err != nil {
+		return 0, 0, ErrInvalidRange
+	}
+
+	if len(parts) == 1 {
+		return uint32(line), 0, nil
+	}
+
+	col, err := strconv.ParseUint(parts[1], 10, 32)
+	if err != nil {
+		return 0, 0, ErrInvalidRange
+	}
+
+	if line == 0 && col != 0 {
+		// line 0 represents the entire file
+		return 0, 0, ErrInvalidRange
+	}
+
+	return uint32(line), uint32(col), nil
+}
+
+func (r *Range) String() string {
+	out := ""
+	if r.StartLine != 0 {
+		out = fmt.Sprintf("%d", r.StartLine)
+	}
+	if r.StartColumn != 0 {
+		out = fmt.Sprintf("%s+%d", out, r.StartColumn)
+	}
+	if r.EndLine != 0 {
+		out = fmt.Sprintf("%s:%d", out, r.EndLine)
+	}
+	if r.EndColumn != 0 {
+		out = fmt.Sprintf("%s+%d", out, r.EndColumn)
+	}
+	return out
 }

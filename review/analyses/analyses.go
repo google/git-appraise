@@ -19,11 +19,12 @@ package analyses
 
 import (
 	"encoding/json"
-	"github.com/google/git-appraise/repository"
 	"io/ioutil"
 	"net/http"
 	"sort"
 	"strconv"
+
+	"github.com/google/git-appraise/repository"
 )
 
 const (
@@ -53,7 +54,10 @@ type Report struct {
 
 // LocationRange represents the location within a source file that an analysis message covers.
 type LocationRange struct {
-	StartLine int `json:"start_line,omitempty"`
+	StartLine   uint32 `json:"start_line,omitempty"`
+	StartColumn uint32 `json:"start_column,omitempty"`
+	EndLine     uint32 `json:"end_line,omitempty"`
+	EndColumn   uint32 `json:"end_column,omitempty"`
 }
 
 // Location represents the location within a source tree that an analysis message covers.
