@@ -14,3 +14,5 @@
 {"timestamp":"1512508533","author":"ojarjur","location":{"commit":"dadd50baca8ec0494ce49f59dfd69f9cc01bad44","path":"commands/output/output.go","range":{"startLine":112}},"description":"I like it; your code is very clean and nicely encapsulates the check. Thanks for adding that in!\r\n\r\nAs for the order of checking seeming odd; I can definitely see your argument. The only design principle I can think of for this order is to keep the `repository.Repo` interface as small as possible so that it is easy to define alternative implementations.\r\n\r\nFor instance, in the future we may want to switch from calling the `git` command to using an implementation of git written in Go. By keeping the Repo interface limited to the bare minimum we make such a future migration easier."}
 
 {"timestamp":"1512508811","author":"ojarjur@google.com","location":{"commit":"71bb3eb261a515ebb1c974d8db8d7cf759334794"},"resolved":true}
+
+{"timestamp":"1512509669","author":"ojarjur","description":"Thanks again for taking the time and putting in the effort to help improve the tool.\r\n\r\nThis is a great addition."}
