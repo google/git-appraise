@@ -56,6 +56,42 @@ type Location struct {
 	Range *Range `json:"range,omitempty"`
 }
 
+// Check verifies that this location is valid in the provided
+// repository.
+func (location *Location) Check(repo repository.Repo) error {
+	contents, err := repo.Show(location.Commit, location.Path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(contents, "\n")
+	if location.Range.StartLine > uint32(len(lines)) {
+		return fmt.Errorf("Line number %d does not exist in file %q",
+			location.Range.StartLine,
+			location.Path)
+	}
+	if location.Range.StartColumn != 0 &&
+		location.Range.StartColumn > uint32(len(lines[location.Range.StartLine-1])) {
+		return fmt.Errorf("Line %d in %q is too short for column %d",
+			location.Range.StartLine,
+			location.Path,
+			location.Range.StartColumn)
+	}
+	if location.Range.EndLine != 0 &&
+		location.Range.EndLine > uint32(len(lines)) {
+		return fmt.Errorf("End line number %d does not exist in file %q",
+			location.Range.EndLine,
+			location.Path)
+	}
+	if location.Range.EndColumn != 0 &&
+		location.Range.EndColumn > uint32(len(lines[location.Range.EndLine-1])) {
+		return fmt.Errorf("End line %d in %q is too short for column %d",
+			location.Range.EndLine,
+			location.Path,
+			location.Range.EndColumn)
+	}
+	return nil
+}
+
 // Comment represents a review comment, and can occur in any of the following contexts:
 // 1. As a comment on an entire commit.
 // 2. As a comment about a specific file in a commit.

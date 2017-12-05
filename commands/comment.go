@@ -20,7 +20,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"strings"
 
 	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
@@ -55,28 +54,6 @@ func commentHashExists(hashToFind string, threads []review.CommentThread) bool {
 		}
 	}
 	return false
-}
-
-// checkCommentLocation verifies that the given location exists at the given commit.
-func checkCommentLocation(repo repository.Repo, commit, file string, location comment.Range) error {
-	contents, err := repo.Show(commit, file)
-	if err != nil {
-		return err
-	}
-	lines := strings.Split(contents, "\n")
-	if location.StartLine > uint32(len(lines)) {
-		return fmt.Errorf("Line number %d does not exist in file %q", location.StartLine, file)
-	}
-	if location.StartColumn != 0 && location.StartColumn > uint32(len(lines[location.StartLine-1])) {
-		return fmt.Errorf("Line %d in %q is too short for column %d", location.StartLine, file, location.StartColumn)
-	}
-	if location.EndLine != 0 && location.EndLine > uint32(len(lines)) {
-		return fmt.Errorf("End line number %d does not exist in file %q", location.EndLine, file)
-	}
-	if location.EndColumn != 0 && location.EndColumn > uint32(len(lines[location.EndLine-1])) {
-		return fmt.Errorf("End line %d in %q is too short for column %d", location.EndLine, file, location.EndColumn)
-	}
-	return nil
 }
 
 // commentOnReview adds a comment to the current code review.
@@ -134,11 +111,11 @@ func commentOnReview(repo repository.Repo, args []string) error {
 		Commit: commentedUponCommit,
 	}
 	if *commentFile != "" {
-		if err := checkCommentLocation(r.Repo, commentedUponCommit, *commentFile, commentLocation); err != nil {
-			return fmt.Errorf("Unable to comment on the given location: %v", err)
-		}
 		location.Path = *commentFile
 		location.Range = &commentLocation
+		if err := location.Check(r.Repo); err != nil {
+			return fmt.Errorf("Unable to comment on the given location: %v", err)
+		}
 	}
 
 	userEmail, err := repo.GetUserEmail()

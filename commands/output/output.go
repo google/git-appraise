@@ -108,6 +108,10 @@ func showThread(r *review.Review, thread review.CommentThread) error {
 			return err
 		}
 		lines := strings.Split(contents, "\n")
+		err = comment.Location.Check(r.Repo)
+		if err != nil {
+			return err
+		}
 		if comment.Location.Range.StartLine <= uint32(len(lines)) {
 			firstLine := comment.Location.Range.StartLine
 			lastLine := comment.Location.Range.EndLine
