@@ -8,3 +8,5 @@
 {"timestamp":"1512421124","author":"ojarjur","description":"Thanks, @tcolgate. This change looks great.\r\n\r\nSince the title starts with `[WIP]`, are there other things you wanted to get in before we merge this?"}
 {"timestamp":"1512468848","author":"tcolgate","location":{"commit":"dadd50baca8ec0494ce49f59dfd69f9cc01bad44","path":"commands/output/output.go","range":{"startLine":112}},"description":"I'll look at that tonight, definitely don't want to leave any potential out of bounds accesses hanging around."}
 {"timestamp":"1512468852","author":"tcolgate","description":"The WIP was because (if I'm completely honest), I hadn't actually run the code at the point that I raised the original PR."}
+
+{"timestamp":"1512504674","author":"tcolgate","location":{"commit":"dadd50baca8ec0494ce49f59dfd69f9cc01bad44","path":"commands/output/output.go","range":{"startLine":112}},"description":"I have pushed an attempt at this. It seems to do the job. Feels a little odd checking the Repo against the Location, rather than the other way around, but it ends up quite tidy. I'm sure there's a design principle in there I should already know :)"}
