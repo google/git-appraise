@@ -16,3 +16,5 @@
 {"timestamp":"1512508811","author":"ojarjur@google.com","location":{"commit":"71bb3eb261a515ebb1c974d8db8d7cf759334794"},"resolved":true}
 
 {"timestamp":"1512509669","author":"ojarjur","description":"Thanks again for taking the time and putting in the effort to help improve the tool.\r\n\r\nThis is a great addition."}
+
+{"timestamp":"1512548647","author":"tcolgate","description":"Thanks for the review. git-appraise is looking really good. I'm going to focus a bit on seeing if I can get a reasonable vim integration working (there are some projects up and running, but there's not much progress yet)."}
