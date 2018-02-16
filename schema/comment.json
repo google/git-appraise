@@ -15,6 +15,11 @@
       "type": "string"
     },
 
+    "original": {
+      "description": "the SHA1 hash of another comment on the same revision, and it means this comment is an updated version of that comment",
+      "type": "string"
+    },
+
     "parent": {
       "description": "the SHA1 hash of another comment on the same revision, and it means this comment is a reply to that comment",
       "type": "string"
