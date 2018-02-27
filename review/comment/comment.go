@@ -103,6 +103,8 @@ type Comment struct {
 	// git-blame will become more and more expensive as the number of code reviews grows.
 	Timestamp string `json:"timestamp,omitempty"`
 	Author    string `json:"author,omitempty"`
+	// If original is provided, then the comment is an updated version of another comment.
+	Original string `json:"original,omitempty"`
 	// If parent is provided, then the comment is a response to another comment.
 	Parent string `json:"parent,omitempty"`
 	// If location is provided, then the comment is specific to that given location.

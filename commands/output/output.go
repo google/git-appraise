@@ -150,11 +150,7 @@ func showSubThread(r *review.Review, thread review.CommentThread, indent string)
 		}
 	}
 	comment := thread.Comment
-	threadHash, err := comment.Hash()
-	if err != nil {
-		return err
-	}
-
+	threadHash := thread.Hash
 	timestamp := reformatTimestamp(comment.Timestamp)
 	commentSummary := fmt.Sprintf(indent+commentTemplate, threadHash, comment.Author, timestamp, statusString, comment.Description)
 	indent = indent + "  "

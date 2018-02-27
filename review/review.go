@@ -40,10 +40,13 @@ const archiveRef = "refs/devtools/archives/reviews"
 // then that means that there are no unaddressed comments, and that the root
 // comment has its resolved bit set to true.
 type CommentThread struct {
-	Hash     string          `json:"hash,omitempty"`
-	Comment  comment.Comment `json:"comment"`
-	Children []CommentThread `json:"children,omitempty"`
-	Resolved *bool           `json:"resolved,omitempty"`
+	Hash     string             `json:"hash,omitempty"`
+	Comment  comment.Comment    `json:"comment"`
+	Original *comment.Comment   `json:"original,omitempty"`
+	Edits    []*comment.Comment `json:"edits,omitempty"`
+	Children []CommentThread    `json:"children,omitempty"`
+	Resolved *bool              `json:"resolved,omitempty"`
+	Edited   bool               `json:"edited,omitempty"`
 }
 
 // Summary represents the high-level state of a code review.
@@ -76,6 +79,15 @@ type Review struct {
 	*Summary
 	Reports  []ci.Report       `json:"reports,omitempty"`
 	Analyses []analyses.Report `json:"analyses,omitempty"`
+}
+
+type commentsByTimestamp []*comment.Comment
+
+// Interface methods for sorting comment threads by timestamp
+func (cs commentsByTimestamp) Len() int      { return len(cs) }
+func (cs commentsByTimestamp) Swap(i, j int) { cs[i], cs[j] = cs[j], cs[i] }
+func (cs commentsByTimestamp) Less(i, j int) bool {
+	return cs[i].Timestamp < cs[j].Timestamp
 }
 
 type byTimestamp []CommentThread
@@ -155,6 +167,7 @@ func (thread *CommentThread) updateResolvedStatus() {
 type mutableThread struct {
 	Hash     string
 	Comment  comment.Comment
+	Edits    []*comment.Comment
 	Children []*mutableThread
 }
 
@@ -163,13 +176,27 @@ type mutableThread struct {
 // (fully constructed comment thread).
 func fixMutableThread(mutableThread *mutableThread) CommentThread {
 	var children []CommentThread
+	edited := len(mutableThread.Edits) > 0
 	for _, mutableChild := range mutableThread.Children {
-		children = append(children, fixMutableThread(mutableChild))
+		child := fixMutableThread(mutableChild)
+		if (!edited) && child.Edited {
+			edited = true
+		}
+		children = append(children, child)
 	}
+	comment := &mutableThread.Comment
+	if len(mutableThread.Edits) > 0 {
+		sort.Stable(commentsByTimestamp(mutableThread.Edits))
+		comment = mutableThread.Edits[len(mutableThread.Edits)-1]
+	}
+
 	return CommentThread{
 		Hash:     mutableThread.Hash,
-		Comment:  mutableThread.Comment,
+		Comment:  *comment,
+		Original: &mutableThread.Comment,
+		Edits:    mutableThread.Edits,
 		Children: children,
+		Edited:   edited,
 	}
 }
 
@@ -191,7 +218,12 @@ func buildCommentThreads(commentsByHash map[string]comment.Comment) []CommentThr
 	}
 	var rootHashes []string
 	for hash, thread := range threadsByHash {
-		if thread.Comment.Parent == "" {
+		if thread.Comment.Original != "" {
+			original, ok := threadsByHash[thread.Comment.Original]
+			if ok {
+				original.Edits = append(original.Edits, &thread.Comment)
+			}
+		} else if thread.Comment.Parent == "" {
 			rootHashes = append(rootHashes, hash)
 		} else {
 			parent, ok := threadsByHash[thread.Comment.Parent]

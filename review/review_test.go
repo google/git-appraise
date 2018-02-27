@@ -25,6 +25,39 @@ import (
 )
 
 func TestCommentSorting(t *testing.T) {
+	sampleComments := []*comment.Comment{
+		&comment.Comment{
+			Timestamp:   "012400",
+			Description: "Fourth",
+		},
+		&comment.Comment{
+			Timestamp:   "012400",
+			Description: "Fifth",
+		},
+		&comment.Comment{
+			Timestamp:   "012346",
+			Description: "Second",
+		},
+		&comment.Comment{
+			Timestamp:   "012345",
+			Description: "First",
+		},
+		&comment.Comment{
+			Timestamp:   "012347",
+			Description: "Third",
+		},
+	}
+	sort.Stable(commentsByTimestamp(sampleComments))
+	descriptions := []string{}
+	for _, comment := range sampleComments {
+		descriptions = append(descriptions, comment.Description)
+	}
+	if !(descriptions[0] == "First" && descriptions[1] == "Second" && descriptions[2] == "Third" && descriptions[3] == "Fourth" && descriptions[4] == "Fifth") {
+		t.Fatalf("Comment ordering failed. Got %v", sampleComments)
+	}
+}
+
+func TestThreadSorting(t *testing.T) {
 	sampleThreads := []CommentThread{
 		CommentThread{
 			Comment: comment.Comment{
@@ -525,11 +558,18 @@ func TestBuildCommentThreads(t *testing.T) {
 	}
 	child := comment.Comment{
 		Timestamp:   "012346",
-		Resolved:    &rejected,
+		Resolved:    nil,
 		Parent:      rootHash,
 		Description: "child",
 	}
 	childHash, err := child.Hash()
+	updatedChild := comment.Comment{
+		Timestamp:   "012346",
+		Resolved:    &rejected,
+		Original:    childHash,
+		Description: "updated child",
+	}
+	updatedChildHash, err := updatedChild.Hash()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -544,9 +584,10 @@ func TestBuildCommentThreads(t *testing.T) {
 		t.Fatal(err)
 	}
 	commentsByHash := map[string]comment.Comment{
-		rootHash:  root,
-		childHash: child,
-		leafHash:  leaf,
+		rootHash:         root,
+		childHash:        child,
+		updatedChildHash: updatedChild,
+		leafHash:         leaf,
 	}
 	threads := buildCommentThreads(commentsByHash)
 	if len(threads) != 1 {
@@ -556,12 +597,21 @@ func TestBuildCommentThreads(t *testing.T) {
 	if rootThread.Comment.Description != "root" {
 		t.Fatalf("Unexpected root thread: %v", rootThread)
 	}
+	if !rootThread.Edited {
+		t.Fatalf("Unexpected root thread edited status: %v", rootThread)
+	}
 	if len(rootThread.Children) != 1 {
 		t.Fatalf("Unexpected root children: %v", rootThread.Children)
 	}
 	rootChild := rootThread.Children[0]
-	if rootChild.Comment.Description != "child" {
-		t.Fatalf("Unexpected child: %v", rootChild)
+	if rootChild.Comment.Description != "updated child" {
+		t.Fatalf("Unexpected updated child: %v", rootChild)
+	}
+	if rootChild.Original.Description != "child" {
+		t.Fatalf("Unexpected original child: %v", rootChild)
+	}
+	if len(rootChild.Edits) != 1 {
+		t.Fatalf("Unexpected child history: %v", rootChild.Edits)
 	}
 	if len(rootChild.Children) != 1 {
 		t.Fatalf("Unexpected leaves: %v", rootChild.Children)
@@ -572,6 +622,9 @@ func TestBuildCommentThreads(t *testing.T) {
 	}
 	if len(threadLeaf.Children) != 0 {
 		t.Fatalf("Unexpected leaf children: %v", threadLeaf.Children)
+	}
+	if threadLeaf.Edited {
+		t.Fatalf("Unexpected leaf edited status: %v", threadLeaf)
 	}
 }
 
