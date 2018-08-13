@@ -17,6 +17,10 @@ This design removes the need for any sort of server-side setup. As a result,
 this tool can work with any git hosting provider, and the only setup required
 is installing the client on your workstation.
 
+Additionally, code reviews can be conducted across multiple hosting providers.
+The list of forks of a repository is also stored in the repository as git
+objects, allowing code reviews to be pulled from every registered fork.
+
 ## Installation
 
 Assuming you have the [Go tools installed](https://golang.org/doc/install), run
@@ -80,7 +84,14 @@ Submitting the current review:
 
     git appraise submit [--merge | --rebase]
 
+Adding a fork:
+
+    git appraise fork add [--owner "<contributor-email>"]+ <name> <url>
+
 A more detailed getting started doc is available [here](docs/tutorial.md).
+
+Instructions for using `git-appraise` with multiple forks can be found
+[here](docs/forks.md).
 
 ## Metadata
 
