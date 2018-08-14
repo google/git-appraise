@@ -58,9 +58,9 @@ func help() {
 		usage()
 		return
 	}
-	subcommand, ok := commands.CommandMap[os.Args[2]]
+	subcommand, ok, _ := commands.FindSubcommand(os.Args[2:])
 	if !ok {
-		fmt.Printf("Unknown command %q\n", os.Args[2])
+		fmt.Printf("Unknown command %q\n", os.Args[2:])
 		usage()
 		return
 	}
@@ -82,22 +82,13 @@ func main() {
 		fmt.Printf("%s must be run from within a git repo.\n", os.Args[0])
 		return
 	}
-	if len(os.Args) < 2 {
-		subcommand, ok := commands.CommandMap["list"]
-		if !ok {
-			fmt.Printf("Unable to list reviews")
-			return
-		}
-		subcommand.Run(repo, []string{})
-		return
-	}
-	subcommand, ok := commands.CommandMap[os.Args[1]]
+	subcommand, ok, remainingArgs := commands.FindSubcommand(os.Args[1:])
 	if !ok {
 		fmt.Printf("Unknown command: %q\n", os.Args[1])
 		usage()
 		return
 	}
-	if err := subcommand.Run(repo, os.Args[2:]); err != nil {
+	if err := subcommand.Run(repo, remainingArgs); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
