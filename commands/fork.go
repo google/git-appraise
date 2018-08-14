@@ -27,7 +27,7 @@ import (
 
 var (
 	addForkFlagSet = flag.NewFlagSet("addFork", flag.ExitOnError)
-	addForkOwnerEmails = addForkFlagSet.String("owner-emails", "", "Comma-separated list of owner email addresses")
+	addForkOwners = addForkFlagSet.String("o", "", "Comma-separated list of owner email addresses")
 )
 
 // addFork updates the local git repository to include the specified fork.
@@ -36,8 +36,8 @@ func addFork(repo repository.Repo, args []string) error {
 	args = addForkFlagSet.Args()
 
 	var owners []string
-	if len(*addForkOwnerEmails) > 0 {
-		for _, owner := range strings.Split(*addForkOwnerEmails, ",") {
+	if len(*addForkOwners) > 0 {
+		for _, owner := range strings.Split(*addForkOwners, ",") {
 			owners = append(owners, strings.TrimSpace(owner))
 		}
 	}
@@ -48,7 +48,7 @@ func addFork(repo repository.Repo, args []string) error {
 		return errors.New("Only the name and URL of the fork may be specified.")
 	}
 	if len(owners) == 0 {
-		return errors.New("You must specify at least one owner email address.")
+		return errors.New("You must specify at least one owner.")
 	}
 	return errors.New("Not yet implemented.")
 }

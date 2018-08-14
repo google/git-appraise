@@ -86,7 +86,7 @@ Submitting the current review:
 
 Adding a fork:
 
-    git appraise fork add --owner-emails <contributor-email-addresses> <name> <url>
+    git appraise fork add -o <contributor-email>[,<contributor-email>]* <name> <url>
 
 A more detailed getting started doc is available [here](docs/tutorial.md).
 
