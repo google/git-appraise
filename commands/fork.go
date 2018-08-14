@@ -20,13 +20,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/google/git-appraise/repository"
 )
 
 var (
 	addForkFlagSet = flag.NewFlagSet("addFork", flag.ExitOnError)
-	addForkOwnerEmail = addForkFlagSet.String("owner-email", "", "Email address of the owner of the fork")
+	addForkOwnerEmails = addForkFlagSet.String("owner-emails", "", "Comma-separated list of owner email addresses")
 )
 
 // addFork updates the local git repository to include the specified fork.
@@ -34,11 +35,20 @@ func addFork(repo repository.Repo, args []string) error {
 	addForkFlagSet.Parse(args)
 	args = addForkFlagSet.Args()
 
+	var owners []string
+	if len(*addForkOwnerEmails) > 0 {
+		for _, owner := range strings.Split(*addForkOwnerEmails, ",") {
+			owners = append(owners, strings.TrimSpace(owner))
+		}
+	}
 	if len(args) < 2 {
 		return errors.New("The name and URL of the fork must be specified.")
 	}
 	if len(args) > 2 {
 		return errors.New("Only the name and URL of the fork may be specified.")
+	}
+	if len(owners) == 0 {
+		return errors.New("You must specify at least one owner email address.")
 	}
 	return errors.New("Not yet implemented.")
 }

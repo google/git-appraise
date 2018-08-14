@@ -16,7 +16,7 @@ The owner of the main repository can add a fork with the following command,
 followed by `git appraise push`:
 
 ```shell
-git appraise fork add [--owner "<contributor-email>"]+ <name> <url>
+git appraise fork add --owner-emails <contributor-email-addresses> <name> <url>
 ```
 
 ## Using a fork to request a review
