@@ -43,20 +43,20 @@ func (cmd *Command) Run(repo repository.Repo, args []string) error {
 
 // CommandMap defines all of the available (sub)commands.
 var CommandMap = map[string]*Command{
-	"abandon": abandonCmd,
-	"accept":  acceptCmd,
-	"comment": commentCmd,
-	"fork add": addForkCmd,
-	"fork list": listForksCmd,
+	"abandon":     abandonCmd,
+	"accept":      acceptCmd,
+	"comment":     commentCmd,
+	"fork add":    addForkCmd,
+	"fork list":   listForksCmd,
 	"fork remove": removeForkCmd,
-	"list":    listCmd,
-	"pull":    pullCmd,
-	"push":    pushCmd,
-	"rebase":  rebaseCmd,
-	"reject":  rejectCmd,
-	"request": requestCmd,
-	"show":    showCmd,
-	"submit":  submitCmd,
+	"list":        listCmd,
+	"pull":        pullCmd,
+	"push":        pushCmd,
+	"rebase":      rebaseCmd,
+	"reject":      rejectCmd,
+	"request":     requestCmd,
+	"show":        showCmd,
+	"submit":      submitCmd,
 }
 
 // FindSubcommand parses the subcommand from the list of arguments.

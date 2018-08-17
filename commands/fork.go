@@ -27,7 +27,7 @@ import (
 
 var (
 	addForkFlagSet = flag.NewFlagSet("addFork", flag.ExitOnError)
-	addForkOwners = addForkFlagSet.String("o", "", "Comma-separated list of owner email addresses")
+	addForkOwners  = addForkFlagSet.String("o", "", "Comma-separated list of owner email addresses")
 )
 
 // addFork updates the local git repository to include the specified fork.

@@ -34,7 +34,8 @@ const branchRefPrefix = "refs/heads/"
 
 // GitRepo represents an instance of a (local) git repository.
 type GitRepo struct {
-	Path string
+	Path  string
+	Forks map[string]*Fork
 }
 
 // Run the given git command with the given I/O reader/writers, returning an error if it fails.
@@ -709,6 +710,32 @@ func (repo *GitRepo) ListNotedRevisions(notesRef string) []string {
 	return revisions
 }
 
+// AddFork adds the given fork to the repository, replacing any existing forks with the same name.
+func (r *GitRepo) AddFork(forksRef, name string, fork *Fork) error {
+	r.Forks[name] = fork
+	return nil
+}
+
+// GetFork gets the given fork from the repository.
+func (r *GitRepo) GetFork(forksRef, name string) (*Fork, error) {
+	f, ok := r.Forks[name]
+	if !ok {
+		return nil, fmt.Errorf("No fork named %q", name)
+	}
+	return f, nil
+}
+
+// DeleteFork delets the given fork from the repository.
+func (r *GitRepo) DeleteFork(forksRef, name string) error {
+	delete(r.Forks, name)
+	return nil
+}
+
+// ListForks lists the forks recorded in the repository.
+func (r *GitRepo) ListForks(forksRef string) (map[string]*Fork, error) {
+	return r.Forks, nil
+}
+
 // PushNotes pushes git notes to a remote repo.
 func (repo *GitRepo) PushNotes(remote, notesRefPattern string) error {
 	refspec := fmt.Sprintf("%s:%s", notesRefPattern, notesRefPattern)
@@ -824,5 +851,27 @@ func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 	if err := repo.mergeRemoteArchives(remote, archiveRefPattern); err != nil {
 		return err
 	}
+	return nil
+}
+
+// PushNotesForksAndArchive pushes the given notes, forks, and archive refs to a remote repo.
+func (r *GitRepo) PushNotesForksAndArchive(remote, notesRefPattern, forksRefPattern, archiveRefPattern string) error {
+	return nil
+}
+
+// PullNotesForksAndArchive fetches the contents of the notes, forks, and archives
+// refs from  a remote repo, and merges them with the corresponding local refs.
+//
+// For notes and forks refs, we assume that every note can be automatically
+// merged using the 'cat_sort_uniq' strategy (the git-appraise schemas fit
+// that requirement),  so we automatically merge the remote notes into the
+// local notes.
+//
+// For "archive" refs, they are expected to be used solely for maintaining
+// reachability of commits that are part of the history of any reviews,
+// so we do not maintain any consistency with their tree objects. Instead,
+// we merely ensure that their history graph includes every commit that we
+// intend to keep.
+func (r *GitRepo) PullNotesForksAndArchive(remote, notesRefPattern, forksRefPattern, archiveRefPattern string) error {
 	return nil
 }
