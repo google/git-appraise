@@ -18,12 +18,22 @@ package commands
 
 import (
 	"errors"
+	"flag"
 	"fmt"
+
 	"github.com/google/git-appraise/repository"
+)
+
+var (
+	pullFlagSet      = flag.NewFlagSet("pull", flag.ExitOnError)
+	pullIncludeForks = pullFlagSet.Bool("include-forks", true, "Also pull reviews and comments from forks.")
 )
 
 // pull updates the local git-notes used for reviews with those from a remote repo.
 func pull(repo repository.Repo, args []string) error {
+	pullFlagSet.Parse(args)
+	args = pullFlagSet.Args()
+
 	if len(args) > 1 {
 		return errors.New("Only pulling from one remote at a time is supported.")
 	}
@@ -33,7 +43,10 @@ func pull(repo repository.Repo, args []string) error {
 		remote = args[0]
 	}
 
-	if err := repo.PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern); err != nil {
+	if !*pullIncludeForks {
+		return repo.PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern)
+	}
+	if err := repo.PullNotesForksAndArchive(remote, notesRefPattern, forksRefPattern, archiveRefPattern); err != nil {
 		return err
 	}
 	return nil
@@ -41,7 +54,8 @@ func pull(repo repository.Repo, args []string) error {
 
 var pullCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s pull [<remote>]\n", arg0)
+		fmt.Printf("Usage: %s pull [<option>...] [<remote>]\n\nOptions:\n", arg0)
+		pullFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {
 		return pull(repo, args)

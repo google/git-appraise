@@ -41,7 +41,7 @@ addresses for the fork.
 
 When running `git appraise pull`, the tool will automatically fetch and merge
 reviews from the forks. This behavior can be controlled using the
-`--[no-]include-forks` flag. Alternatively, it can be configured on a
+`--include-forks` flag. Alternatively, it can be configured on a
 per-remote basis using the `appraise.remote.<remote>.includeForks` setting.
 
 ## Dealing with abusive fork owners

@@ -23,9 +23,12 @@ import (
 	"github.com/google/git-appraise/repository"
 )
 
-const notesRefPattern = "refs/notes/devtools/*"
-const archiveRefPattern = "refs/devtools/archives/*"
-const commentFilename = "APPRAISE_COMMENT_EDITMSG"
+const (
+	notesRefPattern   = "refs/notes/devtools/*"
+	forksRefPattern   = "refs/devtools/forks/*"
+	archiveRefPattern = "refs/devtools/archives/*"
+	commentFilename   = "APPRAISE_COMMENT_EDITMSG"
+)
 
 // Command represents the definition of a single command.
 type Command struct {
