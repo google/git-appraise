@@ -21,7 +21,9 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/google/git-appraise/fork"
 	"github.com/google/git-appraise/repository"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -46,10 +48,20 @@ func pull(repo repository.Repo, args []string) error {
 	if !*pullIncludeForks {
 		return repo.PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern)
 	}
-	if err := repo.PullNotesForksAndArchive(remote, notesRefPattern, forksRefPattern, archiveRefPattern); err != nil {
+	if err := repo.PullNotesForksAndArchive(remote, notesRefPattern, fork.Ref, archiveRefPattern); err != nil {
 		return err
 	}
-	return nil
+	forks, err := fork.List(repo)
+	if err != nil {
+		return err
+	}
+	var g errgroup.Group
+	for _, f := range forks {
+		g.Go(func() error {
+			return fork.Pull(repo, f)
+		})
+	}
+	return g.Wait()
 }
 
 var pullCmd = &Command{

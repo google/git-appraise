@@ -77,7 +77,6 @@ type mockRepoForTest struct {
 	Refs    map[string]string            `json:"refs,omitempty"`
 	Commits map[string]mockCommit        `json:"commits,omitempty"`
 	Notes   map[string]map[string]string `json:"notes,omitempty"`
-	Forks   map[string]*Fork             `json:"forks,omitempty"`
 }
 
 func (r *mockRepoForTest) createCommit(message string, time string, parents []string) (string, error) {
@@ -177,7 +176,6 @@ func NewMockRepoForTest() Repo {
 				TestCommitD: TestDiscussD,
 			},
 		},
-		Forks: map[string]*Fork{},
 	}
 }
 
@@ -540,32 +538,6 @@ func (r *mockRepoForTest) ListNotedRevisions(notesRef string) []string {
 	return revisions
 }
 
-// AddFork adds the given fork to the repository, replacing any existing forks with the same name.
-func (r *mockRepoForTest) AddFork(forksRef, name string, fork *Fork) error {
-	r.Forks[name] = fork
-	return nil
-}
-
-// GetFork gets the given fork from the repository.
-func (r *mockRepoForTest) GetFork(forksRef, name string) (*Fork, error) {
-	f, ok := r.Forks[name]
-	if !ok {
-		return nil, fmt.Errorf("No fork named %q", name)
-	}
-	return f, nil
-}
-
-// DeleteFork delets the given fork from the repository.
-func (r *mockRepoForTest) DeleteFork(forksRef, name string) error {
-	delete(r.Forks, name)
-	return nil
-}
-
-// ListForks lists the forks recorded in the repository.
-func (r *mockRepoForTest) ListForks(forksRef string) (map[string]*Fork, error) {
-	return r.Forks, nil
-}
-
 // PushNotes pushes git notes to a remote repo.
 func (r *mockRepoForTest) PushNotes(remote, notesRefPattern string) error { return nil }
 
@@ -596,23 +568,25 @@ func (r *mockRepoForTest) PullNotesAndArchive(remote, notesRefPattern, archiveRe
 }
 
 // PushNotesForksAndArchive pushes the given notes, forks, and archive refs to a remote repo.
-func (r *mockRepoForTest) PushNotesForksAndArchive(remote, notesRefPattern, forksRefPattern, archiveRefPattern string) error {
+func (r *mockRepoForTest) PushNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
 	return nil
 }
 
 // PullNotesForksAndArchive fetches the contents of the notes, forks, and archives
 // refs from  a remote repo, and merges them with the corresponding local refs.
 //
-// For notes and forks refs, we assume that every note can be automatically
-// merged using the 'cat_sort_uniq' strategy (the git-appraise schemas fit
-// that requirement),  so we automatically merge the remote notes into the
-// local notes.
+// For notes refs, we assume that every note can be automatically merged using
+// the 'cat_sort_uniq' strategy (the git-appraise schemas fit that requirement),
+// so we automatically merge the remote notes into the local notes.
+//
+// For the forks ref, we assume that we can merge using the recursive, `ours`,
+// merge strategy.
 //
 // For "archive" refs, they are expected to be used solely for maintaining
 // reachability of commits that are part of the history of any reviews,
 // so we do not maintain any consistency with their tree objects. Instead,
 // we merely ensure that their history graph includes every commit that we
 // intend to keep.
-func (r *mockRepoForTest) PullNotesForksAndArchive(remote, notesRefPattern, forksRefPattern, archiveRefPattern string) error {
+func (r *mockRepoForTest) PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
 	return nil
 }

@@ -30,12 +30,6 @@ type CommitDetails struct {
 	Summary     string   `json:"summary,omitempty"`
 }
 
-type Fork struct {
-	URL        string   `json:"url,omitempty"`
-	Owners     []string `json:"owners,omitempty"`
-	FetchSpecs []string `json:"fetchSpecs,omitempty"`
-}
-
 // Repo represents a source code repository.
 type Repo interface {
 	// GetPath returns the path to the repo.
@@ -167,18 +161,6 @@ type Repo interface {
 	// ListNotedRevisions returns the collection of revisions that are annotated by notes in the given ref.
 	ListNotedRevisions(notesRef string) []string
 
-	// AddFork adds the given fork to the repository, replacing any existing forks with the same name.
-	AddFork(forksRef, name string, fork *Fork) error
-
-	// GetFork gets the given fork from the repository.
-	GetFork(forksRef, name string) (*Fork, error)
-
-	// DeleteFork delets the given fork from the repository.
-	DeleteFork(forksRef, name string) error
-
-	// ListForks lists the forks recorded in the repository.
-	ListForks(forksRef string) (map[string]*Fork, error)
-
 	// PushNotes pushes git notes to a remote repo.
 	PushNotes(remote, notesRefPattern string) error
 
@@ -205,20 +187,22 @@ type Repo interface {
 	PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error
 
 	// PushNotesForksAndArchive pushes the given notes, forks, and archive refs to a remote repo.
-	PushNotesForksAndArchive(remote, notesRefPattern, forksRefPattern, archiveRefPattern string) error
+	PushNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error
 
 	// PullNotesForksAndArchive fetches the contents of the notes, forks, and archives
 	// refs from  a remote repo, and merges them with the corresponding local refs.
 	//
-	// For notes and forks refs, we assume that every note can be automatically
-	// merged using the 'cat_sort_uniq' strategy (the git-appraise schemas fit
-	// that requirement),  so we automatically merge the remote notes into the
-	// local notes.
+	// For notes refs, we assume that every note can be automatically merged using
+	// the 'cat_sort_uniq' strategy (the git-appraise schemas fit that requirement),
+	// so we automatically merge the remote notes into the local notes.
+	//
+	// For the forks ref, we assume that we can merge using the recursive, `ours`,
+	// merge strategy.
 	//
 	// For "archive" refs, they are expected to be used solely for maintaining
 	// reachability of commits that are part of the history of any reviews,
 	// so we do not maintain any consistency with their tree objects. Instead,
 	// we merely ensure that their history graph includes every commit that we
 	// intend to keep.
-	PullNotesForksAndArchive(remote, notesRefPattern, forksRefPattern, archiveRefPattern string) error
+	PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error
 }

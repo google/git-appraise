@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/git-appraise/fork"
 	"github.com/google/git-appraise/repository"
 )
 
@@ -50,7 +51,9 @@ func addFork(repo repository.Repo, args []string) error {
 	if len(owners) == 0 {
 		return errors.New("You must specify at least one owner.")
 	}
-	return errors.New("Not yet implemented.")
+	name := args[0]
+	url := args[1]
+	return fork.Add(repo, fork.New(name, url, owners))
 }
 
 // listForks lists the forks registered in the local git repository.

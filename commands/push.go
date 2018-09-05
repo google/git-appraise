@@ -19,6 +19,8 @@ package commands
 import (
 	"errors"
 	"fmt"
+
+	"github.com/google/git-appraise/fork"
 	"github.com/google/git-appraise/repository"
 )
 
@@ -33,7 +35,7 @@ func push(repo repository.Repo, args []string) error {
 		remote = args[0]
 	}
 
-	if err := repo.PushNotesAndArchive(remote, notesRefPattern, archiveRefPattern); err != nil {
+	if err := repo.PushNotesForksAndArchive(remote, notesRefPattern, fork.Ref, archiveRefPattern); err != nil {
 		return err
 	}
 	return nil
