@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/git-appraise/commands/output"
 	"github.com/google/git-appraise/fork"
 	"github.com/google/git-appraise/repository"
 )
@@ -58,7 +59,12 @@ func addFork(repo repository.Repo, args []string) error {
 
 // listForks lists the forks registered in the local git repository.
 func listForks(repo repository.Repo, args []string) error {
-	return errors.New("Not yet implemented.")
+	forks, err := fork.List(repo)
+	if err != nil {
+		return err
+	}
+	output.PrintForks(forks)
+	return nil
 }
 
 // removeFork updates the local git repository to no longer include the specified fork.
@@ -69,7 +75,8 @@ func removeFork(repo repository.Repo, args []string) error {
 	if len(args) > 1 {
 		return errors.New("Only the name of the fork may be specified.")
 	}
-	return errors.New("Not yet implemented.")
+	name := args[0]
+	return fork.Delete(repo, name)
 }
 
 // addForkCmd defines the `fork add` command.
