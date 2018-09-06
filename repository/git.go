@@ -31,7 +31,10 @@ import (
 	"strings"
 )
 
-const branchRefPrefix = "refs/heads/"
+const (
+	branchRefPrefix   = "refs/heads/"
+	devtoolsRefPrefix = "refs/devtools/"
+)
 
 // GitRepo represents an instance of a (local) git repository.
 type GitRepo struct {
@@ -736,10 +739,15 @@ func (repo *GitRepo) PushNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 
 // PushNotesForksAndArchive pushes the given notes, forks, and archive refs to a remote repo.
 func (repo *GitRepo) PushNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
+	if !strings.HasPrefix(forksRef, devtoolsRefPrefix) {
+		return fmt.Errorf("Unsupported forks ref: %q", forksRef)
+	}
+	if !strings.HasPrefix(archiveRefPattern, devtoolsRefPrefix) {
+		return fmt.Errorf("Unsupported archive ref pattern: %q", archiveRefPattern)
+	}
 	notesRefspec := fmt.Sprintf("%s:%s", notesRefPattern, notesRefPattern)
-	forksRefspec := fmt.Sprintf("%s:%s", forksRef, forksRef)
-	archiveRefspec := fmt.Sprintf("%s:%s", archiveRefPattern, archiveRefPattern)
-	err := repo.runGitCommandInline("push", remote, notesRefspec, forksRefspec, archiveRefspec)
+	devtoolsRefspec := fmt.Sprintf("+%s*:%s*", devtoolsRefPrefix, devtoolsRefPrefix)
+	err := repo.runGitCommandInline("push", remote, notesRefspec, devtoolsRefspec)
 	if err != nil {
 		return fmt.Errorf("Failed to push the local notes, forks, and archive to the remote '%s': %v", remote, err)
 	}
@@ -841,6 +849,14 @@ func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 }
 
 func (repo *GitRepo) mergeRemoteForks(remote, forksRef string) error {
+	remoteForksRef, err := repo.runGitCommand("ls-remote", remote, forksRef)
+	if err != nil {
+		return err
+	}
+	if remoteForksRef == "" {
+		// There are no remote forks to merge
+		return nil
+	}
 	remoteRef := getRemoteDevtoolsRef(remote, forksRef)
 
 	dir, err := ioutil.TempDir("", "merge-forks-dir")
@@ -878,16 +894,21 @@ func (repo *GitRepo) mergeRemoteForks(remote, forksRef string) error {
 // we merely ensure that their history graph includes every commit that we
 // intend to keep.
 func (repo *GitRepo) PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
-	remoteArchiveRef := getRemoteDevtoolsRef(remote, archiveRefPattern)
-	archiveFetchRefSpec := fmt.Sprintf("+%s:%s", archiveRefPattern, remoteArchiveRef)
-
-	remoteForksRef := getRemoteDevtoolsRef(remote, forksRef)
-	forksFetchRefSpec := fmt.Sprintf("+%s:%s", forksRef, remoteForksRef)
+	if !strings.HasPrefix(forksRef, devtoolsRefPrefix) {
+		return fmt.Errorf("Unsupported forks ref: %q", forksRef)
+	}
+	if !strings.HasPrefix(archiveRefPattern, devtoolsRefPrefix) {
+		return fmt.Errorf("Unsupported archive ref pattern: %q", archiveRefPattern)
+	}
 
 	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
 	notesFetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
 
-	err := repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, forksFetchRefSpec, archiveFetchRefSpec)
+	localDevtoolsRefPattern := devtoolsRefPrefix + "*"
+	remoteDevtoolsRefPattern := getRemoteDevtoolsRef(remote, localDevtoolsRefPattern)
+	devtoolsFetchRefSpec := fmt.Sprintf("+%s:%s", localDevtoolsRefPattern, remoteDevtoolsRefPattern)
+
+	err := repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, devtoolsFetchRefSpec)
 	if err != nil {
 		return err
 	}

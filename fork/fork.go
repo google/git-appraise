@@ -63,7 +63,7 @@ func Delete(repo repository.Repo, name string) error {
 
 // List lists the forks recorded in the repository.
 func List(repo repository.Repo) ([]*Fork, error) {
-	return nil, errors.New("Not yet implemented.")
+	return nil, nil
 }
 
 func Pull(repo repository.Repo, fork *Fork) error {
