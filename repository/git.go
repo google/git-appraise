@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -733,9 +734,21 @@ func (repo *GitRepo) PushNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 	return nil
 }
 
+// PushNotesForksAndArchive pushes the given notes, forks, and archive refs to a remote repo.
+func (repo *GitRepo) PushNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
+	notesRefspec := fmt.Sprintf("%s:%s", notesRefPattern, notesRefPattern)
+	forksRefspec := fmt.Sprintf("%s:%s", forksRef, forksRef)
+	archiveRefspec := fmt.Sprintf("%s:%s", archiveRefPattern, archiveRefPattern)
+	err := repo.runGitCommandInline("push", remote, notesRefspec, forksRefspec, archiveRefspec)
+	if err != nil {
+		return fmt.Errorf("Failed to push the local notes, forks, and archive to the remote '%s': %v", remote, err)
+	}
+	return nil
+}
+
 func getRemoteNotesRef(remote, localNotesRef string) string {
 	relativeNotesRef := strings.TrimPrefix(localNotesRef, "refs/notes/")
-	return "refs/notes/" + remote + "/" + relativeNotesRef
+	return "refs/notes/remotes/" + remote + "/" + relativeNotesRef
 }
 
 func (repo *GitRepo) mergeRemoteNotes(remote, notesRefPattern string) error {
@@ -771,9 +784,9 @@ func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 	return repo.mergeRemoteNotes(remote, notesRefPattern)
 }
 
-func getRemoteArchiveRef(remote, archiveRefPattern string) string {
-	relativeArchiveRef := strings.TrimPrefix(archiveRefPattern, "refs/devtools/archives/")
-	return "refs/devtools/remoteArchives/" + remote + "/" + relativeArchiveRef
+func getRemoteDevtoolsRef(remote, devtoolsRefPattern string) string {
+	relativeRef := strings.TrimPrefix(devtoolsRefPattern, "refs/devtools/")
+	return "refs/remoteDevtools/" + remote + "/" + relativeRef
 }
 
 func (repo *GitRepo) mergeRemoteArchives(remote, archiveRefPattern string) error {
@@ -785,7 +798,7 @@ func (repo *GitRepo) mergeRemoteArchives(remote, archiveRefPattern string) error
 		lineParts := strings.Split(line, "\t")
 		if len(lineParts) == 2 {
 			ref := lineParts[1]
-			remoteRef := getRemoteArchiveRef(remote, ref)
+			remoteRef := getRemoteDevtoolsRef(remote, ref)
 			if err := repo.mergeArchives(ref, remoteRef); err != nil {
 				return err
 			}
@@ -807,7 +820,7 @@ func (repo *GitRepo) mergeRemoteArchives(remote, archiveRefPattern string) error
 // we merely ensure that their history graph includes every commit that we
 // intend to keep.
 func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
-	remoteArchiveRef := getRemoteArchiveRef(remote, archiveRefPattern)
+	remoteArchiveRef := getRemoteDevtoolsRef(remote, archiveRefPattern)
 	archiveFetchRefSpec := fmt.Sprintf("+%s:%s", archiveRefPattern, remoteArchiveRef)
 
 	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
@@ -827,9 +840,26 @@ func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 	return nil
 }
 
-// PushNotesForksAndArchive pushes the given notes, forks, and archive refs to a remote repo.
-func (r *GitRepo) PushNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
-	return r.PushNotesAndArchive(remote, notesRefPattern, archiveRefPattern)
+func (repo *GitRepo) mergeRemoteForks(remote, forksRef string) error {
+	remoteRef := getRemoteDevtoolsRef(remote, forksRef)
+
+	dir, err := ioutil.TempDir("", "merge-forks-dir")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+	if _, err := repo.runGitCommand("worktree", "add", dir, forksRef); err != nil {
+		return err
+	}
+	defer func() {
+		repo.runGitCommand("worktree", "remove", "--force", dir)
+	}()
+
+	workTreeRepo := &GitRepo{
+		Path: dir,
+	}
+	_, err = workTreeRepo.runGitCommand("merge", "--commit", "--no-edit", "-s", "recursive", "-X", "ours", remoteRef)
+	return err
 }
 
 // PullNotesForksAndArchive fetches the contents of the notes, forks, and archives
@@ -847,6 +877,29 @@ func (r *GitRepo) PushNotesForksAndArchive(remote, notesRefPattern, forksRef, ar
 // so we do not maintain any consistency with their tree objects. Instead,
 // we merely ensure that their history graph includes every commit that we
 // intend to keep.
-func (r *GitRepo) PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
-	return r.PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern)
+func (repo *GitRepo) PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
+	remoteArchiveRef := getRemoteDevtoolsRef(remote, archiveRefPattern)
+	archiveFetchRefSpec := fmt.Sprintf("+%s:%s", archiveRefPattern, remoteArchiveRef)
+
+	remoteForksRef := getRemoteDevtoolsRef(remote, forksRef)
+	forksFetchRefSpec := fmt.Sprintf("+%s:%s", forksRef, remoteForksRef)
+
+	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
+	notesFetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
+
+	err := repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, forksFetchRefSpec, archiveFetchRefSpec)
+	if err != nil {
+		return err
+	}
+
+	if err := repo.mergeRemoteNotes(remote, notesRefPattern); err != nil {
+		return err
+	}
+	if err := repo.mergeRemoteForks(remote, forksRef); err != nil {
+		return err
+	}
+	if err := repo.mergeRemoteArchives(remote, archiveRefPattern); err != nil {
+		return err
+	}
+	return nil
 }
