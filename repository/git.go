@@ -90,6 +90,18 @@ func NewGitRepo(path string) (*GitRepo, error) {
 	return nil, err
 }
 
+func (repo *GitRepo) hasRef(ref string) (bool, error) {
+	_, _, err := repo.runGitCommandRaw("show-ref", "--verify", "--quiet", ref)
+	if err == nil {
+		return true, nil
+	}
+	if _, ok := err.(*exec.ExitError); ok {
+		return false, nil
+	}
+	// Got an unexpected error
+	return false, err
+}
+
 // GetPath returns the path to the repo.
 func (repo *GitRepo) GetPath() string {
 	return repo.Path
@@ -278,22 +290,30 @@ func (repo *GitRepo) SwitchToRef(ref string) error {
 
 // mergeArchives merges two archive refs.
 func (repo *GitRepo) mergeArchives(archive, remoteArchive string) error {
+	hasRemote, err := repo.hasRef(remoteArchive)
+	if err != nil {
+		return err
+	}
+	if !hasRemote {
+		// The remote archive does not exist, so we have nothing to do
+		return nil
+	}
 	remoteHash, err := repo.GetCommitHash(remoteArchive)
 	if err != nil {
 		return err
 	}
-	if remoteHash == "" {
-		// The remote archive does not exist, so we have nothing to do
-		return nil
-	}
 
-	archiveHash, err := repo.GetCommitHash(archive)
+	hasLocal, err := repo.hasRef(archive)
 	if err != nil {
 		return err
 	}
-	if archiveHash == "" {
+	if !hasLocal {
 		// The local archive does not exist, so we merely need to set it
 		_, err := repo.runGitCommand("update-ref", archive, remoteHash)
+		return err
+	}
+	archiveHash, err := repo.GetCommitHash(archive)
+	if err != nil {
 		return err
 	}
 
@@ -849,15 +869,24 @@ func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 }
 
 func (repo *GitRepo) mergeRemoteForks(remote, forksRef string) error {
-	remoteForksRef, err := repo.runGitCommand("ls-remote", remote, forksRef)
+	remoteRef := getRemoteDevtoolsRef(remote, forksRef)
+	hasRemote, err := repo.hasRef(remoteRef)
 	if err != nil {
 		return err
 	}
-	if remoteForksRef == "" {
+	if !hasRemote {
 		// There are no remote forks to merge
 		return nil
 	}
-	remoteRef := getRemoteDevtoolsRef(remote, forksRef)
+	hasLocal, err := repo.hasRef(forksRef)
+	if err != nil {
+		return err
+	}
+	if !hasLocal {
+		// The local forks commit does not exist, so we merely need to set it
+		_, err := repo.runGitCommand("update-ref", forksRef, remoteRef)
+		return err
+	}
 
 	dir, err := ioutil.TempDir("", "merge-forks-dir")
 	if err != nil {
