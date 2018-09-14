@@ -53,7 +53,8 @@ status: %s
 	// Number of lines of context to print for inline comments
 	contextLineCount = 5
 	// Template for printing the summary of the forks.
-	forksSummaryTemplate = `%d forks`
+	forksSummaryTemplate = `%d forks
+`
 	// Template for printing the summary of a code review.
 	forkTemplate = `%q
   owners: %q
