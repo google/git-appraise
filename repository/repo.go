@@ -50,6 +50,9 @@ type Repo interface {
 	// HasUncommittedChanges returns true if there are local, uncommitted changes.
 	HasUncommittedChanges() (bool, error)
 
+	// HasRef checks whether the specified ref exists in the repo.
+	HasRef(ref string) (bool, error)
+
 	// VerifyCommit verifies that the supplied hash points to a known commit.
 	VerifyCommit(hash string) error
 
@@ -96,6 +99,12 @@ type Repo interface {
 
 	// Show returns the contents of the given file at the given commit.
 	Show(commit, path string) (string, error)
+
+	// ShowAll returns the contents of all the files at the given commit
+	// with any of the specified path prefixes.
+	//
+	// The return value is a map from the fully qualified file path to its contents.
+	ShowAll(commit string, pathPrefixes ...string) (map[string]string, error)
 
 	// SwitchToRef changes the currently-checked-out ref.
 	SwitchToRef(ref string) error

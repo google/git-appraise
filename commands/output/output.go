@@ -57,7 +57,7 @@ status: %s
 	// Template for printing the summary of a code review.
 	forkTemplate = `%q
   owners: %q
-  url: %q
+  urls: %q
 `
 )
 
@@ -227,6 +227,6 @@ func PrintDiff(r *review.Review, diffArgs ...string) error {
 func PrintForks(forks []*fork.Fork) {
 	fmt.Printf(forksSummaryTemplate, len(forks))
 	for _, f := range forks {
-		fmt.Printf(forkTemplate, f.Name, f.Owners, f.URL)
+		fmt.Printf(forkTemplate, f.Name, f.Owners, f.URLS)
 	}
 }

@@ -216,6 +216,14 @@ func (r *mockRepoForTest) resolveLocalRef(ref string) (string, error) {
 	return "", fmt.Errorf("The ref %q does not exist", ref)
 }
 
+// HasRef checks whether the specified ref exists in the repo.
+func (r *mockRepoForTest) HasRef(ref string) (bool, error) {
+	if err := r.VerifyCommit(ref); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // VerifyCommit verifies that the supplied hash points to a known commit.
 func (r *mockRepoForTest) VerifyCommit(hash string) error {
 	if _, ok := r.Commits[hash]; !ok {
@@ -373,6 +381,14 @@ func (r *mockRepoForTest) Diff(left, right string, diffArgs ...string) (string, 
 // Show returns the contents of the given file at the given commit.
 func (r *mockRepoForTest) Show(commit, path string) (string, error) {
 	return fmt.Sprintf("%s:%s", commit, path), nil
+}
+
+// ShowAll returns the contents of all the files at the given commit
+// with any of the specified path prefixes.
+//
+// The return value is a map from the fully qualified file path to its contents.
+func (r *mockRepoForTest) ShowAll(commit string, pathPrefixes ...string) (map[string]string, error) {
+	return nil, nil
 }
 
 // SwitchToRef changes the currently-checked-out ref.

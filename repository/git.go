@@ -90,7 +90,7 @@ func NewGitRepo(path string) (*GitRepo, error) {
 	return nil, err
 }
 
-func (repo *GitRepo) hasRef(ref string) (bool, error) {
+func (repo *GitRepo) HasRef(ref string) (bool, error) {
 	_, _, err := repo.runGitCommandRaw("show-ref", "--verify", "--quiet", ref)
 	if err == nil {
 		return true, nil
@@ -277,6 +277,41 @@ func (repo *GitRepo) Show(commit, path string) (string, error) {
 	return repo.runGitCommand("show", fmt.Sprintf("%s:%s", commit, path))
 }
 
+// ShowAll returns the contents of all the files at the given commit
+// with any of the specified path prefixes.
+//
+// The return value is a map from the fully qualified file path to its contents.
+func (repo *GitRepo) ShowAll(commit string, pathPrefixes ...string) (map[string]string, error) {
+	command := append([]string{"ls-tree", "--full-tree", "-r", commit}, pathPrefixes...)
+	out, err := repo.runGitCommand(command...)
+	if err != nil {
+		return nil, fmt.Errorf("Failure listing the file contents of %q: %v", commit, err)
+	}
+	files := make(map[string]string)
+	var fileHashes []*string
+	for _, line := range strings.Split(out, "\n") {
+		lineParts := strings.Split(line, " ")
+		hash := lineParts[2]
+		path := lineParts[len(lineParts)-1]
+		files[path] = hash
+		fileHashes = append(fileHashes, &lineParts[2])
+	}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	if err := repo.runGitCommandWithIO(stringsReader(fileHashes), &stdout, &stderr, "cat-file", "--batch=%(objectname)\n%(objectsize)"); err != nil {
+		return nil, fmt.Errorf("Failure performing a batch file read: %v", err)
+	}
+	fileContentsMap, err := splitBatchCatFileOutput(&stdout)
+	if err != nil {
+		return nil, fmt.Errorf("Failure parsing the output of a batch file read: %v", err)
+	}
+	fileContents := make(map[string]string)
+	for path, hash := range files {
+		fileContents[path] = string(fileContentsMap[hash])
+	}
+	return fileContents, nil
+}
+
 // SwitchToRef changes the currently-checked-out ref.
 func (repo *GitRepo) SwitchToRef(ref string) error {
 	// If the ref starts with "refs/heads/", then we have to trim that prefix,
@@ -290,7 +325,7 @@ func (repo *GitRepo) SwitchToRef(ref string) error {
 
 // mergeArchives merges two archive refs.
 func (repo *GitRepo) mergeArchives(archive, remoteArchive string) error {
-	hasRemote, err := repo.hasRef(remoteArchive)
+	hasRemote, err := repo.HasRef(remoteArchive)
 	if err != nil {
 		return err
 	}
@@ -303,7 +338,7 @@ func (repo *GitRepo) mergeArchives(archive, remoteArchive string) error {
 		return err
 	}
 
-	hasLocal, err := repo.hasRef(archive)
+	hasLocal, err := repo.HasRef(archive)
 	if err != nil {
 		return err
 	}
@@ -870,7 +905,7 @@ func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 
 func (repo *GitRepo) mergeRemoteForks(remote, forksRef string) error {
 	remoteRef := getRemoteDevtoolsRef(remote, forksRef)
-	hasRemote, err := repo.hasRef(remoteRef)
+	hasRemote, err := repo.HasRef(remoteRef)
 	if err != nil {
 		return err
 	}
@@ -878,7 +913,7 @@ func (repo *GitRepo) mergeRemoteForks(remote, forksRef string) error {
 		// There are no remote forks to merge
 		return nil
 	}
-	hasLocal, err := repo.hasRef(forksRef)
+	hasLocal, err := repo.HasRef(forksRef)
 	if err != nil {
 		return err
 	}
