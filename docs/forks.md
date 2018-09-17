@@ -64,5 +64,6 @@ git appraise fork remove <name>
 Anyone who runs `git appraise pull --include-forks` can configure a list of
 forks to be excluded from the pull. This is controlled by the config settings
 `appraise.remote.<remote>.excludeFork` and `appraise.excludeFork`. The first
-operates on a per-remote basis and uses either the fork name or URL. The second
-applies to every remote and uses the fork's URL.
+operates on a per-remote basis while the second applies to every remote.
+
+Either option can be configured with either the fork name or URL.
