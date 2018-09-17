@@ -28,9 +28,9 @@ limitations under the License.
 package fork
 
 import (
+	"crypto/sha1"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/google/git-appraise/repository"
 )
@@ -38,10 +38,10 @@ import (
 const (
 	Ref = "refs/devtools/forks"
 
-	nameFile  = "NAME"
-	ownersDir = "OWNERS"
-	refsDir   = "REFS"
-	urlsDir   = "URLS"
+	nameFilePath  = "NAME"
+	ownersDirPath = "OWNERS"
+	refsDirPath   = "REFS"
+	urlsDirPath   = "URLS"
 )
 
 type Fork struct {
@@ -64,26 +64,75 @@ func New(name, url string, owners []string) *Fork {
 	}
 }
 
-// Add adds the given fork to the repository, replacing any existing forks with the same name.
-func Add(repo repository.Repo, fork *Fork) error {
-	return errors.New("Not yet implemented.")
+func forkPath(fork *Fork) []string {
+	forkHash := fmt.Sprintf("%x", sha1.Sum([]byte(fork.Name)))
+	return []string{forkHash[0:1], forkHash[1:2], forkHash[2:]}
 }
 
-func forkNameFromPath(path string) (string, error) {
-	// The path of a fork config item should look like:
-	// <FORK_NAME_AS_SUBPATH>/(urls|owners|refs)/<OBJECT_HASH>,
-	// ... where <FORK_NAME> may be split into multiple path components
-	// to reduce the size of the git tree objects.
-	//
-	// For example, the fork named "omar" will be represented in
-	// a subpath as "o/m/ar", whereas the form named "om" would
-	// simply be "o/m".
-	pathParts := strings.Split(path, "/")
-	if len(pathParts) < 3 {
-		// This is not a valid fork entry
-		return "", fmt.Errorf("Invalid fork configuration item: %q", path)
+func encodeListAsHashedFiles(items []string) *repository.Tree {
+	contents := make(map[string]repository.TreeChild)
+	for _, item := range items {
+		blob := new(repository.Blob)
+		*blob = repository.Blob(item)
+		path := fmt.Sprintf("%x", sha1.Sum([]byte(item)))
+		contents[path] = blob
 	}
-	return strings.Join(pathParts[0:len(pathParts)-2], ""), nil
+	return &repository.Tree{Contents: contents}
+}
+
+// Add adds the given fork to the repository, replacing any existing forks with the same name.
+func Add(repo repository.Repo, fork *Fork) error {
+	treeContents := make(map[string]repository.TreeChild)
+	nameBlob := new(repository.Blob)
+	treeContents[nameFilePath] = nameBlob
+	*nameBlob = repository.Blob(fork.Name)
+	treeContents[urlsDirPath] = encodeListAsHashedFiles(fork.URLS)
+	treeContents[ownersDirPath] = encodeListAsHashedFiles(fork.Owners)
+	treeContents[refsDirPath] = encodeListAsHashedFiles(fork.Refs)
+	t := &repository.Tree{Contents: treeContents}
+
+	var previousCommitHash string
+	var forksTree *repository.Tree
+	hasRef, err := repo.HasRef(Ref)
+	if err != nil {
+		return fmt.Errorf("failure checking the existence of the forks ref: %v", err)
+	}
+	if hasRef {
+		previousCommitHash, err = repo.GetCommitHash(Ref)
+		if err != nil {
+			return fmt.Errorf("failure reading the forks ref commit: %v", err)
+		}
+		forksTree, err = repo.ReadTree(previousCommitHash)
+		if err != nil {
+			return fmt.Errorf("failure reading the forks ref: %v", err)
+		}
+	} else {
+		forksTree = &repository.Tree{Contents: make(map[string]repository.TreeChild)}
+	}
+
+	currentLevel := forksTree
+	path := forkPath(fork)
+	for len(path) > 1 {
+		childName := path[0]
+		path = path[1:]
+		var childTree *repository.Tree
+		childObj, ok := currentLevel.Contents[childName]
+		if ok {
+			childTree, ok = childObj.(*repository.Tree)
+		}
+		if !ok {
+			childTree = &repository.Tree{Contents: make(map[string]repository.TreeChild)}
+			currentLevel.Contents[childName] = childTree
+		}
+		currentLevel = childTree
+	}
+	currentLevel.Contents[path[0]] = t
+	var commitParents []string
+	if previousCommitHash != "" {
+		commitParents = append(commitParents, previousCommitHash)
+	}
+	commitHash, err := repo.CreateCommit(forksTree, commitParents, fmt.Sprintf("Adding the fork: %q", fork.Name))
+	return repo.SetRef(Ref, commitHash, previousCommitHash)
 }
 
 // Get gets the given fork from the repository.
@@ -96,12 +145,85 @@ func Delete(repo repository.Repo, name string) error {
 	return errors.New("Not yet implemented.")
 }
 
-func forkHashFromPath(path string) (string, error) {
-	pathParts := strings.Split(path, "/")
-	if len(pathParts) < 4 {
-		return "", fmt.Errorf("Malformed fork config file path: %q", path)
+func readHashedFiles(t *repository.Tree) []string {
+	var results []string
+	for path, obj := range t.Contents {
+		blob, ok := obj.(*repository.Blob)
+		if !ok {
+			// we are not interested in subdirectories
+			continue
+		}
+		contents := string(*blob)
+		hash := fmt.Sprintf("%x", sha1.Sum([]byte(contents)))
+		if path != hash {
+			// we are not interested in non-hash-named files
+			continue
+		}
+		results = append(results, contents)
 	}
-	return strings.Join(pathParts[0:3], ""), nil
+	return results
+}
+
+func parseForkTree(t *repository.Tree) (*Fork, error) {
+	nameFile, ok := t.Contents[nameFilePath]
+	if !ok {
+		return nil, fmt.Errorf("fork missing a NAME file")
+	}
+	nameBlob, ok := nameFile.(*repository.Blob)
+	if !ok {
+		return nil, fmt.Errorf("fork NAME file is not actually a file")
+	}
+	ownersFile, ok := t.Contents[ownersDirPath]
+	if !ok {
+		return nil, fmt.Errorf("fork missing an OWNERS subdirectory")
+	}
+	ownersDir, ok := ownersFile.(*repository.Tree)
+	if !ok {
+		return nil, fmt.Errorf("fork OWNERS subdirectory is not actually a directory")
+	}
+	refsFile, ok := t.Contents[refsDirPath]
+	if !ok {
+		return nil, fmt.Errorf("fork missing a REFS subdirectory")
+	}
+	refsDir, ok := refsFile.(*repository.Tree)
+	if !ok {
+		return nil, fmt.Errorf("fork REFS subdirectory is not actually a directory")
+	}
+	urlsFile, ok := t.Contents[urlsDirPath]
+	if !ok {
+		return nil, fmt.Errorf("fork missing a URLS subdirectory")
+	}
+	urlsDir, ok := urlsFile.(*repository.Tree)
+	if !ok {
+		return nil, fmt.Errorf("fork URLS subdirectory is not actually a directory")
+	}
+	fork := &Fork{
+		Name:   string(*nameBlob),
+		Owners: readHashedFiles(ownersDir),
+		Refs:   readHashedFiles(refsDir),
+		URLS:   readHashedFiles(urlsDir),
+	}
+	return fork, nil
+}
+
+// Flatten the given number of levels of the specified tree.
+//
+// The resulting value is a map from paths in the tree to the nested tree
+// at each path, and is stored in the `results` parameter.
+//
+// Any child objects that are not subtrees at the specified level are ignored.
+func flattenTree(t *repository.Tree, levelsToFlatten int, pathPrefix string, results map[string]*repository.Tree) {
+	if levelsToFlatten < 1 {
+		results[pathPrefix] = t
+		return
+	}
+	for path, obj := range t.Contents {
+		childTree, ok := obj.(*repository.Tree)
+		if !ok {
+			continue
+		}
+		flattenTree(childTree, levelsToFlatten-1, pathPrefix+path, results)
+	}
 }
 
 // List lists the forks recorded in the repository.
@@ -113,38 +235,19 @@ func List(repo repository.Repo) ([]*Fork, error) {
 	if !hasForks {
 		return nil, nil
 	}
-	forksTree, err := repo.ShowAll(Ref, "/")
+	forksTree, err := repo.ReadTree(Ref)
 	if err != nil {
 		return nil, err
 	}
+	forkTrees := make(map[string]*repository.Tree)
+	flattenTree(forksTree, 3, "", forkTrees)
 	forkHashesMap := make(map[string]*Fork)
-	for path, contents := range forksTree {
-		forkHash, err := forkHashFromPath(path)
+	for forkPath, forkTree := range forkTrees {
+		fork, err := parseForkTree(forkTree)
 		if err != nil {
 			continue
 		}
-		fork, ok := forkHashesMap[forkHash]
-		if !ok {
-			fork = &Fork{}
-			forkHashesMap[forkHash] = fork
-		}
-		pathSuffixParts := strings.Split(path, "/")[3:]
-		if len(pathSuffixParts) == 1 && pathSuffixParts[0] == nameFile {
-			fork.Name = contents
-		}
-		if len(pathSuffixParts) != 2 {
-			// An unrecognized fork config entry
-			continue
-		}
-		if pathSuffixParts[0] == ownersDir {
-			fork.Owners = append(fork.Owners, contents)
-		}
-		if pathSuffixParts[0] == refsDir {
-			fork.Refs = append(fork.Refs, contents)
-		}
-		if pathSuffixParts[0] == urlsDir {
-			fork.URLS = append(fork.URLS, contents)
-		}
+		forkHashesMap[forkPath] = fork
 	}
 	var forks []*Fork
 	for _, fork := range forkHashesMap {

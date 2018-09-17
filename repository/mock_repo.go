@@ -383,14 +383,6 @@ func (r *mockRepoForTest) Show(commit, path string) (string, error) {
 	return fmt.Sprintf("%s:%s", commit, path), nil
 }
 
-// ShowAll returns the contents of all the files at the given commit
-// with any of the specified path prefixes.
-//
-// The return value is a map from the fully qualified file path to its contents.
-func (r *mockRepoForTest) ShowAll(commit string, pathPrefixes ...string) (map[string]string, error) {
-	return nil, nil
-}
-
 // SwitchToRef changes the currently-checked-out ref.
 func (r *mockRepoForTest) SwitchToRef(ref string) error {
 	r.Head = ref
@@ -510,6 +502,32 @@ func (r *mockRepoForTest) ListCommitsBetween(from, to string) ([]string, error) 
 		}
 	}
 	return commits, nil
+}
+
+// StoreBlob writes the given file to the repository and returns its hash.
+func (r *mockRepoForTest) StoreBlob(b *Blob) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+// StoreTree writes the given file tree to the repository and returns its hash.
+func (r *mockRepoForTest) StoreTree(t *Tree) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+// ReadTree reads the file tree pointed to by the given ref or hash from the repository.
+func (r *mockRepoForTest) ReadTree(ref string) (*Tree, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+// CreateCommit creates a commit object and returns its hash.
+func (r *mockRepoForTest) CreateCommit(t *Tree, parents []string, message string) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+// SetRef sets the commit pointed to by the specified ref to `newCommitHash`,
+// iff the ref currently points `previousCommitHash`.
+func (r *mockRepoForTest) SetRef(ref, newCommitHash, previousCommitHash string) error {
+	return fmt.Errorf("not implemented")
 }
 
 // GetNotes reads the notes from the given ref that annotate the given revision.

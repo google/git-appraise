@@ -30,6 +30,38 @@ type CommitDetails struct {
 	Summary     string   `json:"summary,omitempty"`
 }
 
+type TreeChild interface {
+	// Type returns the type of the child object (e.g. "blob" vs. "tree").
+	Type() string
+
+	// Store writes the object to the given repository and returns its hash.
+	Store(repo Repo) (string, error)
+}
+
+// Blob represents a (non-directory) file stored in a repository.
+type Blob string
+
+func (b *Blob) Type() string {
+	return "blob"
+}
+
+func (b *Blob) Store(repo Repo) (string, error) {
+	return repo.StoreBlob(b)
+}
+
+// Tree represents a directory stored in a repository.
+type Tree struct {
+	Contents map[string]TreeChild
+}
+
+func (t *Tree) Type() string {
+	return "tree"
+}
+
+func (t *Tree) Store(repo Repo) (string, error) {
+	return repo.StoreTree(t)
+}
+
 // Repo represents a source code repository.
 type Repo interface {
 	// GetPath returns the path to the repo.
@@ -100,12 +132,6 @@ type Repo interface {
 	// Show returns the contents of the given file at the given commit.
 	Show(commit, path string) (string, error)
 
-	// ShowAll returns the contents of all the files at the given commit
-	// with any of the specified path prefixes.
-	//
-	// The return value is a map from the fully qualified file path to its contents.
-	ShowAll(commit string, pathPrefixes ...string) (map[string]string, error)
-
 	// SwitchToRef changes the currently-checked-out ref.
 	SwitchToRef(ref string) error
 
@@ -153,6 +179,22 @@ type Repo interface {
 	//
 	// The generated list is in chronological order (with the oldest commit first).
 	ListCommitsBetween(from, to string) ([]string, error)
+
+	// StoreBlob writes the given file to the repository and returns its hash.
+	StoreBlob(b *Blob) (string, error)
+
+	// StoreTree writes the given file tree to the repository and returns its hash.
+	StoreTree(t *Tree) (string, error)
+
+	// ReadTree reads the file tree pointed to by the given ref or hash from the repository.
+	ReadTree(ref string) (*Tree, error)
+
+	// CreateCommit creates a commit object and returns its hash.
+	CreateCommit(t *Tree, parents []string, message string) (string, error)
+
+	// SetRef sets the commit pointed to by the specified ref to `newCommitHash`,
+	// iff the ref currently points `previousCommitHash`.
+	SetRef(ref, newCommitHash, previousCommitHash string) error
 
 	// GetNotes reads the notes from the given ref that annotate the given revision.
 	GetNotes(notesRef, revision string) []Note

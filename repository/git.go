@@ -277,9 +277,6 @@ func (repo *GitRepo) Show(commit, path string) (string, error) {
 	return repo.runGitCommand("show", fmt.Sprintf("%s:%s", commit, path))
 }
 
-// ShowAll returns the contents of all the files at the given commit
-// with any of the specified path prefixes.
-//
 // The return value is a map from the fully qualified file path to its contents.
 func (repo *GitRepo) ShowAll(commit string, pathPrefixes ...string) (map[string]string, error) {
 	command := append([]string{"ls-tree", "--full-tree", "-r", commit}, pathPrefixes...)
@@ -485,6 +482,114 @@ func (repo *GitRepo) ListCommitsBetween(from, to string) ([]string, error) {
 		return nil, nil
 	}
 	return strings.Split(out, "\n"), nil
+}
+
+// StoreBlob writes the given file to the repository and returns its hash.
+func (repo *GitRepo) StoreBlob(b *Blob) (string, error) {
+	stdin := strings.NewReader(string(*b))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	args := []string{"hash-object", "-w", "-t", "blob", "--stdin"}
+	err := repo.runGitCommandWithIO(stdin, &stdout, &stderr, args...)
+	if err != nil {
+		message := strings.TrimSpace(stderr.String())
+		return "", fmt.Errorf("failure storing a git blob, %v: %q", err, message)
+	}
+	return strings.TrimSpace(stdout.String()), nil
+}
+
+// StoreTree writes the given file tree to the repository and returns its hash.
+func (repo *GitRepo) StoreTree(t *Tree) (string, error) {
+	var lines []string
+	for path, obj := range t.Contents {
+		objHash, err := obj.Store(repo)
+		if err != nil {
+			return "", err
+		}
+		mode := "040000"
+		if obj.Type() == "blob" {
+			mode = "100644"
+		}
+		line := fmt.Sprintf("%s %s %s\t%s", mode, obj.Type(), objHash, path)
+		lines = append(lines, line)
+	}
+	stdin := strings.NewReader(strings.Join(lines, "\n"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	args := []string{"mktree"}
+	err := repo.runGitCommandWithIO(stdin, &stdout, &stderr, args...)
+	if err != nil {
+		message := strings.TrimSpace(stderr.String())
+		return "", fmt.Errorf("failure storing a git tree, %v: %q", err, message)
+	}
+	return strings.TrimSpace(stdout.String()), nil
+}
+
+func (repo *GitRepo) readBlob(objHash string) (*Blob, error) {
+	out, err := repo.runGitCommand("cat-file", "-p", objHash)
+	if err != nil {
+		return nil, fmt.Errorf("failure reading the file contents of %q: %v", objHash, err)
+	}
+	blob := Blob(out)
+	return &blob, nil
+}
+
+func (repo *GitRepo) ReadTree(ref string) (*Tree, error) {
+	out, err := repo.runGitCommand("ls-tree", "--full-tree", ref)
+	if err != nil {
+		return nil, fmt.Errorf("failure listing the file contents of %q: %v", ref, err)
+	}
+	contents := make(map[string]TreeChild)
+	for _, line := range strings.Split(out, "\n") {
+		lineParts := strings.Split(line, "\t")
+		if len(lineParts) != 2 {
+			return nil, fmt.Errorf("malformed ls-tree output line: %q", line)
+		}
+		path := lineParts[1]
+		lineParts = strings.Split(lineParts[0], " ")
+		if len(lineParts) != 3 {
+			return nil, fmt.Errorf("malformed ls-tree output line: %q", line)
+		}
+		objType := lineParts[1]
+		objHash := lineParts[2]
+		var child TreeChild
+		if objType == "tree" {
+			child, err = repo.ReadTree(objHash)
+		} else if objType == "blob" {
+			child, err = repo.readBlob(objHash)
+		} else {
+			return nil, fmt.Errorf("unrecognized tree object type: %q", objType)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to read a tree child object: %v", err)
+		}
+		contents[path] = child
+	}
+	return &Tree{contents}, nil
+}
+
+// CreateCommit creates a commit object and returns its hash.
+func (repo *GitRepo) CreateCommit(t *Tree, parents []string, message string) (string, error) {
+	treeHash, err := repo.StoreTree(t)
+	if err != nil {
+		return "", fmt.Errorf("failure storing a tree: %v", err)
+	}
+	args := []string{"commit-tree", treeHash, "-m", message}
+	for _, parent := range parents {
+		args = append(args, "-p", parent)
+	}
+	return repo.runGitCommand(args...)
+}
+
+// SetRef sets the commit pointed to by the specified ref to `newCommitHash`,
+// iff the ref currently points `previousCommitHash`.
+func (repo *GitRepo) SetRef(ref, newCommitHash, previousCommitHash string) error {
+	args := []string{"update-ref", ref, newCommitHash}
+	if previousCommitHash != "" {
+		args = append(args, previousCommitHash)
+	}
+	_, err := repo.runGitCommand(args...)
+	return err
 }
 
 // GetNotes uses the "git" command-line tool to read the notes from the given ref for a given revision.
