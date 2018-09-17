@@ -135,11 +135,6 @@ func Add(repo repository.Repo, fork *Fork) error {
 	return repo.SetRef(Ref, commitHash, previousCommitHash)
 }
 
-// Get gets the given fork from the repository.
-func Get(repo repository.Repo, name string) (*Fork, error) {
-	return nil, errors.New("Not yet implemented.")
-}
-
 // Delete deletes the given fork from the repository.
 func Delete(repo repository.Repo, name string) error {
 	return errors.New("Not yet implemented.")
@@ -257,5 +252,5 @@ func List(repo repository.Repo) ([]*Fork, error) {
 }
 
 func Pull(repo repository.Repo, fork *Fork) error {
-	return errors.New("Not yet implemented.")
+	return nil
 }
