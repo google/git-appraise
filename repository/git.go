@@ -277,38 +277,6 @@ func (repo *GitRepo) Show(commit, path string) (string, error) {
 	return repo.runGitCommand("show", fmt.Sprintf("%s:%s", commit, path))
 }
 
-// The return value is a map from the fully qualified file path to its contents.
-func (repo *GitRepo) ShowAll(commit string, pathPrefixes ...string) (map[string]string, error) {
-	command := append([]string{"ls-tree", "--full-tree", "-r", commit}, pathPrefixes...)
-	out, err := repo.runGitCommand(command...)
-	if err != nil {
-		return nil, fmt.Errorf("Failure listing the file contents of %q: %v", commit, err)
-	}
-	files := make(map[string]string)
-	var fileHashes []*string
-	for _, line := range strings.Split(out, "\n") {
-		lineParts := strings.Split(line, " ")
-		hash := lineParts[2]
-		path := lineParts[len(lineParts)-1]
-		files[path] = hash
-		fileHashes = append(fileHashes, &lineParts[2])
-	}
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	if err := repo.runGitCommandWithIO(stringsReader(fileHashes), &stdout, &stderr, "cat-file", "--batch=%(objectname)\n%(objectsize)"); err != nil {
-		return nil, fmt.Errorf("Failure performing a batch file read: %v", err)
-	}
-	fileContentsMap, err := splitBatchCatFileOutput(&stdout)
-	if err != nil {
-		return nil, fmt.Errorf("Failure parsing the output of a batch file read: %v", err)
-	}
-	fileContents := make(map[string]string)
-	for path, hash := range files {
-		fileContents[path] = string(fileContentsMap[hash])
-	}
-	return fileContents, nil
-}
-
 // SwitchToRef changes the currently-checked-out ref.
 func (repo *GitRepo) SwitchToRef(ref string) error {
 	// If the ref starts with "refs/heads/", then we have to trim that prefix,
