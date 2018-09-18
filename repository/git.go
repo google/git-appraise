@@ -508,6 +508,10 @@ func (repo *GitRepo) ReadTree(ref string) (*Tree, error) {
 		return nil, fmt.Errorf("failure listing the file contents of %q: %v", ref, err)
 	}
 	contents := make(map[string]TreeChild)
+	if len(out) == 0 {
+		// This is possible if the tree is empty
+		return &Tree{contents}, nil
+	}
 	for _, line := range strings.Split(out, "\n") {
 		lineParts := strings.Split(line, "\t")
 		if len(lineParts) != 2 {

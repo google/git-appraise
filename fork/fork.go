@@ -29,7 +29,6 @@ package fork
 
 import (
 	"crypto/sha1"
-	"errors"
 	"fmt"
 
 	"github.com/google/git-appraise/repository"
@@ -64,9 +63,13 @@ func New(name, url string, owners []string) *Fork {
 	}
 }
 
-func forkPath(fork *Fork) []string {
-	forkHash := fmt.Sprintf("%x", sha1.Sum([]byte(fork.Name)))
+func forkPathFromName(forkName string) []string {
+	forkHash := fmt.Sprintf("%x", sha1.Sum([]byte(forkName)))
 	return []string{forkHash[0:1], forkHash[1:2], forkHash[2:]}
+}
+
+func forkPath(fork *Fork) []string {
+	return forkPathFromName(fork.Name)
 }
 
 func encodeListAsHashedFiles(items []string) *repository.Tree {
@@ -132,12 +135,50 @@ func Add(repo repository.Repo, fork *Fork) error {
 		commitParents = append(commitParents, previousCommitHash)
 	}
 	commitHash, err := repo.CreateCommit(forksTree, commitParents, fmt.Sprintf("Adding the fork: %q", fork.Name))
+	if err != nil {
+		return fmt.Errorf("failure creating a commit to add the fork %q", fork.Name)
+	}
 	return repo.SetRef(Ref, commitHash, previousCommitHash)
 }
 
 // Delete deletes the given fork from the repository.
 func Delete(repo repository.Repo, name string) error {
-	return errors.New("Not yet implemented.")
+	if hasRef, err := repo.HasRef(Ref); err != nil {
+		return fmt.Errorf("failure checking the existence of the forks ref: %v", err)
+	} else if !hasRef {
+		return fmt.Errorf("the specified fork, %q, does not exist", name)
+	}
+	previousCommitHash, err := repo.GetCommitHash(Ref)
+	if err != nil {
+		return fmt.Errorf("failure reading the forks ref commit: %v", err)
+	}
+	forksTree, err := repo.ReadTree(previousCommitHash)
+	if err != nil {
+		return fmt.Errorf("failure reading the forks ref: %v", err)
+	}
+
+	currentLevel := forksTree
+	path := forkPathFromName(name)
+	for len(path) > 1 {
+		childName := path[0]
+		path = path[1:]
+		childObj, ok := currentLevel.Contents[childName]
+		if !ok {
+			return fmt.Errorf("the specified fork, %q, does not exist", name)
+		}
+		childTree, ok := childObj.(*repository.Tree)
+		if !ok {
+			return fmt.Errorf("the specified fork, %q, does not exist", name)
+		}
+		currentLevel = childTree
+	}
+	delete(currentLevel.Contents, path[0])
+	commitHash, err := repo.CreateCommit(forksTree, []string{previousCommitHash},
+		fmt.Sprintf("Deleting the fork: %q", name))
+	if err != nil {
+		return fmt.Errorf("failure creating a commit to delete the fork %q", name)
+	}
+	return repo.SetRef(Ref, commitHash, previousCommitHash)
 }
 
 func readHashedFiles(t *repository.Tree) []string {
