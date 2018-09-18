@@ -39,7 +39,11 @@ type TreeChild interface {
 }
 
 // Blob represents a (non-directory) file stored in a repository.
-type Blob string
+type Blob struct {
+	Contents string
+
+	savedHash string
+}
 
 func (b *Blob) Type() string {
 	return "blob"
@@ -51,7 +55,12 @@ func (b *Blob) Store(repo Repo) (string, error) {
 
 // Tree represents a directory stored in a repository.
 type Tree struct {
-	Contents map[string]TreeChild
+	contents  map[string]TreeChild
+	savedHash string
+}
+
+func NewTree() *Tree {
+	return &Tree{contents: make(map[string]TreeChild)}
 }
 
 func (t *Tree) Type() string {
@@ -60,6 +69,29 @@ func (t *Tree) Type() string {
 
 func (t *Tree) Store(repo Repo) (string, error) {
 	return repo.StoreTree(t)
+}
+
+func (t *Tree) Add(name string, child TreeChild) {
+	t.contents[name] = child
+	t.savedHash = ""
+}
+
+func (t *Tree) Get(name string) (TreeChild, bool) {
+	child, ok := t.contents[name]
+	// Since the returned child is mutable, we have to assume the hash could change.
+	t.savedHash = ""
+	return child, ok
+}
+
+func (t *Tree) Delete(name string) {
+	delete(t.contents, name)
+	t.savedHash = ""
+}
+
+func (t *Tree) Contents() map[string]TreeChild {
+	// Since the returned contents are mutable, we have to assume the hash could change.
+	t.savedHash = ""
+	return t.contents
 }
 
 // Repo represents a source code repository.

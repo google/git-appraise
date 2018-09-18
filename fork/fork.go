@@ -73,26 +73,22 @@ func forkPath(fork *Fork) []string {
 }
 
 func encodeListAsHashedFiles(items []string) *repository.Tree {
-	contents := make(map[string]repository.TreeChild)
+	t := repository.NewTree()
 	for _, item := range items {
-		blob := new(repository.Blob)
-		*blob = repository.Blob(item)
+		blob := &repository.Blob{Contents: item}
 		path := fmt.Sprintf("%x", sha1.Sum([]byte(item)))
-		contents[path] = blob
+		t.Add(path, blob)
 	}
-	return &repository.Tree{Contents: contents}
+	return t
 }
 
 // Add adds the given fork to the repository, replacing any existing forks with the same name.
 func Add(repo repository.Repo, fork *Fork) error {
-	treeContents := make(map[string]repository.TreeChild)
-	nameBlob := new(repository.Blob)
-	treeContents[nameFilePath] = nameBlob
-	*nameBlob = repository.Blob(fork.Name)
-	treeContents[urlsDirPath] = encodeListAsHashedFiles(fork.URLS)
-	treeContents[ownersDirPath] = encodeListAsHashedFiles(fork.Owners)
-	treeContents[refsDirPath] = encodeListAsHashedFiles(fork.Refs)
-	t := &repository.Tree{Contents: treeContents}
+	t := repository.NewTree()
+	t.Add(nameFilePath, &repository.Blob{Contents: fork.Name})
+	t.Add(urlsDirPath, encodeListAsHashedFiles(fork.URLS))
+	t.Add(ownersDirPath, encodeListAsHashedFiles(fork.Owners))
+	t.Add(refsDirPath, encodeListAsHashedFiles(fork.Refs))
 
 	var previousCommitHash string
 	var forksTree *repository.Tree
@@ -110,7 +106,7 @@ func Add(repo repository.Repo, fork *Fork) error {
 			return fmt.Errorf("failure reading the forks ref: %v", err)
 		}
 	} else {
-		forksTree = &repository.Tree{Contents: make(map[string]repository.TreeChild)}
+		forksTree = repository.NewTree()
 	}
 
 	currentLevel := forksTree
@@ -119,17 +115,17 @@ func Add(repo repository.Repo, fork *Fork) error {
 		childName := path[0]
 		path = path[1:]
 		var childTree *repository.Tree
-		childObj, ok := currentLevel.Contents[childName]
+		childObj, ok := currentLevel.Get(childName)
 		if ok {
 			childTree, ok = childObj.(*repository.Tree)
 		}
 		if !ok {
-			childTree = &repository.Tree{Contents: make(map[string]repository.TreeChild)}
-			currentLevel.Contents[childName] = childTree
+			childTree = repository.NewTree()
+			currentLevel.Add(childName, childTree)
 		}
 		currentLevel = childTree
 	}
-	currentLevel.Contents[path[0]] = t
+	currentLevel.Add(path[0], t)
 	var commitParents []string
 	if previousCommitHash != "" {
 		commitParents = append(commitParents, previousCommitHash)
@@ -162,7 +158,7 @@ func Delete(repo repository.Repo, name string) error {
 	for len(path) > 1 {
 		childName := path[0]
 		path = path[1:]
-		childObj, ok := currentLevel.Contents[childName]
+		childObj, ok := currentLevel.Get(childName)
 		if !ok {
 			return fmt.Errorf("the specified fork, %q, does not exist", name)
 		}
@@ -172,7 +168,7 @@ func Delete(repo repository.Repo, name string) error {
 		}
 		currentLevel = childTree
 	}
-	delete(currentLevel.Contents, path[0])
+	currentLevel.Delete(path[0])
 	commitHash, err := repo.CreateCommit(forksTree, []string{previousCommitHash},
 		fmt.Sprintf("Deleting the fork: %q", name))
 	if err != nil {
@@ -183,13 +179,13 @@ func Delete(repo repository.Repo, name string) error {
 
 func readHashedFiles(t *repository.Tree) []string {
 	var results []string
-	for path, obj := range t.Contents {
+	for path, obj := range t.Contents() {
 		blob, ok := obj.(*repository.Blob)
 		if !ok {
 			// we are not interested in subdirectories
 			continue
 		}
-		contents := string(*blob)
+		contents := blob.Contents
 		hash := fmt.Sprintf("%x", sha1.Sum([]byte(contents)))
 		if path != hash {
 			// we are not interested in non-hash-named files
@@ -201,7 +197,7 @@ func readHashedFiles(t *repository.Tree) []string {
 }
 
 func parseForkTree(t *repository.Tree) (*Fork, error) {
-	nameFile, ok := t.Contents[nameFilePath]
+	nameFile, ok := t.Get(nameFilePath)
 	if !ok {
 		return nil, fmt.Errorf("fork missing a NAME file")
 	}
@@ -209,7 +205,7 @@ func parseForkTree(t *repository.Tree) (*Fork, error) {
 	if !ok {
 		return nil, fmt.Errorf("fork NAME file is not actually a file")
 	}
-	ownersFile, ok := t.Contents[ownersDirPath]
+	ownersFile, ok := t.Get(ownersDirPath)
 	if !ok {
 		return nil, fmt.Errorf("fork missing an OWNERS subdirectory")
 	}
@@ -217,7 +213,7 @@ func parseForkTree(t *repository.Tree) (*Fork, error) {
 	if !ok {
 		return nil, fmt.Errorf("fork OWNERS subdirectory is not actually a directory")
 	}
-	refsFile, ok := t.Contents[refsDirPath]
+	refsFile, ok := t.Get(refsDirPath)
 	if !ok {
 		return nil, fmt.Errorf("fork missing a REFS subdirectory")
 	}
@@ -225,7 +221,7 @@ func parseForkTree(t *repository.Tree) (*Fork, error) {
 	if !ok {
 		return nil, fmt.Errorf("fork REFS subdirectory is not actually a directory")
 	}
-	urlsFile, ok := t.Contents[urlsDirPath]
+	urlsFile, ok := t.Get(urlsDirPath)
 	if !ok {
 		return nil, fmt.Errorf("fork missing a URLS subdirectory")
 	}
@@ -234,7 +230,7 @@ func parseForkTree(t *repository.Tree) (*Fork, error) {
 		return nil, fmt.Errorf("fork URLS subdirectory is not actually a directory")
 	}
 	fork := &Fork{
-		Name:   string(*nameBlob),
+		Name:   nameBlob.Contents,
 		Owners: readHashedFiles(ownersDir),
 		Refs:   readHashedFiles(refsDir),
 		URLS:   readHashedFiles(urlsDir),
@@ -253,7 +249,7 @@ func flattenTree(t *repository.Tree, levelsToFlatten int, pathPrefix string, res
 		results[pathPrefix] = t
 		return
 	}
-	for path, obj := range t.Contents {
+	for path, obj := range t.Contents() {
 		childTree, ok := obj.(*repository.Tree)
 		if !ok {
 			continue
@@ -298,7 +294,9 @@ func Pull(repo repository.Repo, fork *Fork) error {
 		for _, ref := range fork.Refs {
 			refSpecs = append(refSpecs, fmt.Sprintf("+%s:refs/forks/%s/%s", ref, fork.Name, ref))
 		}
-		repo.Fetch(url, refSpecs)
+		if err := repo.Fetch(url, refSpecs); err != nil {
+			return err
+		}
 	}
 	return nil
 }
