@@ -71,23 +71,6 @@ func (t *Tree) Store(repo Repo) (string, error) {
 	return repo.StoreTree(t)
 }
 
-func (t *Tree) Add(name string, child TreeChild) {
-	t.contents[name] = child
-	t.savedHash = ""
-}
-
-func (t *Tree) Get(name string) (TreeChild, bool) {
-	child, ok := t.contents[name]
-	// Since the returned child is mutable, we have to assume the hash could change.
-	t.savedHash = ""
-	return child, ok
-}
-
-func (t *Tree) Delete(name string) {
-	delete(t.contents, name)
-	t.savedHash = ""
-}
-
 func (t *Tree) Contents() map[string]TreeChild {
 	// Since the returned contents are mutable, we have to assume the hash could change.
 	t.savedHash = ""

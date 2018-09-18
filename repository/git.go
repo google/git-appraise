@@ -527,6 +527,7 @@ func (repo *GitRepo) readTreeWithHash(ref, hash string) (*Tree, error) {
 		// This is possible if the tree is empty
 		return t, nil
 	}
+	contents := t.Contents()
 	for _, line := range strings.Split(out, "\n") {
 		lineParts := strings.Split(line, "\t")
 		if len(lineParts) != 2 {
@@ -550,7 +551,7 @@ func (repo *GitRepo) readTreeWithHash(ref, hash string) (*Tree, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read a tree child object: %v", err)
 		}
-		t.Add(path, child)
+		contents[path] = child
 	}
 	t.savedHash = hash
 	return t, nil
