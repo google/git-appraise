@@ -1015,8 +1015,13 @@ func (repo *GitRepo) mergeRemoteForks(remote, forksRef string) error {
 	workTreeRepo := &GitRepo{
 		Path: dir,
 	}
-	_, err = workTreeRepo.runGitCommand("merge", "--commit", "--no-edit", "-s", "recursive", "-X", "ours", remoteRef)
-	return err
+	if _, err := workTreeRepo.runGitCommand("merge", "--commit", "--allow-unrelated-histories", "--no-edit", "-s", "recursive", "-X", "ours", remoteRef); err != nil {
+		return err
+	}
+	if _, err := workTreeRepo.runGitCommand("update-ref", forksRef, "HEAD"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // PullNotesForksAndArchive fetches the contents of the notes, forks, and archives
