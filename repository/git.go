@@ -845,6 +845,14 @@ func (repo *GitRepo) ListNotedRevisions(notesRef string) []string {
 	return revisions
 }
 
+// Fetch fetches from the given remote using the supplied refspecs.
+func (repo *GitRepo) Fetch(remote string, fetchSpecs []string) error {
+	args := []string{"fetch", remote}
+	args = append(args, fetchSpecs...)
+	_, err := repo.runGitCommand(args...)
+	return err
+}
+
 // PushNotes pushes git notes to a remote repo.
 func (repo *GitRepo) PushNotes(remote, notesRefPattern string) error {
 	refspec := fmt.Sprintf("%s:%s", notesRefPattern, notesRefPattern)

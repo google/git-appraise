@@ -293,5 +293,12 @@ func List(repo repository.Repo) ([]*Fork, error) {
 }
 
 func Pull(repo repository.Repo, fork *Fork) error {
+	for _, url := range fork.URLS {
+		var refSpecs []string
+		for _, ref := range fork.Refs {
+			refSpecs = append(refSpecs, fmt.Sprintf("+%s:refs/forks/%s/%s", ref, fork.Name, ref))
+		}
+		repo.Fetch(url, refSpecs)
+	}
 	return nil
 }

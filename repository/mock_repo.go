@@ -572,6 +572,9 @@ func (r *mockRepoForTest) ListNotedRevisions(notesRef string) []string {
 	return revisions
 }
 
+// Fetch fetches from the given remote using the supplied refspecs.
+func (r *mockRepoForTest) Fetch(remote string, fetchSpecs []string) error { return nil }
+
 // PushNotes pushes git notes to a remote repo.
 func (r *mockRepoForTest) PushNotes(remote, notesRefPattern string) error { return nil }
 

@@ -212,6 +212,9 @@ type Repo interface {
 	// ListNotedRevisions returns the collection of revisions that are annotated by notes in the given ref.
 	ListNotedRevisions(notesRef string) []string
 
+	// Fetch fetches from the given remote using the supplied refspecs.
+	Fetch(remote string, fetchSpecs []string) error
+
 	// PushNotes pushes git notes to a remote repo.
 	PushNotes(remote, notesRefPattern string) error
 
