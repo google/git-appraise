@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -860,6 +861,21 @@ func (repo *GitRepo) ListNotedRevisions(notesRef string) []string {
 		}
 	}
 	return revisions
+}
+
+// Remotes returns a list of the remotes.
+func (repo *GitRepo) Remotes() ([]string, error) {
+	remotes, err := repo.runGitCommand("remote")
+	if err != nil {
+		return nil, err
+	}
+	remoteNames := strings.Split(remotes, "\n")
+	var result []string
+	for _, name := range remoteNames {
+		result = append(result, strings.TrimSpace(name))
+	}
+	sort.Strings(result)
+	return result, nil
 }
 
 // Fetch fetches from the given remote using the supplied refspecs.

@@ -556,7 +556,8 @@ func (r *Summary) getStartingCommit() string {
 // For branches, the following are checked in order:
 // 1. An exact match in the local branches.
 // 2. A matching branch in the `origin` remote.
-// 3. A matching branch in a matching fork (e.g. if the branch starts with "somefork/", then look under "refs/forks/somefork/refs/heads/somefork/...").
+// 3. A matching branch in one of the other remotes, checked in alphabetical order.
+// 4. A matching branch in a matching fork (e.g. if the branch starts with "somefork/", then look under "refs/forks/somefork/refs/heads/somefork/...").
 func (r *Review) LocalReviewRef() (string, error) {
 	if !strings.HasPrefix(r.Request.ReviewRef, "refs/heads/") {
 		return r.Request.ReviewRef, nil
@@ -572,6 +573,18 @@ func (r *Review) LocalReviewRef() (string, error) {
 		return "", err
 	} else if hasRef {
 		return originBranch, nil
+	}
+	remotes, err := r.Repo.Remotes()
+	if err != nil {
+		return "", err
+	}
+	for _, remote := range remotes {
+		remoteBranch := "refs/remotes/" + remote + "/" + branchName
+		if hasRef, err := r.Repo.HasRef(remoteBranch); err != nil {
+			return "", err
+		} else if hasRef {
+			return remoteBranch, nil
+		}
 	}
 	if strings.Index(branchName, "/") <= 0 {
 		return r.Request.ReviewRef, nil

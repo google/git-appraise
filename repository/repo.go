@@ -227,6 +227,9 @@ type Repo interface {
 	// ListNotedRevisions returns the collection of revisions that are annotated by notes in the given ref.
 	ListNotedRevisions(notesRef string) []string
 
+	// Remotes returns a list of the remotes.
+	Remotes() ([]string, error)
+
 	// Fetch fetches from the given remote using the supplied refspecs.
 	Fetch(remote string, fetchSpecs []string) error
 

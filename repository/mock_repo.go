@@ -572,6 +572,11 @@ func (r *mockRepoForTest) ListNotedRevisions(notesRef string) []string {
 	return revisions
 }
 
+// Remotes returns a list of the remotes.
+func (r *mockRepoForTest) Remotes() ([]string, error) {
+	return []string{"origin"}, nil
+}
+
 // Fetch fetches from the given remote using the supplied refspecs.
 func (r *mockRepoForTest) Fetch(remote string, fetchSpecs []string) error { return nil }
 
