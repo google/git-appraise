@@ -218,8 +218,8 @@ func (r *mockRepoForTest) resolveLocalRef(ref string) (string, error) {
 
 // HasRef checks whether the specified ref exists in the repo.
 func (r *mockRepoForTest) HasRef(ref string) (bool, error) {
-	if err := r.VerifyCommit(ref); err != nil {
-		return false, err
+	if _, ok := r.Refs[ref]; !ok {
+		return false, nil
 	}
 	return true, nil
 }
