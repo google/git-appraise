@@ -17,8 +17,18 @@ limitations under the License.
 // Package repository contains helper methods for working with a Git repo.
 package repository
 
+import (
+	"crypto/sha1"
+	"fmt"
+)
+
 // Note represents the contents of a git-note
 type Note []byte
+
+// Hash returns a hash of the given note
+func (n Note) Hash() string {
+	return fmt.Sprintf("%x", sha1.Sum([]byte(n)))
+}
 
 // CommitDetails represents the contents of a commit.
 type CommitDetails struct {
@@ -206,6 +216,9 @@ type Repo interface {
 
 	// CreateCommit creates a commit object and returns its hash.
 	CreateCommit(t *Tree, parents []string, message string) (string, error)
+
+	// CreateCommitFromTreeHash creates a commit object and returns its hash.
+	CreateCommitFromTreeHash(treeHash string, parents []string, message string) (string, error)
 
 	// SetRef sets the commit pointed to by the specified ref to `newCommitHash`,
 	// iff the ref currently points `previousCommitHash`.

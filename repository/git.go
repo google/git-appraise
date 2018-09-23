@@ -564,6 +564,11 @@ func (repo *GitRepo) CreateCommit(t *Tree, parents []string, message string) (st
 	if err != nil {
 		return "", fmt.Errorf("failure storing a tree: %v", err)
 	}
+	return repo.CreateCommitFromTreeHash(treeHash, parents, message)
+}
+
+// CreateCommitFromTreeHash creates a commit object and returns its hash.
+func (repo *GitRepo) CreateCommitFromTreeHash(treeHash string, parents []string, message string) (string, error) {
 	args := []string{"commit-tree", treeHash, "-m", message}
 	for _, parent := range parents {
 		args = append(args, "-p", parent)

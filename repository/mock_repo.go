@@ -524,6 +524,11 @@ func (r *mockRepoForTest) CreateCommit(t *Tree, parents []string, message string
 	return "", fmt.Errorf("not implemented")
 }
 
+// CreateCommitFromTreeHash creates a commit object and returns its hash.
+func (r *mockRepoForTest) CreateCommitFromTreeHash(treeHash string, parents []string, message string) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
 // SetRef sets the commit pointed to by the specified ref to `newCommitHash`,
 // iff the ref currently points `previousCommitHash`.
 func (r *mockRepoForTest) SetRef(ref, newCommitHash, previousCommitHash string) error {
