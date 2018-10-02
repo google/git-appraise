@@ -34,10 +34,17 @@ const (
 	forkUserEmail  = "test-fork-user@example.com"
 )
 
-func createTestRepository() (string, error) {
+func createTestRepository(remoteRepo string) (string, error) {
 	dir, err := ioutil.TempDir("", "test-git-repo")
 	if err != nil {
 		return "", err
+	}
+	if len(remoteRepo) > 0 {
+		parentDir := filepath.Dir(dir)
+		if _, err := runGitCommandInRepo(parentDir, []string{"clone", remoteRepo, dir}); err != nil {
+			return "", fmt.Errorf("Failed to clone the remote test repo %q: %v", remoteRepo, err)
+		}
+		return dir, nil
 	}
 	initCmd := exec.Command("git", "init")
 	initCmd.Dir = dir
@@ -72,7 +79,7 @@ type testFork struct {
 func newTestFork(remoteRepo, forkName string) (f *testFork, err error) {
 	forkUser := fmt.Sprintf("Test user for %s", forkName)
 	forkEmail := fmt.Sprintf("%s-owner@example.com", forkName)
-	dir, err := createTestRepository()
+	dir, err := createTestRepository(remoteRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -81,14 +88,6 @@ func newTestFork(remoteRepo, forkName string) (f *testFork, err error) {
 			os.RemoveAll(dir)
 		}
 	}()
-	remoteAddCmd := []string{"remote", "add", "origin", remoteRepo}
-	pullCmd := []string{"pull", "origin", "master"}
-	if _, err := runGitCommandInRepo(dir, remoteAddCmd); err != nil {
-		return nil, fmt.Errorf("Failed to set up the remote for the test fork repo %q: %v", forkName, err)
-	}
-	if _, err := runGitCommandInRepo(dir, pullCmd); err != nil {
-		return nil, fmt.Errorf("Failed to pull the contents of the remote for the test fork repo %q: %v", forkName, err)
-	}
 	if _, err := runGitCommandInRepo(dir, []string{"config", "--local", "--add", "user.name", forkUser}); err != nil {
 		return nil, fmt.Errorf("Failed to set the git user name for the test fork repo %q: %v", forkName, err)
 	}
@@ -119,7 +118,7 @@ func (f *testFork) RunGitCommand(args ...string) (string, error) {
 }
 
 func TestPullingFromForks(t *testing.T) {
-	remoteRepo, err := createTestRepository()
+	remoteRepo, err := createTestRepository("")
 	if err != nil {
 		t.Fatalf("Failed to create the test remote repository: %v", err)
 	}
@@ -162,6 +161,9 @@ func TestPullingFromForks(t *testing.T) {
 		}
 		if _, err := forkRepo.RunGitCommand("appraise", "request"); err != nil {
 			t.Fatalf("Failed to create the review request in the fork repo: %v", err)
+		}
+		if _, err := forkRepo.RunGitCommand("appraise", "pull", "origin"); err != nil {
+			t.Fatalf("Failed to pull the review metadata into the fork repo: %v", err)
 		}
 	}
 
