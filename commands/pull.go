@@ -49,19 +49,32 @@ func pull(repo repository.Repo, args []string) error {
 		return repo.PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern)
 	}
 	if err := repo.PullNotesForksAndArchive(remote, notesRefPattern, fork.Ref, archiveRefPattern); err != nil {
-		return err
+		return fmt.Errorf("failure pulling review metadata from the remote %q: %v", remote, err)
 	}
 	forks, err := fork.List(repo)
 	if err != nil {
-		return err
+		return fmt.Errorf("failure listing the forks: %v", err)
 	}
 	var g errgroup.Group
 	for _, f := range forks {
-		g.Go(func() error {
-			return fork.Pull(repo, f)
-		})
+		func(f *fork.Fork) {
+			g.Go(func() error {
+				if err := f.Fetch(repo); err != nil {
+					return fmt.Errorf("failure pulling from the fork %q: %v", f.Name, err)
+				}
+				return nil
+			})
+		}(f)
 	}
-	return g.Wait()
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	for _, f := range forks {
+		if err := f.Merge(repo); err != nil {
+			return fmt.Errorf("failure merging from the fork %q: %v", f.Name, err)
+		}
+	}
+	return nil
 }
 
 var pullCmd = &Command{

@@ -30,6 +30,7 @@ package fork
 import (
 	"crypto/sha1"
 	"fmt"
+	"strings"
 
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/comment"
@@ -63,6 +64,27 @@ func New(name, url string, owners []string) *Fork {
 			"refs/notes/devtools/*",
 		},
 	}
+}
+
+func localRefForFork(remoteRef, forkName string) (string, error) {
+	if strings.Contains(remoteRef, ":") || strings.Contains(remoteRef, "+") {
+		return "", fmt.Errorf("invalid remote ref %q", remoteRef)
+	}
+	if strings.HasPrefix(remoteRef, "refs/notes/") {
+		// Older versions of git require all notes refs to be under "refs/notes"
+		return fmt.Sprintf("refs/notes/forks/%s/%s", forkName, remoteRef), nil
+	}
+	return fmt.Sprintf("refs/forks/%s/%s", forkName, remoteRef), nil
+}
+
+func filteredRefForFork(remoteRef, forkName string) (string, error) {
+	if strings.Contains(remoteRef, ":") || strings.Contains(remoteRef, "+") {
+		return "", fmt.Errorf("invalid remote ref %q", remoteRef)
+	}
+	if !strings.HasPrefix(remoteRef, "refs/notes/devtools/") {
+		return "", fmt.Errorf("only devtools notes refs can be filtered")
+	}
+	return fmt.Sprintf("refs/notes/filteredForks/%s/%s", forkName, remoteRef), nil
 }
 
 func forkPathFromName(forkName string) []string {
@@ -316,26 +338,68 @@ func newlyAddedNotes(oldNotes []repository.Note, newNotes []repository.Note) []r
 	return addedNotes
 }
 
-func (fork *Fork) mergeOwnerRequests(repo repository.Repo) error {
-	forkRequestsRef := fmt.Sprintf("refs/forks/%s/%s", fork.Name, request.Ref)
+func createMergeCommit(repo repository.Repo, ref, commitToMerge, message string) error {
+	if hasRef, err := repo.HasRef(ref); err != nil {
+		return fmt.Errorf("failure checking the existence of the ref %q: %v", ref, err)
+	} else if !hasRef {
+		// There is nothing to merge into
+		return nil
+	}
+	refDetails, err := repo.GetCommitDetails(ref)
+	if err != nil {
+		return fmt.Errorf("failure reading the ref %q: %v", ref, err)
+	}
+	refCommit, err := repo.GetCommitHash(ref)
+	if err != nil {
+		return fmt.Errorf("failure reading the commit for the ref %q: %v", ref, err)
+	}
+	parents := []string{refCommit, commitToMerge}
+	mergeCommit, err := repo.CreateCommitFromTreeHash(refDetails.Tree, parents, message)
+	if err != nil {
+		return fmt.Errorf("failure creating a merge commit for %q: %v", ref, err)
+	}
+	return repo.SetRef(ref, mergeCommit, refCommit)
+}
+
+func (fork *Fork) filterOwnerRequests(repo repository.Repo) error {
+	forkRequestsRef, err := localRefForFork(request.Ref, fork.Name)
+	if err != nil {
+		return err
+	}
 	forkRequestsRefCommit, err := repo.GetCommitHash(forkRequestsRef)
 	if err != nil {
 		// There are no fork requests to merge
 		return nil
 	}
-	if isAncestor, err := repo.IsAncestor(forkRequestsRefCommit, request.Ref); err != nil {
-		return err
-	} else if isAncestor {
-		// All fork requests have already been merged
-		return nil
-	}
-	existingNotesMap, err := repo.GetAllNotes(request.Ref)
+	filteredForkRequestsRef, err := filteredRefForFork(request.Ref, fork.Name)
 	if err != nil {
 		return err
+	}
+
+	isMerged := false
+	existingNotesMap := map[string][]repository.Note{}
+	if hasRef, err := repo.HasRef(filteredForkRequestsRef); err != nil {
+		return fmt.Errorf("failure checking the existence of the review requests ref: %v", err)
+	} else if hasRef {
+		isMerged, err = repo.IsAncestor(forkRequestsRefCommit, filteredForkRequestsRef)
+		if err != nil {
+			return fmt.Errorf("failure checking the ancestry of the review requests ref: %v", err)
+		}
+		existingNotesMap, err = repo.GetAllNotes(filteredForkRequestsRef)
+		if err != nil {
+			return fmt.Errorf("failure reading the contents of the review requests ref: %v", err)
+		}
+	}
+	if isMerged {
+		// All fork requests have already been merged
+		return nil
 	}
 	newNotesMap, err := repo.GetAllNotes(forkRequestsRef)
 	if err != nil {
 		return err
+	}
+	if len(newNotesMap) == 0 {
+		return fmt.Errorf("failed to load the notes for the ref %q", forkRequestsRef)
 	}
 	for obj, newNotes := range newNotesMap {
 		commitDetails, err := repo.GetCommitDetails(obj)
@@ -352,6 +416,9 @@ func (fork *Fork) mergeOwnerRequests(repo repository.Repo) error {
 			newNotes = newlyAddedNotes(existingNotes, newNotes)
 		}
 		for _, note := range newNotes {
+			if len(note) == 0 {
+				continue
+			}
 			r, err := request.Parse(note)
 			if err != nil {
 				continue
@@ -361,40 +428,46 @@ func (fork *Fork) mergeOwnerRequests(repo repository.Repo) error {
 			}
 		}
 		for _, note := range notesToAdd {
-			if err := repo.AppendNote(request.Ref, obj, note); err != nil {
-				return err
+			if err := repo.AppendNote(filteredForkRequestsRef, obj, note); err != nil {
+				return fmt.Errorf("failure merging in a review request: %v", err)
 			}
 		}
 	}
-	notesRefDetails, err := repo.GetCommitDetails(request.Ref)
-	if err != nil {
-		return err
-	}
-	notesRefCommit, err := repo.GetCommitHash(request.Ref)
-	if err != nil {
-		return err
-	}
-	parents := []string{notesRefCommit, forkRequestsRefCommit}
-	mergeCommit, err := repo.CreateCommitFromTreeHash(notesRefDetails.Tree, parents, fmt.Sprintf("merging in requests from the fork %s", fork.Name))
-	return repo.SetRef(request.Ref, mergeCommit, notesRefCommit)
+	return createMergeCommit(repo, filteredForkRequestsRef, forkRequestsRefCommit, fmt.Sprintf("merging in requests from the fork %q", fork.Name))
 }
 
-func (fork *Fork) mergeOwnerComments(repo repository.Repo) error {
-	forkCommentsRef := fmt.Sprintf("refs/forks/%s/%s", fork.Name, comment.Ref)
+func (fork *Fork) filterOwnerComments(repo repository.Repo) error {
+	forkCommentsRef, err := localRefForFork(comment.Ref, fork.Name)
+	if err != nil {
+		return err
+	}
 	forkCommentsRefCommit, err := repo.GetCommitHash(forkCommentsRef)
 	if err != nil {
 		// There are no fork comments to merge
 		return nil
 	}
-	if isAncestor, err := repo.IsAncestor(forkCommentsRefCommit, comment.Ref); err != nil {
-		return err
-	} else if isAncestor {
-		// The fork comments have already been merged
-		return nil
-	}
-	existingNotesMap, err := repo.GetAllNotes(comment.Ref)
+	filteredForkCommentsRef, err := filteredRefForFork(comment.Ref, fork.Name)
 	if err != nil {
 		return err
+	}
+
+	isMerged := false
+	existingNotesMap := map[string][]repository.Note{}
+	if hasRef, err := repo.HasRef(filteredForkCommentsRef); err != nil {
+		return fmt.Errorf("failure checking the existence of the comments ref: %v", err)
+	} else if hasRef {
+		isMerged, err = repo.IsAncestor(forkCommentsRefCommit, filteredForkCommentsRef)
+		if err != nil {
+			return fmt.Errorf("failure checking the ancestry of the comments ref: %v", err)
+		}
+		existingNotesMap, err = repo.GetAllNotes(filteredForkCommentsRef)
+		if err != nil {
+			return fmt.Errorf("failure reading the contents of the comments ref: %v", err)
+		}
+	}
+	if isMerged {
+		// All fork comments have already been merged
+		return nil
 	}
 	newNotesMap, err := repo.GetAllNotes(forkCommentsRef)
 	if err != nil {
@@ -416,39 +489,94 @@ func (fork *Fork) mergeOwnerComments(repo repository.Repo) error {
 			}
 		}
 		for _, note := range notesToAdd {
-			if err := repo.AppendNote(comment.Ref, obj, note); err != nil {
+			if err := repo.AppendNote(filteredForkCommentsRef, obj, note); err != nil {
 				return err
 			}
 		}
 	}
-	notesRefDetails, err := repo.GetCommitDetails(comment.Ref)
-	if err != nil {
-		return err
-	}
-	notesRefCommit, err := repo.GetCommitHash(comment.Ref)
-	if err != nil {
-		return err
-	}
-	parents := []string{notesRefCommit, forkCommentsRefCommit}
-	mergeCommit, err := repo.CreateCommitFromTreeHash(notesRefDetails.Tree, parents, fmt.Sprintf("merging in comments from the fork %s", fork.Name))
-	return repo.SetRef(comment.Ref, mergeCommit, notesRefCommit)
+	return createMergeCommit(repo, filteredForkCommentsRef, forkCommentsRefCommit, fmt.Sprintf("merging in comments from the fork %q", fork.Name))
 }
 
-func Pull(repo repository.Repo, fork *Fork) error {
+func appendAllNotes(repo repository.Repo, destination, source string) error {
+	sourceCommit, err := repo.GetCommitHash(source)
+	if err != nil {
+		// There is nothing to do
+		return nil
+	}
+	if hasRef, err := repo.HasRef(destination); err != nil {
+		return err
+	} else if !hasRef {
+		// The destination does not yet exist, simply copy the new commit over as-is.
+		return repo.SetRef(destination, sourceCommit, "")
+	}
+	if isMerged, err := repo.IsAncestor(sourceCommit, destination); err != nil {
+		return err
+	} else if isMerged {
+		// The notes have already been merged
+		return nil
+	}
+	existingNotesMap, err := repo.GetAllNotes(destination)
+	if err != nil {
+		return err
+	}
+	newNotesMap, err := repo.GetAllNotes(source)
+	if err != nil {
+		return err
+	}
+	for obj, newNotes := range newNotesMap {
+		if existingNotes, ok := existingNotesMap[obj]; !ok {
+			newNotes = newlyAddedNotes(existingNotes, newNotes)
+		}
+		var notesToAdd []string
+		for _, note := range newNotes {
+			notesToAdd = append(notesToAdd, string(note))
+		}
+		allNotesToAdd := strings.Join(notesToAdd, "\n")
+		if err := repo.AppendNote(destination, obj, repository.Note([]byte(allNotesToAdd))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (fork *Fork) Fetch(repo repository.Repo) error {
 	for _, url := range fork.URLS {
 		var refSpecs []string
 		for _, ref := range fork.Refs {
-			refSpecs = append(refSpecs, fmt.Sprintf("+%s:refs/forks/%s/%s", ref, fork.Name, ref))
+			localRef, err := localRefForFork(ref, fork.Name)
+			if err != nil {
+				return err
+			}
+			refSpec := fmt.Sprintf("+%s:%s", ref, localRef)
+			refSpecs = append(refSpecs, refSpec)
 		}
 		if err := repo.Fetch(url, refSpecs); err != nil {
-			return err
+			return fmt.Errorf("failure fetching from the fork: %v", err)
 		}
-		if err := fork.mergeOwnerRequests(repo); err != nil {
-			return err
+		if err := fork.filterOwnerRequests(repo); err != nil {
+			return fmt.Errorf("failure merging the review requests: %v", err)
 		}
-		if err := fork.mergeOwnerComments(repo); err != nil {
-			return err
+		if err := fork.filterOwnerComments(repo); err != nil {
+			return fmt.Errorf("failure merging the comments: %v", err)
 		}
+	}
+	return nil
+}
+
+func (fork *Fork) Merge(repo repository.Repo) error {
+	filteredForkCommentsRef, err := filteredRefForFork(comment.Ref, fork.Name)
+	if err != nil {
+		return err
+	}
+	if err := appendAllNotes(repo, comment.Ref, filteredForkCommentsRef); err != nil {
+		return err
+	}
+	filteredForkRequestsRef, err := filteredRefForFork(request.Ref, fork.Name)
+	if err != nil {
+		return err
+	}
+	if err := appendAllNotes(repo, request.Ref, filteredForkRequestsRef); err != nil {
+		return err
 	}
 	return nil
 }

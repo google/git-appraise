@@ -1102,17 +1102,17 @@ func (repo *GitRepo) PullNotesForksAndArchive(remote, notesRefPattern, forksRef,
 
 	err := repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, devtoolsFetchRefSpec)
 	if err != nil {
-		return err
+		return fmt.Errorf("failure fetching from the remote %q: %v", remote, err)
 	}
 
 	if err := repo.mergeRemoteNotes(remote, notesRefPattern); err != nil {
-		return err
+		return fmt.Errorf("failure merging notes from the remote %q: %v", remote, err)
 	}
 	if err := repo.mergeRemoteForks(remote, forksRef); err != nil {
-		return err
+		return fmt.Errorf("failure merging forks from the remote %q, %v", remote, err)
 	}
 	if err := repo.mergeRemoteArchives(remote, archiveRefPattern); err != nil {
-		return err
+		return fmt.Errorf("failure merging archives from the remote %q: %v", remote, err)
 	}
 	return nil
 }
