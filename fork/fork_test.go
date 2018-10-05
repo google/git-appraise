@@ -167,14 +167,16 @@ func TestPullingFromForks(t *testing.T) {
 		}
 	}
 
-	if _, err := localRepo.RunGitCommand("appraise", "pull", "origin"); err != nil {
-		t.Fatalf("Failed to pull the review metadata from the remote: %v", err)
-	}
-	if listed, err := localRepo.RunGitCommand("appraise", "list"); err != nil {
-		t.Errorf("Error listing the open reviews: %v", err)
-	} else if len(listed) == 0 {
-		t.Errorf("Failed to list the open reviews")
-	} else if !strings.Contains(listed, "Loaded 10 open reviews") {
-		t.Errorf("Unexpected result from listing the open reviews from forks: %q", listed)
+	for i := 0; i < 10; i++ {
+		if _, err := localRepo.RunGitCommand("appraise", "pull", "origin"); err != nil {
+			t.Fatalf("Failed to pull the review metadata from the remote: %v", err)
+		}
+		if listed, err := localRepo.RunGitCommand("appraise", "list"); err != nil {
+			t.Errorf("Error listing the open reviews: %v", err)
+		} else if len(listed) == 0 {
+			t.Errorf("Failed to list the open reviews")
+		} else if !strings.Contains(listed, "Loaded 10 open reviews") {
+			t.Errorf("Unexpected result from listing the open reviews from forks: %q", listed)
+		}
 	}
 }
