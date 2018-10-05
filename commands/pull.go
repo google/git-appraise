@@ -56,11 +56,14 @@ func pull(repo repository.Repo, args []string) error {
 		return fmt.Errorf("failure listing the forks: %v", err)
 	}
 	var g errgroup.Group
+	newlyFetchedForksChan := make(chan *fork.Fork, len(forks))
 	for _, f := range forks {
 		func(f *fork.Fork) {
 			g.Go(func() error {
-				if err := f.Fetch(repo); err != nil {
+				if newData, err := f.Fetch(repo); err != nil {
 					return fmt.Errorf("failure pulling from the fork %q: %v", f.Name, err)
+				} else if newData {
+					newlyFetchedForksChan <- f
 				}
 				return nil
 			})
@@ -69,10 +72,16 @@ func pull(repo repository.Repo, args []string) error {
 	if err := g.Wait(); err != nil {
 		return err
 	}
-	for _, f := range forks {
-		if err := f.Merge(repo); err != nil {
-			return fmt.Errorf("failure merging from the fork %q: %v", f.Name, err)
-		}
+	close(newlyFetchedForksChan)
+	if len(newlyFetchedForksChan) == 0 {
+		return nil
+	}
+	var forksWithNewData []*fork.Fork
+	for f := range newlyFetchedForksChan {
+		forksWithNewData = append(forksWithNewData, f)
+	}
+	if err := fork.MergeAll(repo, forksWithNewData); err != nil {
+		return fmt.Errorf("failure merging from the forks: %v", err)
 	}
 	return nil
 }
