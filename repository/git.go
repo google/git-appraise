@@ -239,6 +239,8 @@ func (repo GitRepo) GetCommitDetails(ref string) (*CommitDetails, error) {
 	}
 	details.Author = show("%an")
 	details.AuthorEmail = show("%ae")
+	details.Committer = show("%cn")
+	details.CommitterEmail = show("%ce")
 	details.Summary = show("%s")
 	parentsString := show("%P")
 	details.Parents = strings.Split(parentsString, " ")

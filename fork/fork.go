@@ -441,8 +441,8 @@ func (fork *Fork) filterOwnerRequests(repo repository.Repo) error {
 				// Ignore requests for unknown commits
 				return false, nil
 			}
-			if !fork.isOwner(commitDetails.AuthorEmail) {
-				// Ignore requests to review someone else's code
+			if !fork.isOwner(commitDetails.CommitterEmail) {
+				// Ignore requests to review someone else's commit
 				return false, nil
 			}
 			r, err := request.Parse(note)

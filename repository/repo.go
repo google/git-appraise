@@ -32,12 +32,14 @@ func (n Note) Hash() string {
 
 // CommitDetails represents the contents of a commit.
 type CommitDetails struct {
-	Author      string   `json:"author,omitempty"`
-	AuthorEmail string   `json:"authorEmail,omitempty"`
-	Tree        string   `json:"tree,omitempty"`
-	Time        string   `json:"time,omitempty"`
-	Parents     []string `json:"parents,omitempty"`
-	Summary     string   `json:"summary,omitempty"`
+	Author         string   `json:"author,omitempty"`
+	AuthorEmail    string   `json:"authorEmail,omitempty"`
+	Committer      string   `json:"committer,omitempty"`
+	CommitterEmail string   `json:"committerEmail,omitempty"`
+	Tree           string   `json:"tree,omitempty"`
+	Time           string   `json:"time,omitempty"`
+	Parents        []string `json:"parents,omitempty"`
+	Summary        string   `json:"summary,omitempty"`
 }
 
 type TreeChild interface {
