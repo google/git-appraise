@@ -472,11 +472,20 @@ func (fork *Fork) filterOwnerComments(repo repository.Repo) error {
 			if err != nil {
 				return false, nil
 			}
-			// TODO(ojarjur): Also support pulling comment edits from forks
-			if c.Original == "" && fork.isOwner(c.Author) {
-				return true, nil
+			if c.Original != "" {
+				// Ignore comment edits.
+				// TODO(ojarjur): Also support pulling comment edits from forks
+				return false, nil
 			}
-			return false, nil
+			if !fork.isOwner(c.Author) {
+				// Ignore comments that aren't from the repository owner.
+				return false, nil
+			}
+			if c.Location != nil && c.Location.Check(repo) != nil {
+				// Ignore comments at non-existant locations.
+				return false, nil
+			}
+			return true, nil
 		})
 }
 
