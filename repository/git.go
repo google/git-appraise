@@ -102,6 +102,12 @@ func (repo *GitRepo) GetUserEmail() (string, error) {
 	return repo.runGitCommand("config", "user.email")
 }
 
+// GetUserSigningKey returns the key id the user has configured for
+// sigining git artifacts.
+func (repo *GitRepo) GetUserSigningKey() (string, error) {
+	return repo.runGitCommand("config", "user.signingKey")
+}
+
 // GetCoreEditor returns the name of the editor that the user has used to configure git.
 func (repo *GitRepo) GetCoreEditor() (string, error) {
 	return repo.runGitCommand("var", "GIT_EDITOR")

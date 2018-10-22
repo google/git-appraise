@@ -24,6 +24,7 @@ import (
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"github.com/google/git-appraise/review/comment"
+	"github.com/google/git-appraise/review/gpg"
 )
 
 var acceptFlagSet = flag.NewFlagSet("accept", flag.ExitOnError)
@@ -31,6 +32,9 @@ var acceptFlagSet = flag.NewFlagSet("accept", flag.ExitOnError)
 var (
 	acceptMessageFile = acceptFlagSet.String("F", "", "Take the comment from the given file. Use - to read the message from the standard input")
 	acceptMessage     = acceptFlagSet.String("m", "", "Message to attach to the review")
+
+	acceptSign = acceptFlagSet.Bool("S", false,
+		"sign the contents of the acceptance")
 )
 
 // acceptReview adds an LGTM comment to the current code review.
@@ -80,6 +84,16 @@ func acceptReview(repo repository.Repo, args []string) error {
 	c := comment.New(userEmail, *acceptMessage)
 	c.Location = &location
 	c.Resolved = &resolved
+	if *acceptSign {
+		key, err := repo.GetUserSigningKey()
+		if err != nil {
+			return err
+		}
+		err = gpg.Sign(key, &c)
+		if err != nil {
+			return err
+		}
+	}
 	return r.AddComment(c)
 }
 

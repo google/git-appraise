@@ -20,10 +20,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"strings"
+
 	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
+	"github.com/google/git-appraise/review/gpg"
 	"github.com/google/git-appraise/review/request"
-	"strings"
 )
 
 // Template for the "request" subcommand's output.
@@ -44,6 +46,8 @@ var (
 	requestTarget           = requestFlagSet.String("target", "refs/heads/master", "Revision against which to review")
 	requestQuiet            = requestFlagSet.Bool("quiet", false, "Suppress review summary output")
 	requestAllowUncommitted = requestFlagSet.Bool("allow-uncommitted", false, "Allow uncommitted local changes.")
+	requestSign             = requestFlagSet.Bool("S", false,
+		"GPG sign the content of the request")
 )
 
 // Build the template review request based solely on the parsed flag values.
@@ -145,7 +149,16 @@ func requestReview(repo repository.Repo, args []string) error {
 		}
 		r.Description = description
 	}
-
+	if *requestSign {
+		key, err := repo.GetUserSigningKey()
+		if err != nil {
+			return err
+		}
+		err = gpg.Sign(key, &r)
+		if err != nil {
+			return err
+		}
+	}
 	note, err := r.Write()
 	if err != nil {
 		return err

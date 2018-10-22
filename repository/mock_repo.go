@@ -194,6 +194,12 @@ func (r *mockRepoForTest) GetRepoStateHash() (string, error) {
 // GetUserEmail returns the email address that the user has used to configure git.
 func (r *mockRepoForTest) GetUserEmail() (string, error) { return "user@example.com", nil }
 
+// GetUserSigningKey returns the key id the user has configured for
+// sigining git artifacts.
+func (r *mockRepoForTest) GetUserSigningKey() (string, error) {
+	return "gpgsig", nil
+}
+
 // GetCoreEditor returns the name of the editor that the user has used to configure git.
 func (r *mockRepoForTest) GetCoreEditor() (string, error) { return "vi", nil }
 
