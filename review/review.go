@@ -21,12 +21,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
+
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/analyses"
 	"github.com/google/git-appraise/review/ci"
 	"github.com/google/git-appraise/review/comment"
+	"github.com/google/git-appraise/review/gpg"
 	"github.com/google/git-appraise/review/request"
-	"sort"
 )
 
 const archiveRef = "refs/devtools/archives/reviews"
@@ -163,6 +165,21 @@ func (thread *CommentThread) updateResolvedStatus() {
 	thread.Resolved = resolved
 }
 
+// Verify verifies the signature on a comment.
+func (thread *CommentThread) Verify(key string) error {
+	err := gpg.Verify(key, &thread.Comment)
+	if err != nil {
+		return err
+	}
+	for _, child := range thread.Children {
+		err = child.Verify(key)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // mutableThread is an internal-only data structure used to store partially constructed comment threads.
 type mutableThread struct {
 	Hash     string
@@ -263,15 +280,18 @@ func getSummaryFromNotes(repo repository.Repo, revision string, requestNotes, co
 	return &reviewSummary, nil
 }
 
-// GetSummary returns the summary of the specified code review.
+// GetSummary returns the summary of the code review specified by its revision
+// and the references which contain that reviews summary and comments.
 //
 // If no review request exists, the returned review summary is nil.
-func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
+func GetSummaryViaRefs(repo repository.Repo, requestRef, commentRef,
+	revision string) (*Summary, error) {
+
 	if err := repo.VerifyCommit(revision); err != nil {
 		return nil, fmt.Errorf("Could not find a commit named %q", revision)
 	}
-	requestNotes := repo.GetNotes(request.Ref, revision)
-	commentNotes := repo.GetNotes(comment.Ref, revision)
+	requestNotes := repo.GetNotes(requestRef, revision)
+	commentNotes := repo.GetNotes(commentRef, revision)
 	summary, err := getSummaryFromNotes(repo, revision, requestNotes, commentNotes)
 	if err != nil {
 		return nil, err
@@ -289,6 +309,13 @@ func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
 		summary.Submitted = submitted
 	}
 	return summary, nil
+}
+
+// GetSummary returns the summary of the specified code review.
+//
+// If no review request exists, the returned review summary is nil.
+func GetSummary(repo repository.Repo, revision string) (*Summary, error) {
+	return GetSummaryViaRefs(repo, request.Ref, comment.Ref, revision)
 }
 
 // Details returns the detailed review for the given summary.
@@ -312,6 +339,18 @@ func (r *Summary) IsAbandoned() bool {
 // IsOpen returns whether or not the given review is still open (neither submitted nor abandoned).
 func (r *Summary) IsOpen() bool {
 	return !r.Submitted && !r.IsAbandoned()
+}
+
+// Verify returns whether or not a summary's comments are a) signed, and b)
+/// that those signatures are verifiable.
+func (r *Summary) Verify(key string) error {
+	for _, thread := range r.Comments {
+		err := thread.Verify(key)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Get returns the specified code review.

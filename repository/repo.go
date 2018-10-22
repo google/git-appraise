@@ -189,4 +189,18 @@ type Repo interface {
 	// we merely ensure that their history graph includes every commit that we
 	// intend to keep.
 	PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error
+
+	// MergeNotesAndArchive merges the notes and archives from `remote` into
+	// the local branch.
+	MergeNotesAndArchive(remote, notesRefPattern,
+		archiveRefPattern string) error
+
+	// FetchAndReturnNewReviewHashes fetches the notes "branches" and then
+	// susses out the IDs (the revision the review points to) of any new
+	// reviews, then returns that list of IDs.
+	//
+	// This is accomplished by determining which files in the notes tree have
+	// changed because the _names_ of these files correspond to the revisions
+	// they point to.
+	FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern string) ([]string, error)
 }

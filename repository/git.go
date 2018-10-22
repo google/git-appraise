@@ -800,6 +800,18 @@ func (repo *GitRepo) mergeRemoteArchives(remote, archiveRefPattern string) error
 	return nil
 }
 
+func (repo *GitRepo) fetchNotes(remote, notesRefPattern,
+	archiveRefPattern string) error {
+
+	remoteArchiveRef := getRemoteArchiveRef(remote, archiveRefPattern)
+	archiveFetchRefSpec := fmt.Sprintf("+%s:%s", archiveRefPattern, remoteArchiveRef)
+
+	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
+	notesFetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
+
+	return repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, archiveFetchRefSpec)
+}
+
 // PullNotesAndArchive fetches the contents of the notes and archives refs from
 // a remote repo, and merges them with the corresponding local refs.
 //
@@ -813,16 +825,19 @@ func (repo *GitRepo) mergeRemoteArchives(remote, archiveRefPattern string) error
 // we merely ensure that their history graph includes every commit that we
 // intend to keep.
 func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
-	remoteArchiveRef := getRemoteArchiveRef(remote, archiveRefPattern)
-	archiveFetchRefSpec := fmt.Sprintf("+%s:%s", archiveRefPattern, remoteArchiveRef)
-
-	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
-	notesFetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
-
-	err := repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, archiveFetchRefSpec)
+	err := repo.fetchNotes(remote, notesRefPattern, archiveRefPattern)
 	if err != nil {
 		return err
 	}
+
+	return repo.MergeNotesAndArchive(remote, notesRefPattern,
+		archiveRefPattern)
+}
+
+// MergeNotesAndArchive merges the notes and archives from `remote` into the
+// local branch.
+func (repo *GitRepo) MergeNotesAndArchive(remote, notesRefPattern,
+	archiveRefPattern string) error {
 
 	if err := repo.mergeRemoteNotes(remote, notesRefPattern); err != nil {
 		return err
@@ -831,4 +846,56 @@ func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 		return err
 	}
 	return nil
+}
+
+// FetchAndReturnNewReviewHashes fetches the notes "branches" and then susses
+// out the IDs (the revision the review points to) of any new reviews, then
+// returns that list of IDs.
+//
+// This is accomplished by determining which files in the notes tree have
+// changed because the _names_ of these files correspond to the revisions they
+// point to.
+func (repo *GitRepo) FetchAndReturnNewReviewHashes(remote, notesRefPattern,
+	archiveRefPattern string) ([]string, error) {
+
+	beforeHash, err := repo.GetCommitHash(
+		"notes/" + remote + "/devtools/reviews")
+	if err != nil {
+		// We don't have a reference for our remote yet. This is the first
+		// fetch of notes. We need to return _all_ hashes, which is to say,
+		// all the files present at where the reference
+		// `notes/<remote>/reviews' points.
+		err = repo.fetchNotes(remote, notesRefPattern, archiveRefPattern)
+		if err != nil {
+			return nil, err
+		}
+		hash, err := repo.GetCommitHash(
+			"notes/" + remote + "/devtools/reviews")
+		if err != nil {
+			return nil, err
+		}
+		rvws, err := repo.runGitCommand("ls-tree", "-r", "--name-only", hash)
+		if err != nil {
+			return nil, err
+		}
+		return strings.Split(rvws, "\n"), nil
+	}
+
+	afterHash, err := repo.GetCommitHash(
+		"notes/" + remote + "/devtools/reviews")
+	if err != nil {
+		return nil, err
+	}
+
+	// Nothing new here.
+	if beforeHash == afterHash {
+		return []string{}, nil
+	}
+
+	newReviews, err := repo.runGitCommand("diff", "--name-only", beforeHash,
+		afterHash)
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(newReviews, "\n"), nil
 }
