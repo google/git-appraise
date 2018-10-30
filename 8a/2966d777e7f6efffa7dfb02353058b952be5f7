@@ -5,3 +5,5 @@
 {"timestamp":"1540249728","author":"googlebot","description":"CLAs look good, thanks!\n\n\u003c!-- ok --\u003e"}
 
 {"timestamp":"1540339224","author":"ojarjur","description":"@pittma Thanks for taking this on!\r\n\r\nIt will take me some time to go through the full change, but I plan to give you feedback by the end of the week."}
+
+{"timestamp":"1540861036","author":"ojarjur","location":{"commit":"a632af3b751f954b23525a7ea6bfd82ac80a6e6d","path":"review/gpg/signable.go","range":{"startLine":35}},"description":"Minor typo here: This should say \"review/request.go\" instead of \"review/equest.go\""}
