@@ -419,7 +419,7 @@ func (r *mockRepoForTest) ArchiveRef(ref, archive string) error {
 //
 // The ref argument is the ref to merge, and fastForward indicates that the
 // current ref should only move forward, as opposed to creating a bubble merge.
-func (r *mockRepoForTest) MergeRef(ref string, fastForward bool, messages ...string) error {
+func (r *mockRepoForTest) MergeRef(ref string, fastForward, sign bool, messages ...string) error {
 	newCommitHash, err := r.resolveLocalRef(ref)
 	if err != nil {
 		return err
@@ -446,7 +446,7 @@ func (r *mockRepoForTest) MergeRef(ref string, fastForward bool, messages ...str
 }
 
 // RebaseRef rebases the current ref onto the given one.
-func (r *mockRepoForTest) RebaseRef(ref string) error {
+func (r *mockRepoForTest) RebaseRef(ref string, sign bool) error {
 	parentHash := r.Refs[ref]
 	origCommit, err := r.getCommit(r.Head)
 	if err != nil {
@@ -573,7 +573,15 @@ func (r *mockRepoForTest) PullNotesAndArchive(remote, notesRefPattern, archiveRe
 	return nil
 }
 
-func (repo *mockRepoForTest) MergeNotesAndArchive(remote, notesRefPattern,
+// MergeNotes merges in the remote's state of the archives reference into
+// the local repository's.
+func (repo *mockRepoForTest) MergeNotes(remote, notesRefPattern string) error {
+	return nil
+}
+
+// MergeArchives merges in the remote's state of the archives reference into
+// the local repository's.
+func (repo *mockRepoForTest) MergeArchives(remote,
 	archiveRefPattern string) error {
 	return nil
 }

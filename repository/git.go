@@ -369,12 +369,15 @@ func (repo *GitRepo) ArchiveRef(ref, archive string) error {
 // current ref should only move forward, as opposed to creating a bubble merge.
 // The messages argument(s) provide text that should be included in the default
 // merge commit message (separated by blank lines).
-func (repo *GitRepo) MergeRef(ref string, fastForward bool, messages ...string) error {
+func (repo *GitRepo) MergeRef(ref string, fastForward, sign bool, messages ...string) error {
 	args := []string{"merge"}
 	if fastForward {
 		args = append(args, "--ff", "--ff-only")
 	} else {
 		args = append(args, "--no-ff")
+	}
+	if sign {
+		args = append(args, "-S")
 	}
 	if len(messages) > 0 {
 		commitMessage := strings.Join(messages, "\n\n")
@@ -385,7 +388,10 @@ func (repo *GitRepo) MergeRef(ref string, fastForward bool, messages ...string) 
 }
 
 // RebaseRef rebases the current ref onto the given one.
-func (repo *GitRepo) RebaseRef(ref string) error {
+func (repo *GitRepo) RebaseRef(ref string, sign bool) error {
+	if sign {
+		return repo.runGitCommandInline("rebase", "-S", "-i", ref)
+	}
 	return repo.runGitCommandInline("rebase", "-i", ref)
 }
 

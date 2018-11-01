@@ -685,7 +685,7 @@ func (r *Review) AddComment(c comment.Comment) error {
 // review will be added to the 'refs/devtools/archives/reviews' ref prior
 // to being rewritten. That ensures the review history is kept from being
 // garbage collected.
-func (r *Review) Rebase(archivePrevious bool) error {
+func (r *Review) Rebase(archivePrevious, sign bool) error {
 	if archivePrevious {
 		orig, err := r.GetHeadCommit()
 		if err != nil {
@@ -698,7 +698,7 @@ func (r *Review) Rebase(archivePrevious bool) error {
 	if err := r.Repo.SwitchToRef(r.Request.ReviewRef); err != nil {
 		return err
 	}
-	if err := r.Repo.RebaseRef(r.Request.TargetRef); err != nil {
+	if err := r.Repo.RebaseRef(r.Request.TargetRef, sign); err != nil {
 		return err
 	}
 	alias, err := r.Repo.GetCommitHash("HEAD")
@@ -706,6 +706,16 @@ func (r *Review) Rebase(archivePrevious bool) error {
 		return err
 	}
 	r.Request.Alias = alias
+	if sign {
+		key, err := r.Repo.GetUserSigningKey()
+		if err != nil {
+			return err
+		}
+		err = gpg.Sign(key, &r.Request)
+		if err != nil {
+			return err
+		}
+	}
 	newNote, err := r.Request.Write()
 	if err != nil {
 		return err

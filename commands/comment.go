@@ -25,6 +25,7 @@ import (
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 	"github.com/google/git-appraise/review/comment"
+	"github.com/google/git-appraise/review/gpg"
 )
 
 var commentFlagSet = flag.NewFlagSet("comment", flag.ExitOnError)
@@ -37,6 +38,8 @@ var (
 	commentFile        = commentFlagSet.String("f", "", "File being commented upon")
 	commentLgtm        = commentFlagSet.Bool("lgtm", false, "'Looks Good To Me'. Set this to express your approval. This cannot be combined with nmw")
 	commentNmw         = commentFlagSet.Bool("nmw", false, "'Needs More Work'. Set this to express your disapproval. This cannot be combined with lgtm")
+	commentSign        = commentFlagSet.Bool("S", false,
+		"Sign the contents of the comment")
 )
 
 func init() {
@@ -129,6 +132,18 @@ func commentOnReview(repo repository.Repo, args []string) error {
 		resolved := *commentLgtm
 		c.Resolved = &resolved
 	}
+
+	if *commentSign {
+		key, err := repo.GetUserSigningKey()
+		if err != nil {
+			return err
+		}
+		err = gpg.Sign(key, &c)
+		if err != nil {
+			return err
+		}
+	}
+
 	return r.AddComment(c)
 }
 
