@@ -121,10 +121,10 @@ type Repo interface {
 	// current ref should only move forward, as opposed to creating a bubble merge.
 	// The messages argument(s) provide text that should be included in the default
 	// merge commit message (separated by blank lines).
-	MergeRef(ref string, fastForward bool, messages ...string) error
+	MergeRef(ref string, fastForward, sign bool, messages ...string) error
 
 	// RebaseRef rebases the current ref onto the given one.
-	RebaseRef(ref string) error
+	RebaseRef(ref string, sign bool) error
 
 	// ListCommits returns the list of commits reachable from the given ref.
 	//
@@ -190,10 +190,12 @@ type Repo interface {
 	// intend to keep.
 	PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error
 
-	// MergeNotesAndArchive merges the notes and archives from `remote` into
-	// the local branch.
-	MergeNotesAndArchive(remote, notesRefPattern,
-		archiveRefPattern string) error
+	// MergeNotes merges in the remote's state of the archives reference into
+	// the local repository's.
+	MergeNotes(remote, notesRefPattern string) error
+	// MergeArchives merges in the remote's state of the archives reference
+	// into the local repository's.
+	MergeArchives(remote, archiveRefPattern string) error
 
 	// FetchAndReturnNewReviewHashes fetches the notes "branches" and then
 	// susses out the IDs (the revision the review points to) of any new

@@ -750,7 +750,9 @@ func getRemoteNotesRef(remote, localNotesRef string) string {
 	return "refs/notes/" + remote + "/" + relativeNotesRef
 }
 
-func (repo *GitRepo) mergeRemoteNotes(remote, notesRefPattern string) error {
+// MergeNotes merges in the remote's state of the notes reference into the
+// local repository's.
+func (repo *GitRepo) MergeNotes(remote, notesRefPattern string) error {
 	remoteRefs, err := repo.runGitCommand("ls-remote", remote, notesRefPattern)
 	if err != nil {
 		return err
@@ -780,7 +782,7 @@ func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 		return err
 	}
 
-	return repo.mergeRemoteNotes(remote, notesRefPattern)
+	return repo.MergeNotes(remote, notesRefPattern)
 }
 
 func getRemoteArchiveRef(remote, archiveRefPattern string) string {
@@ -788,7 +790,9 @@ func getRemoteArchiveRef(remote, archiveRefPattern string) string {
 	return "refs/devtools/remoteArchives/" + remote + "/" + relativeArchiveRef
 }
 
-func (repo *GitRepo) mergeRemoteArchives(remote, archiveRefPattern string) error {
+// MergeArchives merges in the remote's state of the archives reference into
+// the local repository's.
+func (repo *GitRepo) MergeArchives(remote, archiveRefPattern string) error {
 	remoteRefs, err := repo.runGitCommand("ls-remote", remote, archiveRefPattern)
 	if err != nil {
 		return err
@@ -836,22 +840,11 @@ func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 		return err
 	}
 
-	return repo.MergeNotesAndArchive(remote, notesRefPattern,
-		archiveRefPattern)
-}
-
-// MergeNotesAndArchive merges the notes and archives from `remote` into the
-// local branch.
-func (repo *GitRepo) MergeNotesAndArchive(remote, notesRefPattern,
-	archiveRefPattern string) error {
-
-	if err := repo.mergeRemoteNotes(remote, notesRefPattern); err != nil {
+	err = repo.MergeNotes(remote, notesRefPattern)
+	if err != nil {
 		return err
 	}
-	if err := repo.mergeRemoteArchives(remote, archiveRefPattern); err != nil {
-		return err
-	}
-	return nil
+	return repo.MergeArchives(remote, archiveRefPattern)
 }
 
 // FetchAndReturnNewReviewHashes fetches the notes "branches" and then susses
@@ -887,6 +880,10 @@ func (repo *GitRepo) FetchAndReturnNewReviewHashes(remote, notesRefPattern,
 		return strings.Split(rvws, "\n"), nil
 	}
 
+	err = repo.fetchNotes(remote, notesRefPattern, archiveRefPattern)
+	if err != nil {
+		return nil, err
+	}
 	afterHash, err := repo.GetCommitHash(
 		"notes/" + remote + "/devtools/reviews")
 	if err != nil {

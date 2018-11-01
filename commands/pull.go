@@ -79,8 +79,11 @@ func pull(repo repository.Repo, args []string) error {
 		fmt.Println("verified review:", revision)
 	}
 
-	return repo.MergeNotesAndArchive(remote, notesRefPattern,
-		archiveRefPattern)
+	err = repo.MergeNotes(remote, notesRefPattern)
+	if err != nil {
+		return err
+	}
+	return repo.MergeArchives(remote, archiveRefPattern)
 }
 
 var pullCmd = &Command{

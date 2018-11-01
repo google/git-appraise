@@ -31,7 +31,7 @@ type Signable interface {
 
 // Signature is `Sig`'s implementation of `Signable`. Through this function, an
 // object which needs to implement `Signable` need only embed `Sig`
-// anonymously. See, e.g., review/equest.go.
+// anonymously. See, e.g., review/request.go.
 func (s *Sig) Signature() *string {
 	return &s.Sig
 }
@@ -78,6 +78,8 @@ func Verify(key string, s Signable) error {
 	sig := *sigPtr
 	// Overwrite the value with the placeholder.
 	*sigPtr = placeholder
+
+	defer func() { *sigPtr = sig }()
 
 	// 1. Marshal the content into JSON.
 	// 2. Write the signature and the content to temp files.
