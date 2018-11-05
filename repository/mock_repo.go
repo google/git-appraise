@@ -419,7 +419,7 @@ func (r *mockRepoForTest) ArchiveRef(ref, archive string) error {
 //
 // The ref argument is the ref to merge, and fastForward indicates that the
 // current ref should only move forward, as opposed to creating a bubble merge.
-func (r *mockRepoForTest) MergeRef(ref string, fastForward, sign bool, messages ...string) error {
+func (r *mockRepoForTest) MergeRef(ref string, fastForward bool, messages ...string) error {
 	newCommitHash, err := r.resolveLocalRef(ref)
 	if err != nil {
 		return err
@@ -445,8 +445,18 @@ func (r *mockRepoForTest) MergeRef(ref string, fastForward, sign bool, messages 
 	return nil
 }
 
+// MergeAndSignRef merges the given ref into the current one and signs the
+// merge.
+//
+// The ref argument is the ref to merge, and fastForward indicates that the
+// current ref should only move forward, as opposed to creating a bubble merge.
+func (r *mockRepoForTest) MergeAndSignRef(ref string, fastForward bool,
+	messages ...string) error {
+	return nil
+}
+
 // RebaseRef rebases the current ref onto the given one.
-func (r *mockRepoForTest) RebaseRef(ref string, sign bool) error {
+func (r *mockRepoForTest) RebaseRef(ref string) error {
 	parentHash := r.Refs[ref]
 	origCommit, err := r.getCommit(r.Head)
 	if err != nil {
@@ -465,6 +475,10 @@ func (r *mockRepoForTest) RebaseRef(ref string, sign bool) error {
 	}
 	return nil
 }
+
+// RebaseAndSignRef rebases the current ref onto the given one and signs the
+// result.
+func (r *mockRepoForTest) RebaseAndSignRef(ref string) error { return nil }
 
 // ListCommits returns the list of commits reachable from the given ref.
 //

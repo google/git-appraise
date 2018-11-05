@@ -121,10 +121,23 @@ type Repo interface {
 	// current ref should only move forward, as opposed to creating a bubble merge.
 	// The messages argument(s) provide text that should be included in the default
 	// merge commit message (separated by blank lines).
-	MergeRef(ref string, fastForward, sign bool, messages ...string) error
+	MergeRef(ref string, fastForward bool, messages ...string) error
+
+	// MergeAndSignRef merges the given ref into the current one and signs the
+	// merge.
+	//
+	// The ref argument is the ref to merge, and fastForward indicates that the
+	// current ref should only move forward, as opposed to creating a bubble merge.
+	// The messages argument(s) provide text that should be included in the default
+	// merge commit message (separated by blank lines).
+	MergeAndSignRef(ref string, fastForward bool, messages ...string) error
 
 	// RebaseRef rebases the current ref onto the given one.
-	RebaseRef(ref string, sign bool) error
+	RebaseRef(ref string) error
+
+	// RebaseAndSignRef rebases the current ref onto the given one and signs
+	// the result.
+	RebaseAndSignRef(ref string) error
 
 	// ListCommits returns the list of commits reachable from the given ref.
 	//

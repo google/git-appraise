@@ -166,13 +166,14 @@ func (thread *CommentThread) updateResolvedStatus() {
 }
 
 // Verify verifies the signature on a comment.
-func (thread *CommentThread) Verify(key string) error {
-	err := gpg.Verify(key, &thread.Comment)
+func (thread *CommentThread) Verify() error {
+	err := gpg.Verify(&thread.Comment)
 	if err != nil {
-		return err
+		hash, _ := thread.Comment.Hash()
+		return fmt.Errorf("verification of comment [%s] failed: %s", hash, err)
 	}
 	for _, child := range thread.Children {
-		err = child.Verify(key)
+		err = child.Verify()
 		if err != nil {
 			return err
 		}
@@ -343,9 +344,14 @@ func (r *Summary) IsOpen() bool {
 
 // Verify returns whether or not a summary's comments are a) signed, and b)
 /// that those signatures are verifiable.
-func (r *Summary) Verify(key string) error {
+func (r *Summary) Verify() error {
+	err := gpg.Verify(&r.Request)
+	if err != nil {
+		return fmt.Errorf("couldn't verify request targeting: %q: %s",
+			r.Request.TargetRef, err)
+	}
 	for _, thread := range r.Comments {
-		err := thread.Verify(key)
+		err := thread.Verify()
 		if err != nil {
 			return err
 		}
@@ -698,9 +704,17 @@ func (r *Review) Rebase(archivePrevious, sign bool) error {
 	if err := r.Repo.SwitchToRef(r.Request.ReviewRef); err != nil {
 		return err
 	}
-	if err := r.Repo.RebaseRef(r.Request.TargetRef, sign); err != nil {
+
+	var err error
+	if sign {
+		err = r.Repo.RebaseAndSignRef(r.Request.TargetRef)
+	} else {
+		err = r.Repo.RebaseRef(r.Request.TargetRef)
+	}
+	if err != nil {
 		return err
 	}
+
 	alias, err := r.Repo.GetCommitHash("HEAD")
 	if err != nil {
 		return err

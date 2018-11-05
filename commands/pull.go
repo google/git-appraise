@@ -61,10 +61,6 @@ func pull(repo repository.Repo, args []string) error {
 	if err != nil {
 		return err
 	}
-	key, err := repo.GetUserSigningKey()
-	if err != nil {
-		return err
-	}
 	for _, revision := range revisions {
 		rvw, err := review.GetSummaryViaRefs(repo,
 			"refs/notes/"+remote+"/devtools/reviews",
@@ -72,7 +68,7 @@ func pull(repo repository.Repo, args []string) error {
 		if err != nil {
 			return err
 		}
-		err = rvw.Verify(key)
+		err = rvw.Verify()
 		if err != nil {
 			return err
 		}

@@ -122,10 +122,19 @@ func submitReview(repo repository.Repo, args []string) error {
 	}
 	if *submitMerge {
 		submitMessage := fmt.Sprintf("Submitting review %.12s", r.Revision)
-		return repo.MergeRef(source, false, *submitSign, submitMessage,
-			r.Request.Description)
+		if *submitSign {
+			return repo.MergeAndSignRef(source, false, submitMessage,
+				r.Request.Description)
+		} else {
+			return repo.MergeRef(source, false, submitMessage,
+				r.Request.Description)
+		}
 	} else {
-		return repo.MergeRef(source, true, *submitSign)
+		if *submitSign {
+			return repo.MergeAndSignRef(source, true)
+		} else {
+			return repo.MergeRef(source, true)
+		}
 	}
 }
 

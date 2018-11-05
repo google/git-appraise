@@ -785,7 +785,7 @@ func TestRebase(t *testing.T) {
 	if err := repo.SwitchToRef(pendingReview.Request.TargetRef); err != nil {
 		t.Fatal(err)
 	}
-	if err := repo.MergeRef(pendingReview.Request.ReviewRef, true, false); err != nil {
+	if err := repo.MergeRef(pendingReview.Request.ReviewRef, true); err != nil {
 		t.Fatal(err)
 	}
 
@@ -851,7 +851,7 @@ func TestRebaseDetachedHead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := repo.MergeRef(reviewHead, true, false); err != nil {
+	if err := repo.MergeRef(reviewHead, true); err != nil {
 		t.Fatal(err)
 	}
 
