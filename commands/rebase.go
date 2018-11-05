@@ -82,7 +82,10 @@ func rebaseReview(repo repository.Repo, args []string) error {
 	if err != nil {
 		return err
 	}
-	return r.Rebase(*rebaseArchive, *rebaseSign)
+	if *rebaseSign {
+		return r.RebaseAndSign(*rebaseArchive)
+	}
+	return r.Rebase(*rebaseArchive)
 }
 
 // rebaseCmd defines the "rebase" subcommand.

@@ -108,9 +108,16 @@ func submitReview(repo repository.Repo, args []string) error {
 	}
 
 	if *submitRebase {
-		if err := r.Rebase(*submitArchive, *submitSign); err != nil {
+		var err error
+		if *submitSign {
+			err = r.RebaseAndSign(*submitArchive)
+		} else {
+			err = r.Rebase(*submitArchive)
+		}
+		if err != nil {
 			return err
 		}
+
 		source, err = r.GetHeadCommit()
 		if err != nil {
 			return err
@@ -122,10 +129,19 @@ func submitReview(repo repository.Repo, args []string) error {
 	}
 	if *submitMerge {
 		submitMessage := fmt.Sprintf("Submitting review %.12s", r.Revision)
-		return repo.MergeRef(source, false, *submitSign, submitMessage,
-			r.Request.Description)
+		if *submitSign {
+			return repo.MergeAndSignRef(source, false, submitMessage,
+				r.Request.Description)
+		} else {
+			return repo.MergeRef(source, false, submitMessage,
+				r.Request.Description)
+		}
 	} else {
-		return repo.MergeRef(source, true, *submitSign)
+		if *submitSign {
+			return repo.MergeAndSignRef(source, true)
+		} else {
+			return repo.MergeRef(source, true)
+		}
 	}
 }
 

@@ -751,7 +751,7 @@ func TestRebase(t *testing.T) {
 	}
 
 	// Rebase the review and then confirm that it has been updated correctly.
-	if err := pendingReview.Rebase(true, false); err != nil {
+	if err := pendingReview.Rebase(true); err != nil {
 		t.Fatal(err)
 	}
 	reviewJSON, err := pendingReview.GetJSON()
@@ -785,7 +785,7 @@ func TestRebase(t *testing.T) {
 	if err := repo.SwitchToRef(pendingReview.Request.TargetRef); err != nil {
 		t.Fatal(err)
 	}
-	if err := repo.MergeRef(pendingReview.Request.ReviewRef, true, false); err != nil {
+	if err := repo.MergeRef(pendingReview.Request.ReviewRef, true); err != nil {
 		t.Fatal(err)
 	}
 
@@ -825,7 +825,7 @@ func TestRebaseDetachedHead(t *testing.T) {
 	}
 
 	// Rebase the review and then confirm that it has been updated correctly.
-	if err := pendingReview.Rebase(true, false); err != nil {
+	if err := pendingReview.Rebase(true); err != nil {
 		t.Fatal(err)
 	}
 	headRef, err := repo.GetHeadRef()
@@ -851,7 +851,7 @@ func TestRebaseDetachedHead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := repo.MergeRef(reviewHead, true, false); err != nil {
+	if err := repo.MergeRef(reviewHead, true); err != nil {
 		t.Fatal(err)
 	}
 

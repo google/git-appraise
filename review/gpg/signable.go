@@ -5,6 +5,7 @@ package gpg
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -71,7 +72,7 @@ func signContent(key string, content []byte) (*bytes.Buffer,
 
 // Verify verifies the signatures on the request and its comments with the
 // given key.
-func Verify(key string, s Signable) error {
+func Verify(s Signable) error {
 	// Retrieve the pointer.
 	sigPtr := s.Signature()
 	// Copy its contents.
@@ -117,10 +118,12 @@ func Verify(key string, s Signable) error {
 	}
 
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("gpg", "-u", key, "--verify", sigFile.Name(),
-		contentFile.Name())
+	cmd := exec.Command("gpg", "--verify", sigFile.Name(), contentFile.Name())
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err = cmd.Run()
-	return err
+	if err != nil {
+		return fmt.Errorf("%s", stderr.String())
+	}
+	return nil
 }
