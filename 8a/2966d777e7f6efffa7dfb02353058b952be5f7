@@ -15,3 +15,5 @@
 {"timestamp":"1541092394","author":"pittma","location":{"commit":"a632af3b751f954b23525a7ea6bfd82ac80a6e6d","path":"review/gpg/signable.go","range":{"startLine":81}},"description":"Whew. Seriously good point :smile:."}
 
 {"timestamp":"1541191712","author":"ojarjur","location":{"commit":"fe1cb670a7c65902a658a60f86a709d6cd2f5733","path":"repository/git.go","range":{"startLine":877}},"description":"I tried this command and it shows the object names with slashes (git-notes can be divided into subdirectories with the path parts taken from the SHA1 hash of the noted object).\r\n\r\nI think we need to remove the slashes from all of the strings in the slice before returning."}
+
+{"timestamp":"1541193600","author":"ojarjur","location":{"commit":"fe1cb670a7c65902a658a60f86a709d6cd2f5733","path":"repository/git.go","range":{"startLine":899}},"description":"I really like this approach for finding what notes have changed, but I think we also need to drop any slashes from the result."}
