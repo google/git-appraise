@@ -11,3 +11,5 @@
 {"timestamp":"1540861364","author":"ojarjur","location":{"commit":"a632af3b751f954b23525a7ea6bfd82ac80a6e6d","path":"review/gpg/signable.go","range":{"startLine":81}},"description":"I think maybe we should add a defer statement here to set the value of `*sigPtr` back to `sig` prior to the method returning."}
 
 {"timestamp":"1540861448","author":"ojarjur","location":{"commit":"a632af3b751f954b23525a7ea6bfd82ac80a6e6d","path":"repository/repo.go","range":{"startLine":196}},"description":"I wonder if we should split this in to two separate methods; `MergeNotes` and `MergeArchives`. The reason is that we will soon want to add something like `MergeForks`, and maybe even `MergeKeys`, and we don't want to have to combine all of those together into a single method name."}
+
+{"timestamp":"1541092394","author":"pittma","location":{"commit":"a632af3b751f954b23525a7ea6bfd82ac80a6e6d","path":"review/gpg/signable.go","range":{"startLine":81}},"description":"Whew. Seriously good point :smile:."}
