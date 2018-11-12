@@ -29,6 +29,8 @@ var rebaseFlagSet = flag.NewFlagSet("rebase", flag.ExitOnError)
 
 var (
 	rebaseArchive = rebaseFlagSet.Bool("archive", true, "Prevent the original commit from being garbage collected.")
+	rebaseSign    = rebaseFlagSet.Bool("S", false,
+		"Sign the contents of the request after the rebase")
 )
 
 // Validate that the user's request to rebase a review makes sense.
@@ -79,6 +81,9 @@ func rebaseReview(repo repository.Repo, args []string) error {
 	r, err := validateRebaseRequest(repo, args)
 	if err != nil {
 		return err
+	}
+	if *rebaseSign {
+		return r.RebaseAndSign(*rebaseArchive)
 	}
 	return r.Rebase(*rebaseArchive)
 }

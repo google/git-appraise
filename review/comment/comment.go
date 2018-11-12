@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/google/git-appraise/repository"
+	"github.com/google/git-appraise/review/gpg"
 )
 
 // Ref defines the git-notes ref that we expect to contain review comments.
@@ -118,6 +119,8 @@ type Comment struct {
 	Resolved *bool `json:"resolved,omitempty"`
 	// Version represents the version of the metadata format.
 	Version int `json:"v,omitempty"`
+
+	gpg.Sig
 }
 
 // New returns a new comment with the given description message.

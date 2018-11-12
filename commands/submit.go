@@ -32,6 +32,9 @@ var (
 	submitFastForward = submitFlagSet.Bool("fast-forward", false, "Create a merge using the default fast-forward mode.")
 	submitTBR         = submitFlagSet.Bool("tbr", false, "(To be reviewed) Force the submission of a review that has not been accepted.")
 	submitArchive     = submitFlagSet.Bool("archive", true, "Prevent the original commit from being garbage collected; only affects rebased submits.")
+
+	submitSign = submitFlagSet.Bool("S", false,
+		"Sign the contents of the submission")
 )
 
 // Submit the current code review request.
@@ -105,9 +108,16 @@ func submitReview(repo repository.Repo, args []string) error {
 	}
 
 	if *submitRebase {
-		if err := r.Rebase(*submitArchive); err != nil {
+		var err error
+		if *submitSign {
+			err = r.RebaseAndSign(*submitArchive)
+		} else {
+			err = r.Rebase(*submitArchive)
+		}
+		if err != nil {
 			return err
 		}
+
 		source, err = r.GetHeadCommit()
 		if err != nil {
 			return err
@@ -119,9 +129,19 @@ func submitReview(repo repository.Repo, args []string) error {
 	}
 	if *submitMerge {
 		submitMessage := fmt.Sprintf("Submitting review %.12s", r.Revision)
-		return repo.MergeRef(source, false, submitMessage, r.Request.Description)
+		if *submitSign {
+			return repo.MergeAndSignRef(source, false, submitMessage,
+				r.Request.Description)
+		} else {
+			return repo.MergeRef(source, false, submitMessage,
+				r.Request.Description)
+		}
 	} else {
-		return repo.MergeRef(source, true)
+		if *submitSign {
+			return repo.MergeAndSignRef(source, true)
+		} else {
+			return repo.MergeRef(source, true)
+		}
 	}
 }
 

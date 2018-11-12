@@ -194,6 +194,12 @@ func (r *mockRepoForTest) GetRepoStateHash() (string, error) {
 // GetUserEmail returns the email address that the user has used to configure git.
 func (r *mockRepoForTest) GetUserEmail() (string, error) { return "user@example.com", nil }
 
+// GetUserSigningKey returns the key id the user has configured for
+// sigining git artifacts.
+func (r *mockRepoForTest) GetUserSigningKey() (string, error) {
+	return "gpgsig", nil
+}
+
 // GetCoreEditor returns the name of the editor that the user has used to configure git.
 func (r *mockRepoForTest) GetCoreEditor() (string, error) { return "vi", nil }
 
@@ -439,6 +445,16 @@ func (r *mockRepoForTest) MergeRef(ref string, fastForward bool, messages ...str
 	return nil
 }
 
+// MergeAndSignRef merges the given ref into the current one and signs the
+// merge.
+//
+// The ref argument is the ref to merge, and fastForward indicates that the
+// current ref should only move forward, as opposed to creating a bubble merge.
+func (r *mockRepoForTest) MergeAndSignRef(ref string, fastForward bool,
+	messages ...string) error {
+	return nil
+}
+
 // RebaseRef rebases the current ref onto the given one.
 func (r *mockRepoForTest) RebaseRef(ref string) error {
 	parentHash := r.Refs[ref]
@@ -459,6 +475,10 @@ func (r *mockRepoForTest) RebaseRef(ref string) error {
 	}
 	return nil
 }
+
+// RebaseAndSignRef rebases the current ref onto the given one and signs the
+// result.
+func (r *mockRepoForTest) RebaseAndSignRef(ref string) error { return nil }
 
 // ListCommits returns the list of commits reachable from the given ref.
 //
@@ -565,4 +585,29 @@ func (r *mockRepoForTest) PushNotesAndArchive(remote, notesRefPattern, archiveRe
 // intend to keep.
 func (r *mockRepoForTest) PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
 	return nil
+}
+
+// MergeNotes merges in the remote's state of the archives reference into
+// the local repository's.
+func (repo *mockRepoForTest) MergeNotes(remote, notesRefPattern string) error {
+	return nil
+}
+
+// MergeArchives merges in the remote's state of the archives reference into
+// the local repository's.
+func (repo *mockRepoForTest) MergeArchives(remote,
+	archiveRefPattern string) error {
+	return nil
+}
+
+// FetchAndReturnNewReviewHashes fetches the notes "branches" and then susses
+// out the IDs (the revision the review points to) of any new reviews, then
+// returns that list of IDs.
+//
+// This is accomplished by determining which files in the notes tree have
+// changed because the _names_ of these files correspond to the revisions they
+// point to.
+func (repo *mockRepoForTest) FetchAndReturnNewReviewHashes(remote, notesRefPattern,
+	archiveRefPattern string) ([]string, error) {
+	return nil, nil
 }

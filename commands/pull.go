@@ -18,30 +18,73 @@ package commands
 
 import (
 	"errors"
+	"flag"
 	"fmt"
+
 	"github.com/google/git-appraise/repository"
+	"github.com/google/git-appraise/review"
 )
 
-// pull updates the local git-notes used for reviews with those from a remote repo.
+var (
+	pullFlagSet = flag.NewFlagSet("pull", flag.ExitOnError)
+	pullVerify  = pullFlagSet.Bool("verify-signatures", false,
+		"verify the signatures of pulled reviews")
+)
+
+// pull updates the local git-notes used for reviews with those from a remote
+// repo.
 func pull(repo repository.Repo, args []string) error {
-	if len(args) > 1 {
-		return errors.New("Only pulling from one remote at a time is supported.")
+	pullFlagSet.Parse(args)
+	pullArgs := pullFlagSet.Args()
+
+	if len(pullArgs) > 1 {
+		return errors.New(
+			"Only pulling from one remote at a time is supported.")
 	}
 
 	remote := "origin"
-	if len(args) == 1 {
-		remote = args[0]
+	if len(pullArgs) == 1 {
+		remote = pullArgs[0]
+	}
+	// This is the easy case. We're not checking signatures so just go the
+	// normal route.
+	if !*pullVerify {
+		return repo.PullNotesAndArchive(remote, notesRefPattern,
+			archiveRefPattern)
 	}
 
-	if err := repo.PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern); err != nil {
+	// Otherwise, we collect the fetched reviewed revisions (their hashes), get
+	// their reviews, and then one by one, verify them. If we make it through
+	// the set, _then_ we merge the remote reference into the local branch.
+	revisions, err := repo.FetchAndReturnNewReviewHashes(remote,
+		notesRefPattern, archiveRefPattern)
+	if err != nil {
 		return err
 	}
-	return nil
+	for _, revision := range revisions {
+		rvw, err := review.GetSummaryViaRefs(repo,
+			"refs/notes/"+remote+"/devtools/reviews",
+			"refs/notes/"+remote+"/devtools/discuss", revision)
+		if err != nil {
+			return err
+		}
+		err = rvw.Verify()
+		if err != nil {
+			return err
+		}
+		fmt.Println("verified review:", revision)
+	}
+
+	err = repo.MergeNotes(remote, notesRefPattern)
+	if err != nil {
+		return err
+	}
+	return repo.MergeArchives(remote, archiveRefPattern)
 }
 
 var pullCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s pull [<remote>]\n", arg0)
+		fmt.Printf("Usage: %s pull [<option>] [<remote>]\n", arg0)
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {
 		return pull(repo, args)
