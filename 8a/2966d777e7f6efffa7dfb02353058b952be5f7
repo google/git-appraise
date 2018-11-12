@@ -25,3 +25,5 @@
 {"timestamp":"1541195565","author":"ojarjur","location":{"commit":"fe1cb670a7c65902a658a60f86a709d6cd2f5733","path":"review/review.go","range":{"startLine":173}},"description":"Let's wrap this error with a message explaining which comment could not be verified.\r\n\r\nOtherwise, the user will not know how to act on the error message they see."}
 
 {"timestamp":"1541197922","author":"ojarjur","location":{"commit":"fe1cb670a7c65902a658a60f86a709d6cd2f5733","path":"review/review.go","range":{"startLine":354}},"description":"I think we need to verify the review request too."}
+
+{"timestamp":"1541198411","author":"ojarjur","location":{"commit":"fe1cb670a7c65902a658a60f86a709d6cd2f5733","path":"review/gpg/signable.go","range":{"startLine":75}},"description":"Is \"key\" required here? I haven't used gpg yet so my knowledge of it is very superficial, but it looks like the `--verify` command just takes the document and the signature.\r\n\r\nThis is important as the key we have is the user's key, but the requests/comments will be signed by other users."}
