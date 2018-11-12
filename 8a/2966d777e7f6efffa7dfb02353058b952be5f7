@@ -29,3 +29,5 @@
 {"timestamp":"1541198411","author":"ojarjur","location":{"commit":"fe1cb670a7c65902a658a60f86a709d6cd2f5733","path":"review/gpg/signable.go","range":{"startLine":75}},"description":"Is \"key\" required here? I haven't used gpg yet so my knowledge of it is very superficial, but it looks like the `--verify` command just takes the document and the signature.\r\n\r\nThis is important as the key we have is the user's key, but the requests/comments will be signed by other users."}
 
 {"timestamp":"1541727134","author":"ojarjur","location":{"commit":"90ece46475f9a9e4010afe6f5ed5ea0793404fbe","path":"review/review.go","range":{"startLine":695}},"description":"Can you please add a RebaseAndSign method here similarly to how you added for the Repo interface?\r\n\r\nThat will both prevent backwards-incompatible changes, and also keep the Review API consistent with the Repo API.\r\n\r\nThe current method body could just be a helper that both `Rebase` and `RebaseAndSign` invoke."}
+
+{"timestamp":"1541790904","author":"pittma","location":{"commit":"90ece46475f9a9e4010afe6f5ed5ea0793404fbe","path":"review/review.go","range":{"startLine":695}},"description":"On it!"}
