@@ -311,9 +311,6 @@ type Repo interface {
 	// they point to.
 	FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern string) ([]string, error)
 
-	// PushNotesForksAndArchive pushes the given notes, forks, and archive refs to a remote repo.
-	PushNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error
-
 	// PullNotesForksAndArchive fetches the contents of the notes, forks, and archives
 	// refs from  a remote repo, and merges them with the corresponding local refs.
 	//
@@ -330,4 +327,7 @@ type Repo interface {
 	// we merely ensure that their history graph includes every commit that we
 	// intend to keep.
 	PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error
+
+	// Push pushes the given refs to a remote repo.
+	Push(remote string, refPattern ...string) error
 }

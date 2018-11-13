@@ -663,11 +663,6 @@ func (r *mockRepoForTest) FetchAndReturnNewReviewHashes(remote, notesRefPattern,
 	return nil, nil
 }
 
-// PushNotesForksAndArchive pushes the given notes, forks, and archive refs to a remote repo.
-func (r *mockRepoForTest) PushNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
-	return nil
-}
-
 // PullNotesForksAndArchive fetches the contents of the notes, forks, and archives
 // refs from  a remote repo, and merges them with the corresponding local refs.
 //
@@ -684,5 +679,10 @@ func (r *mockRepoForTest) PushNotesForksAndArchive(remote, notesRefPattern, fork
 // we merely ensure that their history graph includes every commit that we
 // intend to keep.
 func (r *mockRepoForTest) PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
+	return nil
+}
+
+// Push pushes the given refs to a remote repo.
+func (r *mockRepoForTest) Push(remote string, refPattern ...string) error {
 	return nil
 }

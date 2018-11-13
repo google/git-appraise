@@ -953,23 +953,6 @@ func (repo *GitRepo) PushNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 	return nil
 }
 
-// PushNotesForksAndArchive pushes the given notes, forks, and archive refs to a remote repo.
-func (repo *GitRepo) PushNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
-	if !strings.HasPrefix(forksRef, devtoolsRefPrefix) {
-		return fmt.Errorf("Unsupported forks ref: %q", forksRef)
-	}
-	if !strings.HasPrefix(archiveRefPattern, devtoolsRefPrefix) {
-		return fmt.Errorf("Unsupported archive ref pattern: %q", archiveRefPattern)
-	}
-	notesRefspec := fmt.Sprintf("%s:%s", notesRefPattern, notesRefPattern)
-	devtoolsRefspec := fmt.Sprintf("+%s*:%s*", devtoolsRefPrefix, devtoolsRefPrefix)
-	err := repo.runGitCommandInline("push", remote, notesRefspec, devtoolsRefspec)
-	if err != nil {
-		return fmt.Errorf("Failed to push the local notes, forks, and archive to the remote '%s': %v", remote, err)
-	}
-	return nil
-}
-
 func getRemoteNotesRef(remote, localNotesRef string) string {
 	relativeNotesRef := strings.TrimPrefix(localNotesRef, "refs/notes/")
 	return "refs/notes/remotes/" + remote + "/" + relativeNotesRef
@@ -1273,6 +1256,16 @@ func (repo *GitRepo) PullNotesForksAndArchive(remote, notesRefPattern, forksRef,
 	}
 	if err := repo.MergeArchives(remote, archiveRefPattern); err != nil {
 		return fmt.Errorf("failure merging archives from the remote %q: %v", remote, err)
+	}
+	return nil
+}
+
+// Push pushes the given refs to a remote repo.
+func (repo *GitRepo) Push(remote string, refSpecs ...string) error {
+	pushArgs := append([]string{"push", remote}, refSpecs...)
+	err := repo.runGitCommandInline(pushArgs...)
+	if err != nil {
+		return fmt.Errorf("Failed to push the local refs to the remote '%s': %v", remote, err)
 	}
 	return nil
 }

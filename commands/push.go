@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/git-appraise/fork"
 	"github.com/google/git-appraise/repository"
 )
 
@@ -35,10 +34,9 @@ func push(repo repository.Repo, args []string) error {
 		remote = args[0]
 	}
 
-	if err := repo.PushNotesForksAndArchive(remote, notesRefPattern, fork.Ref, archiveRefPattern); err != nil {
-		return err
-	}
-	return nil
+	notesRefspec := fmt.Sprintf("%s:%s", notesRefPattern, notesRefPattern)
+	devtoolsRefspec := fmt.Sprintf("+%s*:%s*", devtoolsRefPattern, devtoolsRefPattern)
+	return repo.Push(remote, notesRefspec, devtoolsRefspec)
 }
 
 var pushCmd = &Command{
