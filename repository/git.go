@@ -119,6 +119,12 @@ func (repo *GitRepo) GetUserEmail() (string, error) {
 	return repo.runGitCommand("config", "user.email")
 }
 
+// GetUserSigningKey returns the key id the user has configured for
+// sigining git artifacts.
+func (repo *GitRepo) GetUserSigningKey() (string, error) {
+	return repo.runGitCommand("config", "user.signingKey")
+}
+
 // GetCoreEditor returns the name of the editor that the user has used to configure git.
 func (repo *GitRepo) GetCoreEditor() (string, error) {
 	return repo.runGitCommand("var", "GIT_EDITOR")
@@ -405,9 +411,39 @@ func (repo *GitRepo) MergeRef(ref string, fastForward bool, messages ...string) 
 	return repo.runGitCommandInline(args...)
 }
 
+// MergeAndSignRef merges the given ref into the current one and signs the
+// merge.
+//
+// The ref argument is the ref to merge, and fastForward indicates that the
+// current ref should only move forward, as opposed to creating a bubble merge.
+// The messages argument(s) provide text that should be included in the default
+// merge commit message (separated by blank lines).
+func (repo *GitRepo) MergeAndSignRef(ref string, fastForward bool,
+	messages ...string) error {
+
+	args := []string{"merge"}
+	if fastForward {
+		args = append(args, "--ff", "--ff-only", "-S")
+	} else {
+		args = append(args, "--no-ff", "-S")
+	}
+	if len(messages) > 0 {
+		commitMessage := strings.Join(messages, "\n\n")
+		args = append(args, "-e", "-m", commitMessage)
+	}
+	args = append(args, ref)
+	return repo.runGitCommandInline(args...)
+}
+
 // RebaseRef rebases the current ref onto the given one.
 func (repo *GitRepo) RebaseRef(ref string) error {
 	return repo.runGitCommandInline("rebase", "-i", ref)
+}
+
+// RebaseAndSignRef rebases the current ref onto the given one and signs the
+// result.
+func (repo *GitRepo) RebaseAndSignRef(ref string) error {
+	return repo.runGitCommandInline("rebase", "-S", "-i", ref)
 }
 
 // ListCommits returns the list of commits reachable from the given ref.
@@ -939,7 +975,9 @@ func getRemoteNotesRef(remote, localNotesRef string) string {
 	return "refs/notes/remotes/" + remote + "/" + relativeNotesRef
 }
 
-func (repo *GitRepo) mergeRemoteNotes(remote, notesRefPattern string) error {
+// MergeNotes merges in the remote's state of the notes reference into the
+// local repository's.
+func (repo *GitRepo) MergeNotes(remote, notesRefPattern string) error {
 	remoteRefs, err := repo.runGitCommand("ls-remote", remote, notesRefPattern)
 	if err != nil {
 		return err
@@ -969,7 +1007,7 @@ func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 		return err
 	}
 
-	return repo.mergeRemoteNotes(remote, notesRefPattern)
+	return repo.MergeNotes(remote, notesRefPattern)
 }
 
 func getRemoteDevtoolsRef(remote, devtoolsRefPattern string) string {
@@ -977,7 +1015,9 @@ func getRemoteDevtoolsRef(remote, devtoolsRefPattern string) string {
 	return "refs/remoteDevtools/" + remote + "/" + relativeRef
 }
 
-func (repo *GitRepo) mergeRemoteArchives(remote, archiveRefPattern string) error {
+// MergeArchives merges in the remote's state of the archives reference into
+// the local repository's.
+func (repo *GitRepo) MergeArchives(remote, archiveRefPattern string) error {
 	remoteRefs, err := repo.runGitCommand("ls-remote", remote, archiveRefPattern)
 	if err != nil {
 		return err
@@ -995,6 +1035,18 @@ func (repo *GitRepo) mergeRemoteArchives(remote, archiveRefPattern string) error
 	return nil
 }
 
+func (repo *GitRepo) fetchNotes(remote, notesRefPattern,
+	archiveRefPattern string) error {
+
+	remoteArchiveRef := getRemoteDevtoolsRef(remote, archiveRefPattern)
+	archiveFetchRefSpec := fmt.Sprintf("+%s:%s", archiveRefPattern, remoteArchiveRef)
+
+	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
+	notesFetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
+
+	return repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, archiveFetchRefSpec)
+}
+
 // PullNotesAndArchive fetches the contents of the notes and archives refs from
 // a remote repo, and merges them with the corresponding local refs.
 //
@@ -1008,27 +1060,133 @@ func (repo *GitRepo) mergeRemoteArchives(remote, archiveRefPattern string) error
 // we merely ensure that their history graph includes every commit that we
 // intend to keep.
 func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
-	remoteArchiveRef := getRemoteDevtoolsRef(remote, archiveRefPattern)
-	archiveFetchRefSpec := fmt.Sprintf("+%s:%s", archiveRefPattern, remoteArchiveRef)
-
-	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
-	notesFetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
-
-	err := repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, archiveFetchRefSpec)
-	if err != nil {
+	if err := repo.fetchNotes(remote, notesRefPattern, archiveRefPattern); err != nil {
 		return err
 	}
-
-	if err := repo.mergeRemoteNotes(remote, notesRefPattern); err != nil {
+	if err := repo.MergeNotes(remote, notesRefPattern); err != nil {
 		return err
 	}
-	if err := repo.mergeRemoteArchives(remote, archiveRefPattern); err != nil {
-		return err
-	}
-	return nil
+	return repo.MergeArchives(remote, archiveRefPattern)
 }
 
-func (repo *GitRepo) mergeRemoteForks(remote, forksRef string) error {
+// FetchAndReturnNewReviewHashes fetches the notes "branches" and then susses
+// out the IDs (the revision the review points to) of any new reviews, then
+// returns that list of IDs.
+//
+// This is accomplished by determining which files in the notes tree have
+// changed because the _names_ of these files correspond to the revisions they
+// point to.
+func (repo *GitRepo) FetchAndReturnNewReviewHashes(remote, notesRefPattern,
+	archiveRefPattern string) ([]string, error) {
+
+	// Record the current state of the reviews and comments refs.
+	var (
+		getAllRevs, getAllComs    bool
+		reviewsList, commentsList []string
+	)
+	reviewBeforeHash, err := repo.GetCommitHash(
+		"notes/" + remote + "/devtools/reviews")
+	getAllRevs = err != nil
+
+	commentBeforeHash, err := repo.GetCommitHash(
+		"notes/" + remote + "/devtools/discuss")
+	getAllComs = err != nil
+
+	// Update them from the remote.
+	err = repo.fetchNotes(remote, notesRefPattern, archiveRefPattern)
+	if err != nil {
+		return nil, err
+	}
+
+	// Now, if either of these are new refs, we just use the whole tree at that
+	// new ref. Otherwise we see which reviews or comments changed and collect
+	// them into a list.
+	if getAllRevs {
+		hash, err := repo.GetCommitHash(
+			"notes/" + remote + "/devtools/reviews")
+		// It is possible that even after we've pulled that this ref still
+		// isn't present (because there are no reviews yet).
+		if err == nil {
+			rvws, err := repo.runGitCommand("ls-tree", "-r", "--name-only",
+				hash)
+			if err != nil {
+				return nil, err
+			}
+			reviewsList = strings.Split(strings.Replace(rvws, "/", "", -1),
+				"\n")
+		}
+	} else {
+		reviewAfterHash, err := repo.GetCommitHash(
+			"notes/" + remote + "/devtools/reviews")
+		if err != nil {
+			return nil, err
+		}
+
+		// Only run through this if the fetch fetched new revisions.
+		// Otherwise leave reviewsList as its default value, an empty slice
+		// of strings.
+		if reviewBeforeHash != reviewAfterHash {
+			newReviewsRaw, err := repo.runGitCommand("diff", "--name-only",
+				reviewBeforeHash, reviewAfterHash)
+			if err != nil {
+				return nil, err
+			}
+			reviewsList = strings.Split(strings.Replace(newReviewsRaw,
+				"/", "", -1), "\n")
+		}
+	}
+
+	if getAllComs {
+		hash, err := repo.GetCommitHash(
+			"notes/" + remote + "/devtools/discuss")
+		// It is possible that even after we've pulled that this ref still
+		// isn't present (because there are no comments yet).
+		if err == nil {
+			rvws, err := repo.runGitCommand("ls-tree", "-r", "--name-only",
+				hash)
+			if err != nil {
+				return nil, err
+			}
+			commentsList = strings.Split(strings.Replace(rvws, "/", "", -1),
+				"\n")
+		}
+	} else {
+		commentAfterHash, err := repo.GetCommitHash(
+			"notes/" + remote + "/devtools/discuss")
+		if err != nil {
+			return nil, err
+		}
+
+		// Only run through this if the fetch fetched new revisions.
+		// Otherwise leave commentsList as its default value, an empty slice
+		// of strings.
+		if commentBeforeHash != commentAfterHash {
+			newCommentsRaw, err := repo.runGitCommand("diff", "--name-only",
+				commentBeforeHash, commentAfterHash)
+			if err != nil {
+				return nil, err
+			}
+			commentsList = strings.Split(strings.Replace(newCommentsRaw,
+				"/", "", -1), "\n")
+		}
+	}
+
+	// Now that we have our two lists, we need to merge them.
+	updatedReviewSet := make(map[string]struct{})
+	for _, hash := range append(reviewsList, commentsList...) {
+		updatedReviewSet[hash] = struct{}{}
+	}
+
+	updatedReviews := make([]string, 0, len(updatedReviewSet))
+	for key, _ := range updatedReviewSet {
+		updatedReviews = append(updatedReviews, key)
+	}
+	return updatedReviews, nil
+}
+
+// MergeForks merges in the remote's state of the forks reference
+// into the local repository's.
+func (repo *GitRepo) MergeForks(remote, forksRef string) error {
 	remoteRef := getRemoteDevtoolsRef(remote, forksRef)
 	hasRemote, err := repo.HasRef(remoteRef)
 	if err != nil {
@@ -1107,13 +1265,13 @@ func (repo *GitRepo) PullNotesForksAndArchive(remote, notesRefPattern, forksRef,
 		return fmt.Errorf("failure fetching from the remote %q: %v", remote, err)
 	}
 
-	if err := repo.mergeRemoteNotes(remote, notesRefPattern); err != nil {
+	if err := repo.MergeNotes(remote, notesRefPattern); err != nil {
 		return fmt.Errorf("failure merging notes from the remote %q: %v", remote, err)
 	}
-	if err := repo.mergeRemoteForks(remote, forksRef); err != nil {
+	if err := repo.MergeForks(remote, forksRef); err != nil {
 		return fmt.Errorf("failure merging forks from the remote %q, %v", remote, err)
 	}
-	if err := repo.mergeRemoteArchives(remote, archiveRefPattern); err != nil {
+	if err := repo.MergeArchives(remote, archiveRefPattern); err != nil {
 		return fmt.Errorf("failure merging archives from the remote %q: %v", remote, err)
 	}
 	return nil

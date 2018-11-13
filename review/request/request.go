@@ -19,9 +19,11 @@ package request
 
 import (
 	"encoding/json"
-	"github.com/google/git-appraise/repository"
 	"strconv"
 	"time"
+
+	"github.com/google/git-appraise/repository"
+	"github.com/google/git-appraise/review/gpg"
 )
 
 // Ref defines the git-notes ref that we expect to contain review requests.
@@ -53,6 +55,8 @@ type Request struct {
 	// Alias stores a post-rebase commit ID for the review. This allows the tool
 	// to track the history of a review even if the commit history changes.
 	Alias string `json:"alias,omitempty"`
+
+	gpg.Sig
 }
 
 // New returns a new request.

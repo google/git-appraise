@@ -23,34 +23,18 @@ import (
 
 	"github.com/google/git-appraise/fork"
 	"github.com/google/git-appraise/repository"
+	"github.com/google/git-appraise/review"
 	"golang.org/x/sync/errgroup"
 )
 
 var (
-	pullFlagSet      = flag.NewFlagSet("pull", flag.ExitOnError)
+	pullFlagSet = flag.NewFlagSet("pull", flag.ExitOnError)
+	pullVerify  = pullFlagSet.Bool("verify-signatures", false,
+		"verify the signatures of pulled reviews")
 	pullIncludeForks = pullFlagSet.Bool("include-forks", true, "Also pull reviews and comments from forks.")
 )
 
-// pull updates the local git-notes used for reviews with those from a remote repo.
-func pull(repo repository.Repo, args []string) error {
-	pullFlagSet.Parse(args)
-	args = pullFlagSet.Args()
-
-	if len(args) > 1 {
-		return errors.New("Only pulling from one remote at a time is supported.")
-	}
-
-	remote := "origin"
-	if len(args) == 1 {
-		remote = args[0]
-	}
-
-	if !*pullIncludeForks {
-		return repo.PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern)
-	}
-	if err := repo.PullNotesForksAndArchive(remote, notesRefPattern, fork.Ref, archiveRefPattern); err != nil {
-		return fmt.Errorf("failure pulling review metadata from the remote %q: %v", remote, err)
-	}
+func pullFromForks(repo repository.Repo) error {
 	forks, err := fork.List(repo)
 	if err != nil {
 		return fmt.Errorf("failure listing the forks: %v", err)
@@ -84,6 +68,68 @@ func pull(repo repository.Repo, args []string) error {
 		return fmt.Errorf("failure merging from the forks: %v", err)
 	}
 	return nil
+}
+
+// pull updates the local git-notes used for reviews with those from a remote
+// repo.
+func pull(repo repository.Repo, args []string) error {
+	pullFlagSet.Parse(args)
+	pullArgs := pullFlagSet.Args()
+
+	if len(pullArgs) > 1 {
+		return errors.New(
+			"Only pulling from one remote at a time is supported.")
+	}
+
+	remote := "origin"
+	if len(pullArgs) == 1 {
+		remote = pullArgs[0]
+	}
+
+	if !*pullVerify {
+		if !*pullIncludeForks {
+			return repo.PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern)
+		}
+		if err := repo.PullNotesForksAndArchive(remote, notesRefPattern, fork.Ref, archiveRefPattern); err != nil {
+			return fmt.Errorf("failure pulling review metadata from the remote %q: %v", remote, err)
+		}
+		return pullFromForks(repo)
+	}
+
+	// We collect the fetched reviewed revisions (their hashes), get
+	// their reviews, and then one by one, verify them. If we make it through
+	// the set, _then_ we merge the remote reference into the local branch.
+	revisions, err := repo.FetchAndReturnNewReviewHashes(remote,
+		notesRefPattern, archiveRefPattern)
+	if err != nil {
+		return err
+	}
+	for _, revision := range revisions {
+		rvw, err := review.GetSummaryViaRefs(repo,
+			"refs/notes/"+remote+"/devtools/reviews",
+			"refs/notes/"+remote+"/devtools/discuss", revision)
+		if err != nil {
+			return err
+		}
+		err = rvw.Verify()
+		if err != nil {
+			return err
+		}
+		fmt.Println("verified review:", revision)
+	}
+	if err := repo.MergeNotes(remote, notesRefPattern); err != nil {
+		return err
+	}
+	if err := repo.MergeArchives(remote, archiveRefPattern); err != nil {
+		return err
+	}
+	if !*pullIncludeForks {
+		return nil
+	}
+	if err := repo.MergeForks(remote, fork.Ref); err != nil {
+		return err
+	}
+	return pullFromForks(repo)
 }
 
 var pullCmd = &Command{

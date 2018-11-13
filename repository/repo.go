@@ -100,6 +100,10 @@ type Repo interface {
 	// GetUserEmail returns the email address that the user has used to configure git.
 	GetUserEmail() (string, error)
 
+	// GetUserSigningKey returns the key id the user has configured for
+	// sigining git artifacts.
+	GetUserSigningKey() (string, error)
+
 	// GetCoreEditor returns the name of the editor that the user has used to configure git.
 	GetCoreEditor() (string, error)
 
@@ -181,8 +185,21 @@ type Repo interface {
 	// merge commit message (separated by blank lines).
 	MergeRef(ref string, fastForward bool, messages ...string) error
 
+	// MergeAndSignRef merges the given ref into the current one and signs the
+	// merge.
+	//
+	// The ref argument is the ref to merge, and fastForward indicates that the
+	// current ref should only move forward, as opposed to creating a bubble merge.
+	// The messages argument(s) provide text that should be included in the default
+	// merge commit message (separated by blank lines).
+	MergeAndSignRef(ref string, fastForward bool, messages ...string) error
+
 	// RebaseRef rebases the current ref onto the given one.
 	RebaseRef(ref string) error
+
+	// RebaseAndSignRef rebases the current ref onto the given one and signs
+	// the result.
+	RebaseAndSignRef(ref string) error
 
 	// ListCommits returns the list of commits reachable from the given ref.
 	//
@@ -272,6 +289,27 @@ type Repo interface {
 	// we merely ensure that their history graph includes every commit that we
 	// intend to keep.
 	PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error
+
+	// MergeNotes merges in the remote's state of the archives reference into
+	// the local repository's.
+	MergeNotes(remote, notesRefPattern string) error
+
+	// MergeArchives merges in the remote's state of the archives reference
+	// into the local repository's.
+	MergeArchives(remote, archiveRefPattern string) error
+
+	// MergeForks merges in the remote's state of the forks reference
+	// into the local repository's.
+	MergeForks(remote, forksRef string) error
+
+	// FetchAndReturnNewReviewHashes fetches the notes "branches" and then
+	// susses out the IDs (the revision the review points to) of any new
+	// reviews, then returns that list of IDs.
+	//
+	// This is accomplished by determining which files in the notes tree have
+	// changed because the _names_ of these files correspond to the revisions
+	// they point to.
+	FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern string) ([]string, error)
 
 	// PushNotesForksAndArchive pushes the given notes, forks, and archive refs to a remote repo.
 	PushNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error
