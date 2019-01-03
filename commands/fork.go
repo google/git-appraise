@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	addForkFlagSet = flag.NewFlagSet("addFork", flag.ExitOnError)
+	addForkFlagSet = flag.NewFlagSet("fork add", flag.ExitOnError)
 	addForkOwners  = addForkFlagSet.String("o", "", "Comma-separated list of owner email addresses")
 )
 
