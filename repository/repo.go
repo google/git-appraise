@@ -309,7 +309,7 @@ type Repo interface {
 	// This is accomplished by determining which files in the notes tree have
 	// changed because the _names_ of these files correspond to the revisions
 	// they point to.
-	FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern string) ([]string, error)
+	FetchAndReturnNewReviewHashes(remote, notesRefPattern string, devtoolsRefPatterns ...string) ([]string, error)
 
 	// PullNotesForksAndArchive fetches the contents of the notes, forks, and archives
 	// refs from  a remote repo, and merges them with the corresponding local refs.
@@ -326,7 +326,10 @@ type Repo interface {
 	// so we do not maintain any consistency with their tree objects. Instead,
 	// we merely ensure that their history graph includes every commit that we
 	// intend to keep.
-	PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error
+	//
+	// The returned slice contains a list of all objects for which new notes were
+	// fetched from the remote.
+	PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) ([]string, error)
 
 	// Push pushes the given refs to a remote repo.
 	Push(remote string, refPattern ...string) error

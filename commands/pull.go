@@ -34,7 +34,7 @@ var (
 	pullIncludeForks = pullFlagSet.Bool("include-forks", true, "Also pull reviews and comments from forks.")
 )
 
-func pullFromForks(repo repository.Repo) error {
+func pullFromForks(repo repository.Repo, verifySignatures bool) error {
 	forks, err := fork.List(repo)
 	if err != nil {
 		return fmt.Errorf("failure listing the forks: %v", err)
@@ -44,7 +44,7 @@ func pullFromForks(repo repository.Repo) error {
 	for _, f := range forks {
 		func(f *fork.Fork) {
 			g.Go(func() error {
-				if newData, err := f.Fetch(repo); err != nil {
+				if newData, err := f.Fetch(repo, verifySignatures); err != nil {
 					return fmt.Errorf("failure pulling from the fork %q: %v", f.Name, err)
 				} else if newData {
 					newlyFetchedForksChan <- f
@@ -77,8 +77,7 @@ func pull(repo repository.Repo, args []string) error {
 	pullArgs := pullFlagSet.Args()
 
 	if len(pullArgs) > 1 {
-		return errors.New(
-			"Only pulling from one remote at a time is supported.")
+		return errors.New("Only pulling from one remote at a time is supported.")
 	}
 
 	remote := "origin"
@@ -86,21 +85,20 @@ func pull(repo repository.Repo, args []string) error {
 		remote = pullArgs[0]
 	}
 
+	if !*pullVerify && !*pullIncludeForks {
+		return repo.PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern)
+	}
 	if !*pullVerify {
-		if !*pullIncludeForks {
-			return repo.PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern)
-		}
-		if err := repo.PullNotesForksAndArchive(remote, notesRefPattern, fork.Ref, archiveRefPattern); err != nil {
+		if _, err := repo.PullNotesForksAndArchive(remote, notesRefPattern, fork.Ref, archiveRefPattern); err != nil {
 			return fmt.Errorf("failure pulling review metadata from the remote %q: %v", remote, err)
 		}
-		return pullFromForks(repo)
+		return pullFromForks(repo, *pullVerify)
 	}
 
 	// We collect the fetched reviewed revisions (their hashes), get
 	// their reviews, and then one by one, verify them. If we make it through
 	// the set, _then_ we merge the remote reference into the local branch.
-	revisions, err := repo.FetchAndReturnNewReviewHashes(remote,
-		notesRefPattern, archiveRefPattern)
+	revisions, err := repo.FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern)
 	if err != nil {
 		return err
 	}
@@ -129,7 +127,7 @@ func pull(repo repository.Repo, args []string) error {
 	if err := repo.MergeForks(remote, fork.Ref); err != nil {
 		return err
 	}
-	return pullFromForks(repo)
+	return pullFromForks(repo, *pullVerify)
 }
 
 var pullCmd = &Command{

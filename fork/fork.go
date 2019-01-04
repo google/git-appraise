@@ -34,6 +34,7 @@ import (
 
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/comment"
+	"github.com/google/git-appraise/review/gpg"
 	"github.com/google/git-appraise/review/request"
 	"golang.org/x/sync/errgroup"
 )
@@ -350,23 +351,21 @@ func filterNewNotes(repo repository.Repo, destinationRef, sourceRef string, allo
 	if len(sourceNotesMap) == 0 {
 		return nil, nil
 	}
-	destinationNotesMap, err := repo.GetAllNotes(destinationRef)
-	if err != nil {
-		// Assume this means the destination ref does not exist
-		return sourceNotesMap, nil
-	}
 	existingNoteHashesMap := make(map[string]map[string]struct{})
-	for obj, notes := range destinationNotesMap {
-		existingNoteHashes := make(map[string]struct{})
-		existingNoteHashesMap[obj] = existingNoteHashes
-		for _, note := range notes {
-			existingNoteHashes[note.Hash()] = struct{}{}
+	destinationNotesMap, err := repo.GetAllNotes(destinationRef)
+	if err == nil {
+		// Assume the opposite just means the destination ref does not exist
+		for obj, notes := range destinationNotesMap {
+			existingNoteHashes := make(map[string]struct{})
+			existingNoteHashesMap[obj] = existingNoteHashes
+			for _, note := range notes {
+				existingNoteHashes[note.Hash()] = struct{}{}
+			}
 		}
 	}
 	newNotesMap := make(map[string][]repository.Note)
 	for obj, objNotes := range sourceNotesMap {
-		existingNoteHashes, ok := existingNoteHashesMap[obj]
-		if ok {
+		if existingNoteHashes, ok := existingNoteHashesMap[obj]; ok {
 			var newNotes []repository.Note
 			for _, note := range objNotes {
 				if len(note) == 0 {
@@ -375,19 +374,24 @@ func filterNewNotes(repo repository.Repo, destinationRef, sourceRef string, allo
 				if _, ok := existingNoteHashes[note.Hash()]; ok {
 					continue
 				}
-				if allow == nil {
-					newNotes = append(newNotes, note)
-				} else if isAllowed, err := allow(obj, note); err != nil {
-					return nil, err
-				} else if isAllowed {
-					newNotes = append(newNotes, note)
-				}
+				newNotes = append(newNotes, note)
 			}
 			objNotes = newNotes
 		}
-		if len(objNotes) > 0 {
-			newNotesMap[obj] = objNotes
+		var filteredNotes []repository.Note
+		for _, note := range objNotes {
+			if allow == nil {
+				filteredNotes = append(filteredNotes, note)
+			} else if isAllowed, err := allow(obj, note); err != nil {
+				return nil, err
+			} else if isAllowed {
+				filteredNotes = append(filteredNotes, note)
+			}
 		}
+		if len(filteredNotes) > 0 {
+			newNotesMap[obj] = filteredNotes
+		}
+
 	}
 	return newNotesMap, nil
 }
@@ -424,7 +428,7 @@ func mergeNewFilteredNotes(repo repository.Repo, destinationRef, sourceRef, merg
 	return createMergeCommit(repo, destinationRef, mergeMessage, parentCommits...)
 }
 
-func (fork *Fork) filterOwnerRequests(repo repository.Repo) error {
+func (fork *Fork) filterOwnerRequests(repo repository.Repo, verifySignatures bool) error {
 	forkRequestsRef, err := localRefForFork(request.Ref, fork.Name)
 	if err != nil {
 		return err
@@ -449,14 +453,21 @@ func (fork *Fork) filterOwnerRequests(repo repository.Repo) error {
 			if err != nil {
 				return false, nil
 			}
-			if fork.isOwner(r.Requester) {
+			if !fork.isOwner(r.Requester) {
+				return false, nil
+			}
+			if !verifySignatures {
 				return true, nil
 			}
-			return false, nil
+			if err := gpg.Verify(&r); err != nil {
+				// Ignore requests that do not have a verified signature
+				return false, nil
+			}
+			return true, nil
 		})
 }
 
-func (fork *Fork) filterOwnerComments(repo repository.Repo) error {
+func (fork *Fork) filterOwnerComments(repo repository.Repo, verifySignatures bool) error {
 	forkCommentsRef, err := localRefForFork(comment.Ref, fork.Name)
 	if err != nil {
 		return err
@@ -485,6 +496,13 @@ func (fork *Fork) filterOwnerComments(repo repository.Repo) error {
 				// Ignore comments at non-existant locations.
 				return false, nil
 			}
+			if !verifySignatures {
+				return true, nil
+			}
+			if err := gpg.Verify(&c); err != nil {
+				// Ignore comments that do not have a verified signature
+				return false, nil
+			}
 			return true, nil
 		})
 }
@@ -507,7 +525,7 @@ func appendAllNotes(repo repository.Repo, destination string, sources ...string)
 	return nil
 }
 
-func (fork *Fork) Fetch(repo repository.Repo) (bool, error) {
+func (fork *Fork) Fetch(repo repository.Repo, verifySignatures bool) (bool, error) {
 	initialHash, err := repo.GetRepoStateHash()
 	if err != nil {
 		return false, err
@@ -532,13 +550,13 @@ func (fork *Fork) Fetch(repo repository.Repo) (bool, error) {
 		}
 		var g errgroup.Group
 		g.Go(func() error {
-			if err := fork.filterOwnerRequests(repo); err != nil {
+			if err := fork.filterOwnerRequests(repo, verifySignatures); err != nil {
 				return fmt.Errorf("failure merging the review requests: %v", err)
 			}
 			return nil
 		})
 		g.Go(func() error {
-			if err := fork.filterOwnerComments(repo); err != nil {
+			if err := fork.filterOwnerComments(repo, verifySignatures); err != nil {
 				return fmt.Errorf("failure merging the comments: %v", err)
 			}
 			return nil

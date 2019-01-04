@@ -659,7 +659,7 @@ func (r *mockRepoForTest) MergeForks(remote, forksRef string) error {
 // This is accomplished by determining which files in the notes tree have
 // changed because the _names_ of these files correspond to the revisions they
 // point to.
-func (r *mockRepoForTest) FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern string) ([]string, error) {
+func (r *mockRepoForTest) FetchAndReturnNewReviewHashes(remote, notesRefPattern string, devtoolsRefPatterns ...string) ([]string, error) {
 	return nil, nil
 }
 
@@ -678,8 +678,8 @@ func (r *mockRepoForTest) FetchAndReturnNewReviewHashes(remote, notesRefPattern,
 // so we do not maintain any consistency with their tree objects. Instead,
 // we merely ensure that their history graph includes every commit that we
 // intend to keep.
-func (r *mockRepoForTest) PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) error {
-	return nil
+func (r *mockRepoForTest) PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) ([]string, error) {
+	return nil, nil
 }
 
 // Push pushes the given refs to a remote repo.
