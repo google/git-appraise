@@ -953,27 +953,50 @@ func (repo *GitRepo) PushNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 	return nil
 }
 
+func (repo *GitRepo) getRefHashes(refPattern string) (map[string]string, error) {
+	if !strings.HasSuffix(refPattern, "/*") {
+		return nil, fmt.Errorf("unsupported ref pattern %q", refPattern)
+	}
+	refPrefix := strings.TrimSuffix(refPattern, "*")
+	showRef, err := repo.runGitCommand("show-ref")
+	if err != nil {
+		return nil, err
+	}
+	refsMap := make(map[string]string)
+	for _, line := range strings.Split(showRef, "\n") {
+		lineParts := strings.Split(line, " ")
+		if len(lineParts) != 2 {
+			return nil, fmt.Errorf("unexpected line in output of `git show-ref`: %q", line)
+		}
+		if strings.HasPrefix(lineParts[1], refPrefix) {
+			refsMap[lineParts[1]] = lineParts[0]
+		}
+	}
+	return refsMap, nil
+}
+
 func getRemoteNotesRef(remote, localNotesRef string) string {
 	relativeNotesRef := strings.TrimPrefix(localNotesRef, "refs/notes/")
 	return "refs/notes/remotes/" + remote + "/" + relativeNotesRef
 }
 
+func getLocalNotesRef(remote, remoteNotesRef string) string {
+	relativeNotesRef := strings.TrimPrefix(remoteNotesRef, "refs/notes/remotes/"+remote+"/")
+	return "refs/notes/" + relativeNotesRef
+}
+
 // MergeNotes merges in the remote's state of the notes reference into the
 // local repository's.
 func (repo *GitRepo) MergeNotes(remote, notesRefPattern string) error {
-	remoteRefs, err := repo.runGitCommand("ls-remote", remote, notesRefPattern)
+	remoteRefPattern := getRemoteNotesRef(remote, notesRefPattern)
+	refsMap, err := repo.getRefHashes(remoteRefPattern)
 	if err != nil {
 		return err
 	}
-	for _, line := range strings.Split(remoteRefs, "\n") {
-		lineParts := strings.Split(line, "\t")
-		if len(lineParts) == 2 {
-			ref := lineParts[1]
-			remoteRef := getRemoteNotesRef(remote, ref)
-			_, err := repo.runGitCommand("notes", "--ref", ref, "merge", remoteRef, "-s", "cat_sort_uniq")
-			if err != nil {
-				return err
-			}
+	for remoteRef := range refsMap {
+		localRef := getLocalNotesRef(remote, remoteRef)
+		if _, err := repo.runGitCommand("notes", "--ref", localRef, "merge", remoteRef, "-s", "cat_sort_uniq"); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -998,46 +1021,26 @@ func getRemoteDevtoolsRef(remote, devtoolsRefPattern string) string {
 	return "refs/remoteDevtools/" + remote + "/" + relativeRef
 }
 
+func getLocalDevtoolsRef(remote, remoteDevtoolsRef string) string {
+	relativeRef := strings.TrimPrefix(remoteDevtoolsRef, "refs/remoteDevtools/"+remote+"/")
+	return "refs/devtools/" + relativeRef
+}
+
 // MergeArchives merges in the remote's state of the archives reference into
 // the local repository's.
 func (repo *GitRepo) MergeArchives(remote, archiveRefPattern string) error {
-	remoteRefs, err := repo.runGitCommand("ls-remote", remote, archiveRefPattern)
+	remoteRefPattern := getRemoteDevtoolsRef(remote, archiveRefPattern)
+	refsMap, err := repo.getRefHashes(remoteRefPattern)
 	if err != nil {
 		return err
 	}
-	for _, line := range strings.Split(remoteRefs, "\n") {
-		lineParts := strings.Split(line, "\t")
-		if len(lineParts) == 2 {
-			ref := lineParts[1]
-			remoteRef := getRemoteDevtoolsRef(remote, ref)
-			if err := repo.mergeArchives(ref, remoteRef); err != nil {
-				return err
-			}
+	for remoteRef := range refsMap {
+		localRef := getLocalDevtoolsRef(remote, remoteRef)
+		if err := repo.mergeArchives(localRef, remoteRef); err != nil {
+			return err
 		}
 	}
 	return nil
-}
-
-func (repo *GitRepo) getRefHashes(refPattern string) (map[string]string, error) {
-	if !strings.HasSuffix(refPattern, "/*") {
-		return nil, fmt.Errorf("unsupported ref pattern %q", refPattern)
-	}
-	refPrefix := strings.TrimSuffix(refPattern, "*")
-	showRef, err := repo.runGitCommand("show-ref")
-	if err != nil {
-		return nil, err
-	}
-	refsMap := make(map[string]string)
-	for _, line := range strings.Split(showRef, "\n") {
-		lineParts := strings.Split(line, " ")
-		if len(lineParts) != 2 {
-			return nil, fmt.Errorf("unexpected line in output of `git show-ref`: %q", line)
-		}
-		if strings.HasPrefix(lineParts[1], refPrefix) {
-			refsMap[lineParts[1]] = lineParts[0]
-		}
-	}
-	return refsMap, nil
 }
 
 // FetchAndReturnNewReviewHashes fetches the notes "branches" and then susses
