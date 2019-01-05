@@ -595,3 +595,39 @@ func MergeAll(repo repository.Repo, forks []*Fork) error {
 	}
 	return nil
 }
+
+func Pull(repo repository.Repo, verifySignatures bool) error {
+	forks, err := List(repo)
+	if err != nil {
+		return fmt.Errorf("failure listing the forks: %v", err)
+	}
+	var g errgroup.Group
+	newlyFetchedForksChan := make(chan *Fork, len(forks))
+	for _, f := range forks {
+		func(f *Fork) {
+			g.Go(func() error {
+				if newData, err := f.Fetch(repo, verifySignatures); err != nil {
+					return fmt.Errorf("failure pulling from the fork %q: %v", f.Name, err)
+				} else if newData {
+					newlyFetchedForksChan <- f
+				}
+				return nil
+			})
+		}(f)
+	}
+	if err := g.Wait(); err != nil {
+		return err
+	}
+	close(newlyFetchedForksChan)
+	if len(newlyFetchedForksChan) == 0 {
+		return nil
+	}
+	var forksWithNewData []*Fork
+	for f := range newlyFetchedForksChan {
+		forksWithNewData = append(forksWithNewData, f)
+	}
+	if err := MergeAll(repo, forksWithNewData); err != nil {
+		return fmt.Errorf("failure merging from the forks: %v", err)
+	}
+	return nil
+}

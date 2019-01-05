@@ -24,7 +24,6 @@ import (
 	"github.com/google/git-appraise/fork"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
-	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -33,42 +32,6 @@ var (
 		"verify the signatures of pulled reviews")
 	pullIncludeForks = pullFlagSet.Bool("include-forks", true, "Also pull reviews and comments from forks.")
 )
-
-func pullFromForks(repo repository.Repo, verifySignatures bool) error {
-	forks, err := fork.List(repo)
-	if err != nil {
-		return fmt.Errorf("failure listing the forks: %v", err)
-	}
-	var g errgroup.Group
-	newlyFetchedForksChan := make(chan *fork.Fork, len(forks))
-	for _, f := range forks {
-		func(f *fork.Fork) {
-			g.Go(func() error {
-				if newData, err := f.Fetch(repo, verifySignatures); err != nil {
-					return fmt.Errorf("failure pulling from the fork %q: %v", f.Name, err)
-				} else if newData {
-					newlyFetchedForksChan <- f
-				}
-				return nil
-			})
-		}(f)
-	}
-	if err := g.Wait(); err != nil {
-		return err
-	}
-	close(newlyFetchedForksChan)
-	if len(newlyFetchedForksChan) == 0 {
-		return nil
-	}
-	var forksWithNewData []*fork.Fork
-	for f := range newlyFetchedForksChan {
-		forksWithNewData = append(forksWithNewData, f)
-	}
-	if err := fork.MergeAll(repo, forksWithNewData); err != nil {
-		return fmt.Errorf("failure merging from the forks: %v", err)
-	}
-	return nil
-}
 
 // pull updates the local git-notes used for reviews with those from a remote
 // repo.
@@ -92,7 +55,7 @@ func pull(repo repository.Repo, args []string) error {
 		if _, err := repo.PullNotesForksAndArchive(remote, notesRefPattern, fork.Ref, archiveRefPattern); err != nil {
 			return fmt.Errorf("failure pulling review metadata from the remote %q: %v", remote, err)
 		}
-		return pullFromForks(repo, *pullVerify)
+		return fork.Pull(repo, *pullVerify)
 	}
 
 	// We collect the fetched reviewed revisions (their hashes), get
@@ -127,7 +90,7 @@ func pull(repo repository.Repo, args []string) error {
 	if err := repo.MergeForks(remote, fork.Ref); err != nil {
 		return err
 	}
-	return pullFromForks(repo, *pullVerify)
+	return fork.Pull(repo, *pullVerify)
 }
 
 var pullCmd = &Command{
