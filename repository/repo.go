@@ -218,4 +218,7 @@ type Repo interface {
 	// changed because the _names_ of these files correspond to the revisions
 	// they point to.
 	FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern string) ([]string, error)
+
+	GetColorBool(name string) bool
+	GetColor(name, default_value string) string
 }

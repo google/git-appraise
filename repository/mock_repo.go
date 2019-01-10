@@ -611,3 +611,11 @@ func (repo *mockRepoForTest) FetchAndReturnNewReviewHashes(remote, notesRefPatte
 	archiveRefPattern string) ([]string, error) {
 	return nil, nil
 }
+
+func (repo *mockRepoForTest) GetColorBool(name string) bool {
+	return false
+}
+
+func (repo *mockRepoForTest) GetColor(name, default_value string) string {
+	return ""
+}

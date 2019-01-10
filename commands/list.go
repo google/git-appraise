@@ -57,7 +57,7 @@ func listReviews(repo repository.Repo, args []string) error {
 		return nil
 	}
 	for _, r := range reviews {
-		output.PrintSummary(&r)
+		output.PrintSummary(&r, &repo)
 	}
 	return nil
 }

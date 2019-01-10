@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 )
 
@@ -52,6 +53,15 @@ status: %s
 	// Number of lines of context to print for inline comments
 	contextLineCount = 5
 )
+var default_color = map[string]string{
+	"tbr": "red white bold blink",
+	"pending": "cyan",
+	"submitted": "yellow",
+	"accepted": "green",
+	"danger": "yellow red bold blink",
+	"abandon": "magenta",
+	"rejected": "yellow red bold strike",
+}
 
 // getStatusString returns a human friendly string encapsulating both the review's
 // resolved status, and its submitted status.
@@ -78,10 +88,29 @@ func getStatusString(r *review.Summary) string {
 }
 
 // PrintSummary prints a single-line summary of a review.
-func PrintSummary(r *review.Summary) {
+func PrintSummary(r *review.Summary, repo *repository.Repo) {
+	var use_color bool = false
+
+	if repo != nil {
+		use_color = (*repo).GetColorBool("color.appraise")
+	}
+
 	statusString := getStatusString(r)
 	indentedDescription := strings.Replace(r.Request.Description, "\n", "\n  ", -1)
-	fmt.Printf(reviewSummaryTemplate, statusString, r.Revision, indentedDescription)
+
+	var colorOn string = ""
+	var colorOff string = ""
+	if use_color {
+		defaultColor, _ := default_color[statusString]
+		colorOn = (*repo).GetColor(
+			fmt.Sprintf("color.appraise.%s", statusString),
+			defaultColor,
+		)
+		colorOff = "\033[00m"
+	}
+	coloredStatusString := fmt.Sprintf("%s%s%s", colorOn, statusString, colorOff)
+
+	fmt.Printf(reviewSummaryTemplate, coloredStatusString, r.Revision, indentedDescription)
 }
 
 // reformatTimestamp takes a timestamp string of the form "0123456789" and changes it
@@ -184,7 +213,7 @@ func printComments(r *review.Review) error {
 
 // PrintDetails prints a multi-line overview of a review, including all comments.
 func PrintDetails(r *review.Review) error {
-	PrintSummary(r.Summary)
+	PrintSummary(r.Summary, nil)
 	fmt.Printf(reviewDetailsTemplate, r.Request.ReviewRef, r.Request.TargetRef,
 		strings.Join(r.Request.Reviewers, ", "),
 		r.Request.Requester, r.GetBuildStatusMessage())
