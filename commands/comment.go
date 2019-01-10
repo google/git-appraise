@@ -43,7 +43,13 @@ var (
 )
 
 func init() {
-	commentFlagSet.Var(&commentLocation, "l", "File location be commented upon; requires that the -f flag also be set")
+	commentFlagSet.Var(&commentLocation, "l",
+		`File location be commented upon; requires that the -f flag also be set.
+Location follows the following format:
+    <START LINE>[+<START COLUMN>][:<END LINE>[+<END COLUMN>]]
+So in order to comment starting on the 5th character of the 2nd line until (and
+including) the 4th character of the 7th line use:
+    -l 2+5:7+4`)
 }
 
 // commentHashExists checks if the given comment hash exists in the given comment threads.
