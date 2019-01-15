@@ -5,3 +5,5 @@
 {"timestamp":"1547502669","author":"googlebot","description":"CLAs look good, thanks!\n\n\u003c!-- ok --\u003e"}
 
 {"timestamp":"1547162176","author":"ojarjur","location":{"commit":"b9c59a15a8e3f3e8a6b7754fb94614cac613586a","path":"commands/comment.go","range":{"startLine":48}},"description":"It looks like there was a grammar error in the original doc that has been copied over here.\r\n\r\nInstead of \"location be commented upon\" it should either say \"location commented upon\" or \"location to be commented upon\"."}
+
+{"timestamp":"1547162247","author":"ojarjur","location":{"commit":"b9c59a15a8e3f3e8a6b7754fb94614cac613586a","path":"commands/comment.go","range":{"startLine":51}},"description":"I think there should be a comma between \"So\" and \"in\".\r\n\r\ni.e. \"So, in order ...\" instead of \"So in order ...\""}
