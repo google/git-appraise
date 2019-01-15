@@ -3,3 +3,5 @@
 {"timestamp":"1547418442","url":"https://travis-ci.org/google/git-appraise/builds/479161836?utm_source=github_status\u0026utm_medium=notification","status":"success","agent":"continuous-integration/travis-ci/pr"}
 
 {"timestamp":"1547418402","url":"https://travis-ci.org/google/git-appraise/builds/479161836?utm_source=github_status\u0026utm_medium=notification","agent":"continuous-integration/travis-ci/pr"}
+
+{"timestamp":"1547418381","status":"failure","agent":"cla/google"}
