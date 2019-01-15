@@ -11,3 +11,5 @@
 {"timestamp":"1547415907","author":"llorens","location":{"commit":"b9c59a15a8e3f3e8a6b7754fb94614cac613586a","path":"commands/comment.go","range":{"startLine":51}},"description":"Thanks for catching that! My English is getting a little bit more rusty every day, but correct me if I am wrong that I should (or could?) put a comma before the \"use:\":\r\n\"the 7th line use:\" =\u003e \"the 7th line, use:\"\r\n"}
 
 {"timestamp":"1547500318","author":"ojarjur","location":{"commit":"b9c59a15a8e3f3e8a6b7754fb94614cac613586a","path":"commands/comment.go","range":{"startLine":51}},"description":"@llorens I *believe* the comma makes sense there, but my grammar knowledge is very primitive."}
+
+{"timestamp":"1547514967","author":"ojarjur@google.com","location":{"commit":"d052037c268b6f12fc0440d19039d4af169d8871"},"resolved":true}
