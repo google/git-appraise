@@ -5,3 +5,5 @@
 {"timestamp":"1547500498","author":"ojarjur","description":"@llorens Thanks for taking this on!\r\n\r\nI hope git-appraise does work for your use case, and if you hit any issues, please let us know.\r\n\r\nWe do need a signed CLA before we can accept any of your changes, though.\r\n\r\nThe comment from \"googlebot\" above gives the URL you would need to go to in order to sign it.\r\n\r\nThanks."}
 
 {"timestamp":"1547502660","author":"llorens","description":"OK, just signed the CLA."}
+
+{"timestamp":"1547502663","author":"googlebot","description":"CLAs look good, thanks!\n\n\u003c!-- ok --\u003e"}
