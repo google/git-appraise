@@ -87,30 +87,44 @@ func getStatusString(r *review.Summary) string {
 	return "rejected"
 }
 
-// PrintSummary prints a single-line summary of a review.
-func PrintSummary(r *review.Summary, repo *repository.Repo) {
-	var use_color bool = false
-
-	if repo != nil {
-		use_color = (*repo).GetColorBool("color.appraise")
+func getColoredStatusString(repo repository.Repo, statusString string) string {
+	useColor, err := repo.GetColorBool("color.appraise")
+	if err != nil || !useColor {
+		return statusString
 	}
 
+	var colorOn string
+	var colorOff string
+
+	defaultColor, _ := default_color[statusString]
+	colorOn, err = repo.GetColor(
+		fmt.Sprintf("color.appraise.%s", statusString),
+		defaultColor,
+	)
+	if err != nil {
+		return statusString
+	}
+
+	colorOff, err = repo.GetColor("", "reset")
+
+	if err != nil {
+		return statusString
+	}
+
+	return fmt.Sprintf("%s%s%s", colorOn, statusString, colorOff)
+}
+
+// PrintSummary prints a single-line summary of a review.
+func PrintSummary(r *review.Summary) {
 	statusString := getStatusString(r)
 	indentedDescription := strings.Replace(r.Request.Description, "\n", "\n  ", -1)
 
-	var colorOn string = ""
-	var colorOff string = ""
-	if use_color {
-		defaultColor, _ := default_color[statusString]
-		colorOn = (*repo).GetColor(
-			fmt.Sprintf("color.appraise.%s", statusString),
-			defaultColor,
-		)
-		colorOff = "\033[00m"
-	}
-	coloredStatusString := fmt.Sprintf("%s%s%s", colorOn, statusString, colorOff)
-
-	fmt.Printf(reviewSummaryTemplate, coloredStatusString, r.Revision, indentedDescription)
+	fmt.Printf(
+		reviewSummaryTemplate,
+		getColoredStatusString(r.Repo, statusString),
+		r.Revision,
+		indentedDescription,
+	)
 }
 
 // reformatTimestamp takes a timestamp string of the form "0123456789" and changes it
@@ -213,7 +227,7 @@ func printComments(r *review.Review) error {
 
 // PrintDetails prints a multi-line overview of a review, including all comments.
 func PrintDetails(r *review.Review) error {
-	PrintSummary(r.Summary, nil)
+	PrintSummary(r.Summary)
 	fmt.Printf(reviewDetailsTemplate, r.Request.ReviewRef, r.Request.TargetRef,
 		strings.Join(r.Request.Reviewers, ", "),
 		r.Request.Requester, r.GetBuildStatusMessage())

@@ -986,36 +986,11 @@ func (repo *GitRepo) FetchAndReturnNewReviewHashes(remote, notesRefPattern,
 	return updatedReviews, nil
 }
 
-func (repo *GitRepo) GetColorBool(name string) bool {
-	ok := repo.runGitCommandInline("config", "--get-colorbool", name)
-	return (ok == nil)
+func (repo *GitRepo) GetColorBool(name string) (bool, error) {
+	err := repo.runGitCommandInline("config", "--get-colorbool", name)
+	return (err == nil), nil
 }
 
-func (repo *GitRepo) GetColor(name, default_value string) string {
-	var res string
-	var ok error
-	if default_value == "" {
-		res, ok = repo.runGitCommand(
-			"config",
-			"--type=color",
-			"-z",
-			"--get",
-			name,
-		)
-	} else {
-		res, ok = repo.runGitCommand(
-			"config",
-			"--type=color",
-			"-z",
-			"--default",
-			default_value,
-			"--get",
-			name,
-		)
-	}
-
-	if ok != nil {
-		return ""
-	}
-	return res
+func (repo *GitRepo) GetColor(name, defaultValue string) (string, error) {
+	return repo.runGitCommand("config", "--get-color", name, defaultValue)
 }

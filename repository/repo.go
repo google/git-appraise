@@ -51,6 +51,12 @@ type Repo interface {
 	// GetSubmitStrategy returns the way in which a review is submitted
 	GetSubmitStrategy() (string, error)
 
+	// GetColorBool returns color setting for "name" (e.g. color.diff).
+	GetColorBool(name string) (bool, error)
+
+	// GetColor returns color configured for "name" (e.g. color.diff.new).
+	GetColor(name, default_value string) (string, error)
+
 	// HasUncommittedChanges returns true if there are local, uncommitted changes.
 	HasUncommittedChanges() (bool, error)
 
@@ -218,7 +224,4 @@ type Repo interface {
 	// changed because the _names_ of these files correspond to the revisions
 	// they point to.
 	FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern string) ([]string, error)
-
-	GetColorBool(name string) bool
-	GetColor(name, default_value string) string
 }
