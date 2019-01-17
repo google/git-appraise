@@ -21,3 +21,5 @@
 {"timestamp":"1547679220","author":"llorens","location":{"commit":"da84096691df278ef70de92403300c88a08e48ee","path":"repository/git.go","range":{"startLine":992}},"description":"I don't think it makes sense for this function to return (bool, error) as opposed to bool only, but I understand from your comment that this is a convention so I oblige."}
 
 {"timestamp":"1547680116","author":"ojarjur","location":{"commit":"da84096691df278ef70de92403300c88a08e48ee","path":"commands/output/output.go","range":{"startLine":57}},"description":"this should be \"defaultColor\" rather than \"default_color\" (i.e. we use mixed case rather than underscores)"}
+
+{"timestamp":"1547680615","author":"ojarjur","location":{"commit":"da84096691df278ef70de92403300c88a08e48ee","path":"commands/output/output.go","range":{"startLine":91}},"description":"Let's call this \"getColorStatusString\"."}
