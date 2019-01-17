@@ -7,3 +7,5 @@
 {"timestamp":"1547502660","author":"llorens","description":"OK, just signed the CLA."}
 
 {"timestamp":"1547502663","author":"googlebot","description":"CLAs look good, thanks!\n\n\u003c!-- ok --\u003e"}
+
+{"timestamp":"1547517407","author":"ojarjur","location":{"commit":"92900a3466792b2d65a25ec1adec055f6b5a1780","path":"repository/repo.go","range":{"startLine":223}},"description":"These two new methods need comments explaining what they do.\r\n\r\nAdditionally, these should probably go up with the rest of the config-fetching methods. I.E. just below the `GetSubmitStrategy` entry.\r\n\r\nAdditionally, they should return a tuple including an error, so that we can propagate outwards any errors in invoking the `git` command line tool\r\n\r\ne.g. `GetColorBool(name string) (bool, error)` and `GetColor(name, defaultValue string) (string, error)`"}
