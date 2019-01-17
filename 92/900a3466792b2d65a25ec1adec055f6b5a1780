@@ -25,3 +25,5 @@
 {"timestamp":"1547680615","author":"ojarjur","location":{"commit":"da84096691df278ef70de92403300c88a08e48ee","path":"commands/output/output.go","range":{"startLine":91}},"description":"Let's call this \"getColorStatusString\"."}
 
 {"timestamp":"1547680806","author":"ojarjur","location":{"commit":"da84096691df278ef70de92403300c88a08e48ee","path":"commands/output/output.go","range":{"startLine":60}},"description":"I feel like the colors for \"pending\" and \"submitted\" should be swapped.\r\n\r\nI think yellow matches better with \"pending\" because it indicates that attention is needed. Conversely, cyan makes me think more along the lines of \"no action necessary\", which would match \"submitted\"."}
+
+{"timestamp":"1547680859","author":"ojarjur","location":{"commit":"da84096691df278ef70de92403300c88a08e48ee","path":"repository/repo.go","range":{"startLine":59}},"description":"This should be \"defaultValue\" rather than \"default_value\""}
