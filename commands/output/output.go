@@ -53,7 +53,7 @@ status: %s
 	// Number of lines of context to print for inline comments
 	contextLineCount = 5
 )
-var default_color = map[string]string{
+var defaultColors = map[string]string{
 	"tbr": "red white bold blink",
 	"pending": "cyan",
 	"submitted": "yellow",
@@ -87,7 +87,7 @@ func getStatusString(r *review.Summary) string {
 	return "rejected"
 }
 
-func getColoredStatusString(repo repository.Repo, statusString string) string {
+func getColorStatusString(repo repository.Repo, statusString string) string {
 	useColor, err := repo.GetColorBool("color.appraise")
 	if err != nil || !useColor {
 		return statusString
@@ -96,7 +96,7 @@ func getColoredStatusString(repo repository.Repo, statusString string) string {
 	var colorOn string
 	var colorOff string
 
-	defaultColor, _ := default_color[statusString]
+	defaultColor, _ := defaultColors[statusString]
 	colorOn, err = repo.GetColor(
 		fmt.Sprintf("color.appraise.%s", statusString),
 		defaultColor,
@@ -121,7 +121,7 @@ func PrintSummary(r *review.Summary) {
 
 	fmt.Printf(
 		reviewSummaryTemplate,
-		getColoredStatusString(r.Repo, statusString),
+		getColorStatusString(r.Repo, statusString),
 		r.Revision,
 		indentedDescription,
 	)

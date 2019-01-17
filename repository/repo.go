@@ -55,7 +55,7 @@ type Repo interface {
 	GetColorBool(name string) (bool, error)
 
 	// GetColor returns color configured for "name" (e.g. color.diff.new).
-	GetColor(name, default_value string) (string, error)
+	GetColor(name, defaultValue string) (string, error)
 
 	// HasUncommittedChanges returns true if there are local, uncommitted changes.
 	HasUncommittedChanges() (bool, error)

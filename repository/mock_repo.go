@@ -616,6 +616,6 @@ func (repo *mockRepoForTest) GetColorBool(name string) (bool, error) {
 	return false, nil
 }
 
-func (repo *mockRepoForTest) GetColor(name, default_value string) (string, error) {
+func (repo *mockRepoForTest) GetColor(name, defaultValue string) (string, error) {
 	return "", nil
 }
