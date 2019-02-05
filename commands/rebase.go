@@ -49,7 +49,7 @@ func validateRebaseRequest(repo repository.Repo, args []string) (*review.Review,
 		r, err = review.GetCurrent(repo)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("Failed to load the review: %v\n", err)
+		return nil, fmt.Errorf("failed to load the review: %v\n", err)
 	}
 	if r == nil {
 		return nil, errors.New("There is no matching review.")

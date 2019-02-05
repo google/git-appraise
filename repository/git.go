@@ -139,7 +139,7 @@ func (repo *GitRepo) VerifyCommit(hash string) error {
 	}
 	objectType := strings.TrimSpace(string(out))
 	if objectType != "commit" {
-		return fmt.Errorf("Hash %q points to a non-commit object of type %q", hash, objectType)
+		return fmt.Errorf("hash %q points to a non-commit object of type %q", hash, objectType)
 	}
 	return nil
 }
@@ -185,9 +185,9 @@ func (repo *GitRepo) ResolveRefCommit(ref string) (string, error) {
 			// There is exactly one match
 			return repo.GetCommitHash(matchingRefs[0])
 		}
-		return "", fmt.Errorf("Unable to find a git ref matching the pattern %q", pattern)
+		return "", fmt.Errorf("unable to find a git ref matching the pattern %q", pattern)
 	}
-	return "", fmt.Errorf("Unknown git ref %q", ref)
+	return "", fmt.Errorf("unknown git ref %q", ref)
 }
 
 // GetCommitMessage returns the message stored in the commit pointed to by the given ref.
@@ -251,7 +251,7 @@ func (repo *GitRepo) IsAncestor(ancestor, descendant string) (bool, error) {
 	if _, ok := err.(*exec.ExitError); ok {
 		return false, nil
 	}
-	return false, fmt.Errorf("Error while trying to determine commit ancestry: %v", err)
+	return false, fmt.Errorf("error while trying to determine commit ancestry: %v", err)
 }
 
 // Diff computes the diff between two given commits.
@@ -507,12 +507,12 @@ func splitBatchCheckOutput(out *bytes.Buffer) (map[string]bool, error) {
 			return isCommit, nil
 		}
 		if err != nil {
-			return nil, fmt.Errorf("Failure while reading the next object name: %v", err)
+			return nil, fmt.Errorf("failure while reading the next object name: %v", err)
 		}
 		nameLine = strings.TrimSuffix(nameLine, " ")
 		typeLine, err := reader.ReadString(byte('\n'))
 		if err != nil && err != io.EOF {
-			return nil, fmt.Errorf("Failure while reading the next object type: %q - %v", nameLine, err)
+			return nil, fmt.Errorf("failure while reading the next object type: %q - %v", nameLine, err)
 		}
 		typeLine = strings.TrimSuffix(typeLine, "\n")
 		if typeLine == "commit" {
@@ -543,18 +543,18 @@ func splitBatchCatFileOutput(out *bytes.Buffer) (map[string][]byte, error) {
 			return contentsMap, nil
 		}
 		if err != nil {
-			return nil, fmt.Errorf("Failure while reading the next object name: %v", err)
+			return nil, fmt.Errorf("failure while reading the next object name: %v", err)
 		}
 		sizeLine, err := reader.ReadString(byte('\n'))
 		if strings.HasSuffix(sizeLine, "\n") {
 			sizeLine = strings.TrimSuffix(sizeLine, "\n")
 		}
 		if err != nil {
-			return nil, fmt.Errorf("Failure while reading the next object size: %q - %v", nameLine, err)
+			return nil, fmt.Errorf("failure while reading the next object size: %q - %v", nameLine, err)
 		}
 		size, err := strconv.Atoi(sizeLine)
 		if err != nil {
-			return nil, fmt.Errorf("Failure while parsing the next object size: %q - %v", nameLine, err)
+			return nil, fmt.Errorf("failure while parsing the next object size: %q - %v", nameLine, err)
 		}
 		contentBytes := make([]byte, size, size)
 		readDest := contentBytes
@@ -608,7 +608,7 @@ func (repo *GitRepo) notesOverview(notesRef string) (*notesOverview, error) {
 		line := outScanner.Text()
 		lineParts := strings.Split(line, " ")
 		if len(lineParts) != 2 {
-			return nil, fmt.Errorf("Malformed output line from 'git-notes list': %q", line)
+			return nil, fmt.Errorf("malformed output line from 'git-notes list': %q", line)
 		}
 		objHash := &lineParts[1]
 		notesHash := &lineParts[0]
@@ -621,7 +621,7 @@ func (repo *GitRepo) notesOverview(notesRef string) (*notesOverview, error) {
 	}
 	err := outScanner.Err()
 	if err != nil && err != io.EOF {
-		return nil, fmt.Errorf("Failure parsing the output of 'git-notes list': %v", err)
+		return nil, fmt.Errorf("failure parsing the output of 'git-notes list': %v", err)
 	}
 	return &notesOverview{
 		NotesMappings:      notesMappings,
@@ -635,11 +635,11 @@ func (overview *notesOverview) getIsCommitMap(repo *GitRepo) (map[string]bool, e
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	if err := repo.runGitCommandWithIO(overview.ObjectHashesReader, &stdout, &stderr, "cat-file", "--batch-check=%(objectname) %(objecttype)"); err != nil {
-		return nil, fmt.Errorf("Failure performing a batch file check: %v", err)
+		return nil, fmt.Errorf("failure performing a batch file check: %v", err)
 	}
 	isCommit, err := splitBatchCheckOutput(&stdout)
 	if err != nil {
-		return nil, fmt.Errorf("Failure parsing the output of a batch file check: %v", err)
+		return nil, fmt.Errorf("failure parsing the output of a batch file check: %v", err)
 	}
 	return isCommit, nil
 }
@@ -649,11 +649,11 @@ func (overview *notesOverview) getNoteContentsMap(repo *GitRepo) (map[string][]b
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	if err := repo.runGitCommandWithIO(overview.NotesHashesReader, &stdout, &stderr, "cat-file", "--batch=%(objectname)\n%(objectsize)"); err != nil {
-		return nil, fmt.Errorf("Failure performing a batch file read: %v", err)
+		return nil, fmt.Errorf("failure performing a batch file read: %v", err)
 	}
 	noteContentsMap, err := splitBatchCatFileOutput(&stdout)
 	if err != nil {
-		return nil, fmt.Errorf("Failure parsing the output of a batch file read: %v", err)
+		return nil, fmt.Errorf("failure parsing the output of a batch file read: %v", err)
 	}
 	return noteContentsMap, nil
 }
@@ -693,11 +693,11 @@ func (repo *GitRepo) GetAllNotes(notesRef string) (map[string][]Note, error) {
 	}
 	isCommit, err := overview.getIsCommitMap(repo)
 	if err != nil {
-		return nil, fmt.Errorf("Failure building the set of commit objects: %v", err)
+		return nil, fmt.Errorf("failure building the set of commit objects: %v", err)
 	}
 	noteContentsMap, err := overview.getNoteContentsMap(repo)
 	if err != nil {
-		return nil, fmt.Errorf("Failure building the mapping from notes hash to contents: %v", err)
+		return nil, fmt.Errorf("failure building the mapping from notes hash to contents: %v", err)
 	}
 	commitNotesMap := make(map[string][]Note)
 	for _, notesMapping := range overview.NotesMappings {
@@ -753,7 +753,7 @@ func (repo *GitRepo) PushNotes(remote, notesRefPattern string) error {
 	// we treat errors as user errors rather than fatal errors.
 	err := repo.runGitCommandInline("push", remote, refspec)
 	if err != nil {
-		return fmt.Errorf("Failed to push to the remote '%s': %v", remote, err)
+		return fmt.Errorf("failed to push to the remote '%s': %v", remote, err)
 	}
 	return nil
 }
@@ -764,7 +764,7 @@ func (repo *GitRepo) PushNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 	archiveRefspec := fmt.Sprintf("%s:%s", archiveRefPattern, archiveRefPattern)
 	err := repo.runGitCommandInline("push", remote, notesRefspec, archiveRefspec)
 	if err != nil {
-		return fmt.Errorf("Failed to push the local archive to the remote '%s': %v", remote, err)
+		return fmt.Errorf("failed to push the local archive to the remote '%s': %v", remote, err)
 	}
 	return nil
 }

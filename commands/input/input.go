@@ -38,7 +38,7 @@ import (
 func LaunchEditor(repo repository.Repo, fileName string) (string, error) {
 	editor, err := repo.GetCoreEditor()
 	if err != nil {
-		return "", fmt.Errorf("Unable to detect default git editor: %v\n", err)
+		return "", fmt.Errorf("unable to detect default git editor: %v\n", err)
 	}
 
 	path := fmt.Sprintf("%s/.git/%s", repo.GetPath(), fileName)
@@ -56,17 +56,17 @@ func LaunchEditor(repo repository.Repo, fileName string) (string, error) {
 		}
 	}
 	if err != nil {
-		return "", fmt.Errorf("Unable to start editor: %v\n", err)
+		return "", fmt.Errorf("unable to start editor: %v\n", err)
 	}
 
 	if err := cmd.Wait(); err != nil {
-		return "", fmt.Errorf("Editing finished with error: %v\n", err)
+		return "", fmt.Errorf("editing finished with error: %v\n", err)
 	}
 
 	output, err := ioutil.ReadFile(path)
 	if err != nil {
 		os.Remove(path)
-		return "", fmt.Errorf("Error reading edited file: %v\n", err)
+		return "", fmt.Errorf("error reading edited file: %v\n", err)
 	}
 	os.Remove(path)
 	return string(output), err
@@ -80,13 +80,13 @@ func FromFile(fileName string) (string, error) {
 	if fileName == "-" {
 		stat, err := os.Stdin.Stat()
 		if err != nil {
-			return "", fmt.Errorf("Error reading from stdin: %v\n", err)
+			return "", fmt.Errorf("error reading from stdin: %v\n", err)
 		}
 		if (stat.Mode() & os.ModeCharDevice) == 0 {
 			// There is no tty. This will allow us to read piped data instead.
 			output, err := ioutil.ReadAll(os.Stdin)
 			if err != nil {
-				return "", fmt.Errorf("Error reading from stdin: %v\n", err)
+				return "", fmt.Errorf("error reading from stdin: %v\n", err)
 			}
 			return string(output), err
 		}
@@ -103,7 +103,7 @@ func FromFile(fileName string) (string, error) {
 
 	output, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		return "", fmt.Errorf("Error reading file: %v\n", err)
+		return "", fmt.Errorf("error reading file: %v\n", err)
 	}
 	return string(output), err
 }

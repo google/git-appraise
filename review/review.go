@@ -267,7 +267,7 @@ func (r *Summary) loadComments(commentNotes []repository.Note) []CommentThread {
 func getSummaryFromNotes(repo repository.Repo, revision string, requestNotes, commentNotes []repository.Note) (*Summary, error) {
 	requests := request.ParseAllValid(requestNotes)
 	if requests == nil {
-		return nil, fmt.Errorf("Could not find any review requests for %q", revision)
+		return nil, fmt.Errorf("could not find any review requests for %q", revision)
 	}
 	sort.Stable(requestsByTimestamp(requests))
 	reviewSummary := Summary{
@@ -289,7 +289,7 @@ func GetSummaryViaRefs(repo repository.Repo, requestRef, commentRef,
 	revision string) (*Summary, error) {
 
 	if err := repo.VerifyCommit(revision); err != nil {
-		return nil, fmt.Errorf("Could not find a commit named %q", revision)
+		return nil, fmt.Errorf("could not find a commit named %q", revision)
 	}
 	requestNotes := repo.GetNotes(requestRef, revision)
 	commentNotes := repo.GetNotes(commentRef, revision)
@@ -456,7 +456,7 @@ func GetCurrent(repo repository.Repo) (*Review, error) {
 		return nil, nil
 	}
 	if len(matchingReviews) != 1 {
-		return nil, fmt.Errorf("There are %d open reviews for the ref \"%s\"", len(matchingReviews), reviewRef)
+		return nil, fmt.Errorf("there are %d open reviews for the ref \\"%s\", len(matchingReviews), reviewRef)
 	}
 	return matchingReviews[0].Details()
 }
@@ -483,7 +483,7 @@ func (r *Review) GetAnalysesNotes() ([]analyses.Note, error) {
 		return nil, err
 	}
 	if latestAnalyses == nil {
-		return nil, fmt.Errorf("No analyses available")
+		return nil, fmt.Errorf("no analyses available")
 	}
 	return latestAnalyses.GetNotes()
 }

@@ -66,26 +66,26 @@ func (location *Location) Check(repo repository.Repo) error {
 	}
 	lines := strings.Split(contents, "\n")
 	if location.Range.StartLine > uint32(len(lines)) {
-		return fmt.Errorf("Line number %d does not exist in file %q",
+		return fmt.Errorf("line number %d does not exist in file %q",
 			location.Range.StartLine,
 			location.Path)
 	}
 	if location.Range.StartColumn != 0 &&
 		location.Range.StartColumn > uint32(len(lines[location.Range.StartLine-1])) {
-		return fmt.Errorf("Line %d in %q is too short for column %d",
+		return fmt.Errorf("line %d in %q is too short for column %d",
 			location.Range.StartLine,
 			location.Path,
 			location.Range.StartColumn)
 	}
 	if location.Range.EndLine != 0 &&
 		location.Range.EndLine > uint32(len(lines)) {
-		return fmt.Errorf("End line number %d does not exist in file %q",
+		return fmt.Errorf("end line number %d does not exist in file %q",
 			location.Range.EndLine,
 			location.Path)
 	}
 	if location.Range.EndColumn != 0 &&
 		location.Range.EndColumn > uint32(len(lines[location.Range.EndLine-1])) {
-		return fmt.Errorf("End line %d in %q is too short for column %d",
+		return fmt.Errorf("end line %d in %q is too short for column %d",
 			location.Range.EndLine,
 			location.Path,
 			location.Range.EndColumn)

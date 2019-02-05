@@ -219,13 +219,13 @@ func (r *mockRepoForTest) resolveLocalRef(ref string) (string, error) {
 	if _, ok := r.Commits[ref]; ok {
 		return ref, nil
 	}
-	return "", fmt.Errorf("The ref %q does not exist", ref)
+	return "", fmt.Errorf("the ref %q does not exist", ref)
 }
 
 // VerifyCommit verifies that the supplied hash points to a known commit.
 func (r *mockRepoForTest) VerifyCommit(hash string) error {
 	if _, ok := r.Commits[hash]; !ok {
-		return fmt.Errorf("The given hash %q is not a known commit", hash)
+		return fmt.Errorf("the given hash %q is not a known commit", hash)
 	}
 	return nil
 }

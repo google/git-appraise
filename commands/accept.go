@@ -55,7 +55,7 @@ func acceptReview(repo repository.Repo, args []string) error {
 	}
 
 	if err != nil {
-		return fmt.Errorf("Failed to load the review: %v\n", err)
+		return fmt.Errorf("failed to load the review: %v\n", err)
 	}
 	if r == nil {
 		return errors.New("There is no matching review.")
