@@ -33,3 +33,5 @@
 {"timestamp":"1547763419","author":"llorens","description":"I'd wait with merging this. `git appraise list -a` got noticeably slower as a consequence of this change because `git config` is called twice for every review listed to get the coloring and color reset sequences. If you have a good idea how to solve this, I'll be happy to hear.\r\nMaybe adding `output.GetColorSettings()` which would return a map and then passing this map to `output.PrintSummaryWithColor()`? Unless it's OK to add a new parameter to `output.PrintSummary()`?"}
 
 {"timestamp":"1547834767","author":"ojarjur","description":"@llorens Thanks for the warning.\r\n\r\nMy suggestion matches with what you mentioned; pass a map of colors to a new `PrintSummaryWithColor` method.\r\n\r\nWe could then load that map once inside of the `commands/list.go` and `commands/show.go` files."}
+
+{"timestamp":"1547756667","author":"llorens","location":{"commit":"da84096691df278ef70de92403300c88a08e48ee","path":"commands/output/output.go","range":{"startLine":57}},"description":"Sorry, my 8-hours-per-day coding style seems to have become my second nature."}
