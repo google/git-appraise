@@ -37,3 +37,5 @@
 {"timestamp":"1547756667","author":"llorens","location":{"commit":"da84096691df278ef70de92403300c88a08e48ee","path":"commands/output/output.go","range":{"startLine":57}},"description":"Sorry, my 8-hours-per-day coding style seems to have become my second nature."}
 
 {"timestamp":"1547756677","author":"llorens","location":{"commit":"da84096691df278ef70de92403300c88a08e48ee","path":"commands/output/output.go","range":{"startLine":60}},"description":"I associate yellow with something old like the paper of an old book becomes yellowish.\r\nThere's magenta – which I find pretty aggressive – used for \"abandon\". How about:\r\n```\r\n\t\"pending\": \"magenta\",\r\n\t\"submitted\": \"cyan\",\r\n\t\"abandon\": \"yellow\",\r\n```\r\n"}
+
+{"timestamp":"1547756754","author":"llorens","location":{"commit":"da84096691df278ef70de92403300c88a08e48ee","path":"commands/output/output.go","range":{"startLine":57}},"description":"BTW, I'll call it defaultColors just in case variable name shadowing is a no-no."}
