@@ -1,0 +1,42 @@
+name: Mirror pull requests into git-notes
+on: [pull_request, issue_comment, pull_request_review, pull_request_review_comment, status]
+jobs:
+  build:
+    name: Mirror
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Set up Go 1.14
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.14
+
+      - name: Setup git-appraise and the pr mirror
+        run: |
+          go get github.com/google/git-appraise/git-appraise
+          go get github.com/google/git-pull-request-mirror/batch
+
+      - name: Configure git for the PR mirror
+        run: |
+          git config --global user.email "${{ github.repository }}@github.com"
+          git config --global user.name "Pull Request Mirror"
+
+      - name: Fetch upstream refs
+        run: |
+          git fetch origin '+refs/heads/*:refs/heads/*'
+          git fetch origin '+refs/tags/*:refs/tags/*'
+          git fetch origin '+refs/pull/*:refs/pull/*'
+
+      - name: Pull existing reviews
+        run: go run github.com/google/git-appraise/git-appraise pull
+
+      - name: Mirror pull requests into local reviews
+        run: go run github.com/google/git-pull-request-mirror/batch --target '${{ github.repository }}' --local ./ --auth-token '${{ secrets.PR_MIRROR_TOKEN }}'
+
+      - name: Merge any upstream review changes
+        run: go run github.com/google/git-appraise/git-appraise pull
+
+      - name: Push updated reviews back upstream
+        run: go run github.com/google/git-appraise/git-appraise push
