@@ -28,6 +28,7 @@ jobs:
           git fetch origin '+refs/heads/*:refs/heads/*'
           git fetch origin '+refs/tags/*:refs/tags/*'
           git fetch origin '+refs/pull/*:refs/pull/*'
+          git fetch origin '+refs/devtools/*:refs/devtools/*'
 
       - name: Pull existing reviews
         run: go run github.com/google/git-appraise/git-appraise pull
