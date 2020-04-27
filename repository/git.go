@@ -26,11 +26,15 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 )
 
-const branchRefPrefix = "refs/heads/"
+const (
+	branchRefPrefix   = "refs/heads/"
+	devtoolsRefPrefix = "refs/devtools/"
+)
 
 // GitRepo represents an instance of a (local) git repository.
 type GitRepo struct {
@@ -84,6 +88,18 @@ func NewGitRepo(path string) (*GitRepo, error) {
 		return nil, err
 	}
 	return nil, err
+}
+
+func (repo *GitRepo) HasRef(ref string) (bool, error) {
+	_, _, err := repo.runGitCommandRaw("show-ref", "--verify", "--quiet", ref)
+	if err == nil {
+		return true, nil
+	}
+	if _, ok := err.(*exec.ExitError); ok {
+		return false, nil
+	}
+	// Got an unexpected error
+	return false, err
 }
 
 // GetPath returns the path to the repo.
@@ -228,6 +244,8 @@ func (repo GitRepo) GetCommitDetails(ref string) (*CommitDetails, error) {
 	}
 	details.Author = show("%an")
 	details.AuthorEmail = show("%ae")
+	details.Committer = show("%cn")
+	details.CommitterEmail = show("%ce")
 	details.Summary = show("%s")
 	parentsString := show("%P")
 	details.Parents = strings.Split(parentsString, " ")
@@ -280,22 +298,30 @@ func (repo *GitRepo) SwitchToRef(ref string) error {
 
 // mergeArchives merges two archive refs.
 func (repo *GitRepo) mergeArchives(archive, remoteArchive string) error {
+	hasRemote, err := repo.HasRef(remoteArchive)
+	if err != nil {
+		return err
+	}
+	if !hasRemote {
+		// The remote archive does not exist, so we have nothing to do
+		return nil
+	}
 	remoteHash, err := repo.GetCommitHash(remoteArchive)
 	if err != nil {
 		return err
 	}
-	if remoteHash == "" {
-		// The remote archive does not exist, so we have nothing to do
-		return nil
-	}
 
-	archiveHash, err := repo.GetCommitHash(archive)
+	hasLocal, err := repo.HasRef(archive)
 	if err != nil {
 		return err
 	}
-	if archiveHash == "" {
+	if !hasLocal {
 		// The local archive does not exist, so we merely need to set it
 		_, err := repo.runGitCommand("update-ref", archive, remoteHash)
+		return err
+	}
+	archiveHash, err := repo.GetCommitHash(archive)
+	if err != nil {
 		return err
 	}
 
@@ -462,6 +488,140 @@ func (repo *GitRepo) ListCommitsBetween(from, to string) ([]string, error) {
 		return nil, nil
 	}
 	return strings.Split(out, "\n"), nil
+}
+
+// StoreBlob writes the given file to the repository and returns its hash.
+func (repo *GitRepo) StoreBlob(b *Blob) (string, error) {
+	if b.savedHash != "" {
+		if _, existsErr := repo.runGitCommand("cat-file", "-e", b.savedHash); existsErr == nil {
+			// We verified the blob already exists
+			return b.savedHash, nil
+		}
+	}
+	stdin := strings.NewReader(b.Contents)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	args := []string{"hash-object", "-w", "-t", "blob", "--stdin"}
+	err := repo.runGitCommandWithIO(stdin, &stdout, &stderr, args...)
+	if err != nil {
+		message := strings.TrimSpace(stderr.String())
+		return "", fmt.Errorf("failure storing a git blob, %v: %q", err, message)
+	}
+	return strings.TrimSpace(stdout.String()), nil
+}
+
+// StoreTree writes the given file tree to the repository and returns its hash.
+func (repo *GitRepo) StoreTree(t *Tree) (string, error) {
+	if t.savedHash != "" {
+		if _, existsErr := repo.runGitCommand("cat-file", "-e", t.savedHash); existsErr == nil {
+			// We verified the tree already exists
+			return t.savedHash, nil
+		}
+	}
+	var lines []string
+	for path, obj := range t.contents {
+		objHash, err := obj.Store(repo)
+		if err != nil {
+			return "", err
+		}
+		mode := "040000"
+		if obj.Type() == "blob" {
+			mode = "100644"
+		}
+		line := fmt.Sprintf("%s %s %s\t%s", mode, obj.Type(), objHash, path)
+		lines = append(lines, line)
+	}
+	stdin := strings.NewReader(strings.Join(lines, "\n"))
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	args := []string{"mktree"}
+	err := repo.runGitCommandWithIO(stdin, &stdout, &stderr, args...)
+	if err != nil {
+		message := strings.TrimSpace(stderr.String())
+		return "", fmt.Errorf("failure storing a git tree, %v: %q", err, message)
+	}
+	return strings.TrimSpace(stdout.String()), nil
+}
+
+func (repo *GitRepo) readBlob(objHash string) (*Blob, error) {
+	out, err := repo.runGitCommand("cat-file", "-p", objHash)
+	if err != nil {
+		return nil, fmt.Errorf("failure reading the file contents of %q: %v", objHash, err)
+	}
+	return &Blob{Contents: out, savedHash: objHash}, nil
+}
+
+func (repo *GitRepo) ReadTree(ref string) (*Tree, error) {
+	return repo.readTreeWithHash(ref, "")
+}
+
+func (repo *GitRepo) readTreeWithHash(ref, hash string) (*Tree, error) {
+	out, err := repo.runGitCommand("ls-tree", "--full-tree", ref)
+	if err != nil {
+		return nil, fmt.Errorf("failure listing the file contents of %q: %v", ref, err)
+	}
+	t := NewTree()
+	if len(out) == 0 {
+		// This is possible if the tree is empty
+		return t, nil
+	}
+	contents := t.Contents()
+	for _, line := range strings.Split(out, "\n") {
+		lineParts := strings.Split(line, "\t")
+		if len(lineParts) != 2 {
+			return nil, fmt.Errorf("malformed ls-tree output line: %q", line)
+		}
+		path := lineParts[1]
+		lineParts = strings.Split(lineParts[0], " ")
+		if len(lineParts) != 3 {
+			return nil, fmt.Errorf("malformed ls-tree output line: %q", line)
+		}
+		objType := lineParts[1]
+		objHash := lineParts[2]
+		var child TreeChild
+		if objType == "tree" {
+			child, err = repo.readTreeWithHash(objHash, objHash)
+		} else if objType == "blob" {
+			child, err = repo.readBlob(objHash)
+		} else {
+			return nil, fmt.Errorf("unrecognized tree object type: %q", objType)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to read a tree child object: %v", err)
+		}
+		contents[path] = child
+	}
+	t.savedHash = hash
+	return t, nil
+}
+
+// CreateCommit creates a commit object and returns its hash.
+func (repo *GitRepo) CreateCommit(t *Tree, parents []string, message string) (string, error) {
+	treeHash, err := repo.StoreTree(t)
+	if err != nil {
+		return "", fmt.Errorf("failure storing a tree: %v", err)
+	}
+	return repo.CreateCommitFromTreeHash(treeHash, parents, message)
+}
+
+// CreateCommitFromTreeHash creates a commit object and returns its hash.
+func (repo *GitRepo) CreateCommitFromTreeHash(treeHash string, parents []string, message string) (string, error) {
+	args := []string{"commit-tree", treeHash, "-m", message}
+	for _, parent := range parents {
+		args = append(args, "-p", parent)
+	}
+	return repo.runGitCommand(args...)
+}
+
+// SetRef sets the commit pointed to by the specified ref to `newCommitHash`,
+// iff the ref currently points `previousCommitHash`.
+func (repo *GitRepo) SetRef(ref, newCommitHash, previousCommitHash string) error {
+	args := []string{"update-ref", ref, newCommitHash}
+	if previousCommitHash != "" {
+		args = append(args, previousCommitHash)
+	}
+	_, err := repo.runGitCommand(args...)
+	return err
 }
 
 // GetNotes uses the "git" command-line tool to read the notes from the given ref for a given revision.
@@ -745,6 +905,29 @@ func (repo *GitRepo) ListNotedRevisions(notesRef string) []string {
 	return revisions
 }
 
+// Remotes returns a list of the remotes.
+func (repo *GitRepo) Remotes() ([]string, error) {
+	remotes, err := repo.runGitCommand("remote")
+	if err != nil {
+		return nil, err
+	}
+	remoteNames := strings.Split(remotes, "\n")
+	var result []string
+	for _, name := range remoteNames {
+		result = append(result, strings.TrimSpace(name))
+	}
+	sort.Strings(result)
+	return result, nil
+}
+
+// Fetch fetches from the given remote using the supplied refspecs.
+func (repo *GitRepo) Fetch(remote string, fetchSpecs []string) error {
+	args := []string{"fetch", remote}
+	args = append(args, fetchSpecs...)
+	_, err := repo.runGitCommand(args...)
+	return err
+}
+
 // PushNotes pushes git notes to a remote repo.
 func (repo *GitRepo) PushNotes(remote, notesRefPattern string) error {
 	refspec := fmt.Sprintf("%s:%s", notesRefPattern, notesRefPattern)
@@ -769,27 +952,50 @@ func (repo *GitRepo) PushNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 	return nil
 }
 
+func (repo *GitRepo) getRefHashes(refPattern string) (map[string]string, error) {
+	if !strings.HasSuffix(refPattern, "/*") {
+		return nil, fmt.Errorf("unsupported ref pattern %q", refPattern)
+	}
+	refPrefix := strings.TrimSuffix(refPattern, "*")
+	showRef, err := repo.runGitCommand("show-ref")
+	if err != nil {
+		return nil, err
+	}
+	refsMap := make(map[string]string)
+	for _, line := range strings.Split(showRef, "\n") {
+		lineParts := strings.Split(line, " ")
+		if len(lineParts) != 2 {
+			return nil, fmt.Errorf("unexpected line in output of `git show-ref`: %q", line)
+		}
+		if strings.HasPrefix(lineParts[1], refPrefix) {
+			refsMap[lineParts[1]] = lineParts[0]
+		}
+	}
+	return refsMap, nil
+}
+
 func getRemoteNotesRef(remote, localNotesRef string) string {
 	relativeNotesRef := strings.TrimPrefix(localNotesRef, "refs/notes/")
-	return "refs/notes/" + remote + "/" + relativeNotesRef
+	return "refs/notes/remotes/" + remote + "/" + relativeNotesRef
+}
+
+func getLocalNotesRef(remote, remoteNotesRef string) string {
+	relativeNotesRef := strings.TrimPrefix(remoteNotesRef, "refs/notes/remotes/"+remote+"/")
+	return "refs/notes/" + relativeNotesRef
 }
 
 // MergeNotes merges in the remote's state of the notes reference into the
 // local repository's.
 func (repo *GitRepo) MergeNotes(remote, notesRefPattern string) error {
-	remoteRefs, err := repo.runGitCommand("ls-remote", remote, notesRefPattern)
+	remoteRefPattern := getRemoteNotesRef(remote, notesRefPattern)
+	refsMap, err := repo.getRefHashes(remoteRefPattern)
 	if err != nil {
 		return err
 	}
-	for _, line := range strings.Split(remoteRefs, "\n") {
-		lineParts := strings.Split(line, "\t")
-		if len(lineParts) == 2 {
-			ref := lineParts[1]
-			remoteRef := getRemoteNotesRef(remote, ref)
-			_, err := repo.runGitCommand("notes", "--ref", ref, "merge", remoteRef, "-s", "cat_sort_uniq")
-			if err != nil {
-				return err
-			}
+	for remoteRef := range refsMap {
+		localRef := getLocalNotesRef(remote, remoteRef)
+		if _, err := repo.runGitCommand("notes", "--ref", localRef, "merge", remoteRef, "-s", "cat_sort_uniq"); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -809,41 +1015,100 @@ func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 	return repo.MergeNotes(remote, notesRefPattern)
 }
 
-func getRemoteArchiveRef(remote, archiveRefPattern string) string {
-	relativeArchiveRef := strings.TrimPrefix(archiveRefPattern, "refs/devtools/archives/")
-	return "refs/devtools/remoteArchives/" + remote + "/" + relativeArchiveRef
+func getRemoteDevtoolsRef(remote, devtoolsRefPattern string) string {
+	relativeRef := strings.TrimPrefix(devtoolsRefPattern, "refs/devtools/")
+	return "refs/remoteDevtools/" + remote + "/" + relativeRef
+}
+
+func getLocalDevtoolsRef(remote, remoteDevtoolsRef string) string {
+	relativeRef := strings.TrimPrefix(remoteDevtoolsRef, "refs/remoteDevtools/"+remote+"/")
+	return "refs/devtools/" + relativeRef
 }
 
 // MergeArchives merges in the remote's state of the archives reference into
 // the local repository's.
 func (repo *GitRepo) MergeArchives(remote, archiveRefPattern string) error {
-	remoteRefs, err := repo.runGitCommand("ls-remote", remote, archiveRefPattern)
+	remoteRefPattern := getRemoteDevtoolsRef(remote, archiveRefPattern)
+	refsMap, err := repo.getRefHashes(remoteRefPattern)
 	if err != nil {
 		return err
 	}
-	for _, line := range strings.Split(remoteRefs, "\n") {
-		lineParts := strings.Split(line, "\t")
-		if len(lineParts) == 2 {
-			ref := lineParts[1]
-			remoteRef := getRemoteArchiveRef(remote, ref)
-			if err := repo.mergeArchives(ref, remoteRef); err != nil {
-				return err
-			}
+	for remoteRef := range refsMap {
+		localRef := getLocalDevtoolsRef(remote, remoteRef)
+		if err := repo.mergeArchives(localRef, remoteRef); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func (repo *GitRepo) fetchNotes(remote, notesRefPattern,
-	archiveRefPattern string) error {
-
-	remoteArchiveRef := getRemoteArchiveRef(remote, archiveRefPattern)
-	archiveFetchRefSpec := fmt.Sprintf("+%s:%s", archiveRefPattern, remoteArchiveRef)
-
+// FetchAndReturnNewReviewHashes fetches the notes "branches" and then susses
+// out the IDs (the revision the review points to) of any new reviews, then
+// returns that list of IDs.
+//
+// This is accomplished by determining which files in the notes tree have
+// changed because the _names_ of these files correspond to the revisions they
+// point to.
+func (repo *GitRepo) FetchAndReturnNewReviewHashes(remote, notesRefPattern string, devtoolsRefPatterns ...string) ([]string, error) {
+	for _, refPattern := range devtoolsRefPatterns {
+		if !strings.HasPrefix(refPattern, devtoolsRefPrefix) {
+			return nil, fmt.Errorf("Unsupported devtools ref: %q", refPattern)
+		}
+	}
 	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
 	notesFetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
 
-	return repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, archiveFetchRefSpec)
+	localDevtoolsRefPattern := devtoolsRefPrefix + "*"
+	remoteDevtoolsRefPattern := getRemoteDevtoolsRef(remote, localDevtoolsRefPattern)
+	devtoolsFetchRefSpec := fmt.Sprintf("+%s:%s", localDevtoolsRefPattern, remoteDevtoolsRefPattern)
+
+	// Prior to fetching, record the current state of the remote notes refs
+	priorRefHashes, err := repo.getRefHashes(remoteNotesRefPattern)
+	if err != nil {
+		return nil, fmt.Errorf("failure reading the existing ref hashes for the remote %q: %v", remote, err)
+	}
+
+	if err := repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, devtoolsFetchRefSpec); err != nil {
+		return nil, fmt.Errorf("failure fetching from the remote %q: %v", remote, err)
+	}
+
+	// After fetching, record the updated state of the remote notes refs
+	updatedRefHashes, err := repo.getRefHashes(remoteNotesRefPattern)
+	if err != nil {
+		return nil, fmt.Errorf("failure reading the updated ref hashes for the remote %q: %v", remote, err)
+	}
+
+	// Now that we have our two lists, we need to merge them.
+	updatedReviewSet := make(map[string]struct{})
+	for ref, hash := range updatedRefHashes {
+		priorHash, ok := priorRefHashes[ref]
+		if priorHash == hash {
+			// Nothing has changed for this ref
+			continue
+		}
+		var notes string
+		var err error
+		if !ok {
+			// This is a new ref, so include every noted object
+			notes, err = repo.runGitCommand("ls-tree", "-r", "--name-only", hash)
+		} else {
+			notes, err = repo.runGitCommand("diff", "--name-only", priorHash, hash)
+		}
+		if err != nil {
+			return nil, err
+		}
+		// The name of the review matches the name of the notes tree entry, with slashes removed
+		reviews := strings.Split(strings.Replace(notes, "/", "", -1), "\n")
+		for _, review := range reviews {
+			updatedReviewSet[review] = struct{}{}
+		}
+	}
+
+	updatedReviews := make([]string, 0, len(updatedReviewSet))
+	for key, _ := range updatedReviewSet {
+		updatedReviews = append(updatedReviews, key)
+	}
+	return updatedReviews, nil
 }
 
 // PullNotesAndArchive fetches the contents of the notes and archives refs from
@@ -859,129 +1124,24 @@ func (repo *GitRepo) fetchNotes(remote, notesRefPattern,
 // we merely ensure that their history graph includes every commit that we
 // intend to keep.
 func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern string) error {
-	err := repo.fetchNotes(remote, notesRefPattern, archiveRefPattern)
-	if err != nil {
-		return err
+	if _, err := repo.FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern); err != nil {
+		return fmt.Errorf("failure fetching from the remote %q: %v", remote, err)
 	}
-
-	err = repo.MergeNotes(remote, notesRefPattern)
-	if err != nil {
-		return err
+	if err := repo.MergeArchives(remote, archiveRefPattern); err != nil {
+		return fmt.Errorf("failure merging archives from the remote %q: %v", remote, err)
 	}
-	return repo.MergeArchives(remote, archiveRefPattern)
+	if err := repo.MergeNotes(remote, notesRefPattern); err != nil {
+		return fmt.Errorf("failure merging notes from the remote %q: %v", remote, err)
+	}
+	return nil
 }
 
-// FetchAndReturnNewReviewHashes fetches the notes "branches" and then susses
-// out the IDs (the revision the review points to) of any new reviews, then
-// returns that list of IDs.
-//
-// This is accomplished by determining which files in the notes tree have
-// changed because the _names_ of these files correspond to the revisions they
-// point to.
-func (repo *GitRepo) FetchAndReturnNewReviewHashes(remote, notesRefPattern,
-	archiveRefPattern string) ([]string, error) {
-
-	// Record the current state of the reviews and comments refs.
-	var (
-		getAllRevs, getAllComs    bool
-		reviewsList, commentsList []string
-	)
-	reviewBeforeHash, err := repo.GetCommitHash(
-		"notes/" + remote + "/devtools/reviews")
-	getAllRevs = err != nil
-
-	commentBeforeHash, err := repo.GetCommitHash(
-		"notes/" + remote + "/devtools/discuss")
-	getAllComs = err != nil
-
-	// Update them from the remote.
-	err = repo.fetchNotes(remote, notesRefPattern, archiveRefPattern)
+// Push pushes the given refs to a remote repo.
+func (repo *GitRepo) Push(remote string, refSpecs ...string) error {
+	pushArgs := append([]string{"push", remote}, refSpecs...)
+	err := repo.runGitCommandInline(pushArgs...)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("Failed to push the local refs to the remote '%s': %v", remote, err)
 	}
-
-	// Now, if either of these are new refs, we just use the whole tree at that
-	// new ref. Otherwise we see which reviews or comments changed and collect
-	// them into a list.
-	if getAllRevs {
-		hash, err := repo.GetCommitHash(
-			"notes/" + remote + "/devtools/reviews")
-		// It is possible that even after we've pulled that this ref still
-		// isn't present (because there are no reviews yet).
-		if err == nil {
-			rvws, err := repo.runGitCommand("ls-tree", "-r", "--name-only",
-				hash)
-			if err != nil {
-				return nil, err
-			}
-			reviewsList = strings.Split(strings.Replace(rvws, "/", "", -1),
-				"\n")
-		}
-	} else {
-		reviewAfterHash, err := repo.GetCommitHash(
-			"notes/" + remote + "/devtools/reviews")
-		if err != nil {
-			return nil, err
-		}
-
-		// Only run through this if the fetch fetched new revisions.
-		// Otherwise leave reviewsList as its default value, an empty slice
-		// of strings.
-		if reviewBeforeHash != reviewAfterHash {
-			newReviewsRaw, err := repo.runGitCommand("diff", "--name-only",
-				reviewBeforeHash, reviewAfterHash)
-			if err != nil {
-				return nil, err
-			}
-			reviewsList = strings.Split(strings.Replace(newReviewsRaw,
-				"/", "", -1), "\n")
-		}
-	}
-
-	if getAllComs {
-		hash, err := repo.GetCommitHash(
-			"notes/" + remote + "/devtools/discuss")
-		// It is possible that even after we've pulled that this ref still
-		// isn't present (because there are no comments yet).
-		if err == nil {
-			rvws, err := repo.runGitCommand("ls-tree", "-r", "--name-only",
-				hash)
-			if err != nil {
-				return nil, err
-			}
-			commentsList = strings.Split(strings.Replace(rvws, "/", "", -1),
-				"\n")
-		}
-	} else {
-		commentAfterHash, err := repo.GetCommitHash(
-			"notes/" + remote + "/devtools/discuss")
-		if err != nil {
-			return nil, err
-		}
-
-		// Only run through this if the fetch fetched new revisions.
-		// Otherwise leave commentsList as its default value, an empty slice
-		// of strings.
-		if commentBeforeHash != commentAfterHash {
-			newCommentsRaw, err := repo.runGitCommand("diff", "--name-only",
-				commentBeforeHash, commentAfterHash)
-			if err != nil {
-				return nil, err
-			}
-			commentsList = strings.Split(strings.Replace(newCommentsRaw,
-				"/", "", -1), "\n")
-		}
-	}
-
-	// Now that we have our two lists, we need to merge them.
-	updatedReviewSet := make(map[string]struct{})
-	for _, hash := range append(reviewsList, commentsList...) {
-		updatedReviewSet[hash] = struct{}{}
-	}
-
-	updatedReviews := make([]string, 0, len(updatedReviewSet))
-	for key, _ := range updatedReviewSet {
-		updatedReviews = append(updatedReviews, key)
-	}
-	return updatedReviews, nil
+	return nil
 }

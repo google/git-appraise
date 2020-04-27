@@ -25,7 +25,7 @@ jobs:
 
       - name: Fetch upstream refs
         run: |
-          git fetch origin '+refs/heads/*:refs/heads/*'
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*'
           git fetch origin '+refs/tags/*:refs/tags/*'
           git fetch origin '+refs/pull/*:refs/pull/*'
 

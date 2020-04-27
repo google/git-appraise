@@ -222,6 +222,14 @@ func (r *mockRepoForTest) resolveLocalRef(ref string) (string, error) {
 	return "", fmt.Errorf("The ref %q does not exist", ref)
 }
 
+// HasRef checks whether the specified ref exists in the repo.
+func (r *mockRepoForTest) HasRef(ref string) (bool, error) {
+	if _, ok := r.Refs[ref]; !ok {
+		return false, nil
+	}
+	return true, nil
+}
+
 // VerifyCommit verifies that the supplied hash points to a known commit.
 func (r *mockRepoForTest) VerifyCommit(hash string) error {
 	if _, ok := r.Commits[hash]; !ok {
@@ -516,6 +524,37 @@ func (r *mockRepoForTest) ListCommitsBetween(from, to string) ([]string, error) 
 	return commits, nil
 }
 
+// StoreBlob writes the given file to the repository and returns its hash.
+func (r *mockRepoForTest) StoreBlob(b *Blob) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+// StoreTree writes the given file tree to the repository and returns its hash.
+func (r *mockRepoForTest) StoreTree(t *Tree) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+// ReadTree reads the file tree pointed to by the given ref or hash from the repository.
+func (r *mockRepoForTest) ReadTree(ref string) (*Tree, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+// CreateCommit creates a commit object and returns its hash.
+func (r *mockRepoForTest) CreateCommit(t *Tree, parents []string, message string) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+// CreateCommitFromTreeHash creates a commit object and returns its hash.
+func (r *mockRepoForTest) CreateCommitFromTreeHash(treeHash string, parents []string, message string) (string, error) {
+	return "", fmt.Errorf("not implemented")
+}
+
+// SetRef sets the commit pointed to by the specified ref to `newCommitHash`,
+// iff the ref currently points `previousCommitHash`.
+func (r *mockRepoForTest) SetRef(ref, newCommitHash, previousCommitHash string) error {
+	return fmt.Errorf("not implemented")
+}
+
 // GetNotes reads the notes from the given ref that annotate the given revision.
 func (r *mockRepoForTest) GetNotes(notesRef, revision string) []Note {
 	notesText := r.Notes[notesRef][revision]
@@ -558,6 +597,14 @@ func (r *mockRepoForTest) ListNotedRevisions(notesRef string) []string {
 	return revisions
 }
 
+// Remotes returns a list of the remotes.
+func (r *mockRepoForTest) Remotes() ([]string, error) {
+	return []string{"origin"}, nil
+}
+
+// Fetch fetches from the given remote using the supplied refspecs.
+func (r *mockRepoForTest) Fetch(remote string, fetchSpecs []string) error { return nil }
+
 // PushNotes pushes git notes to a remote repo.
 func (r *mockRepoForTest) PushNotes(remote, notesRefPattern string) error { return nil }
 
@@ -589,14 +636,13 @@ func (r *mockRepoForTest) PullNotesAndArchive(remote, notesRefPattern, archiveRe
 
 // MergeNotes merges in the remote's state of the archives reference into
 // the local repository's.
-func (repo *mockRepoForTest) MergeNotes(remote, notesRefPattern string) error {
+func (r *mockRepoForTest) MergeNotes(remote, notesRefPattern string) error {
 	return nil
 }
 
 // MergeArchives merges in the remote's state of the archives reference into
 // the local repository's.
-func (repo *mockRepoForTest) MergeArchives(remote,
-	archiveRefPattern string) error {
+func (r *mockRepoForTest) MergeArchives(remote, archiveRefPattern string) error {
 	return nil
 }
 
@@ -607,7 +653,11 @@ func (repo *mockRepoForTest) MergeArchives(remote,
 // This is accomplished by determining which files in the notes tree have
 // changed because the _names_ of these files correspond to the revisions they
 // point to.
-func (repo *mockRepoForTest) FetchAndReturnNewReviewHashes(remote, notesRefPattern,
-	archiveRefPattern string) ([]string, error) {
+func (r *mockRepoForTest) FetchAndReturnNewReviewHashes(remote, notesRefPattern string, devtoolsRefPatterns ...string) ([]string, error) {
 	return nil, nil
+}
+
+// Push pushes the given refs to a remote repo.
+func (r *mockRepoForTest) Push(remote string, refPattern ...string) error {
+	return nil
 }
