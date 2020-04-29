@@ -41,14 +41,20 @@ type GitRepo struct {
 	Path string
 }
 
-// Run the given git command with the given I/O reader/writers, returning an error if it fails.
-func (repo *GitRepo) runGitCommandWithIO(stdin io.Reader, stdout, stderr io.Writer, args ...string) error {
+// Run the given git command with the given I/O reader/writers and environment, returning an error if it fails.
+func (repo *GitRepo) runGitCommandWithIOAndEnv(stdin io.Reader, stdout, stderr io.Writer, env []string, args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = repo.Path
 	cmd.Stdin = stdin
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
+	cmd.Env = env
 	return cmd.Run()
+}
+
+// Run the given git command with the given I/O reader/writers, returning an error if it fails.
+func (repo *GitRepo) runGitCommandWithIO(stdin io.Reader, stdout, stderr io.Writer, args ...string) error {
+	return repo.runGitCommandWithIOAndEnv(stdin, stdout, stderr, nil, args...)
 }
 
 // Run the given git command and return its stdout, or an error if the command fails.
@@ -69,6 +75,21 @@ func (repo *GitRepo) runGitCommand(args ...string) (string, error) {
 		err = fmt.Errorf(stderr)
 	}
 	return stdout, err
+}
+
+// Run the given git command and return its stdout, or an error if the command fails.
+func (repo *GitRepo) runGitCommandWithEnv(env []string, args ...string) (string, error) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := repo.runGitCommandWithIOAndEnv(nil, &stdout, &stderr, env, args...)
+	if err != nil {
+		stderrStr := strings.TrimSpace(stderr.String())
+		if stderrStr == "" {
+			stderrStr = "Error running git command: " + strings.Join(args, " ")
+		}
+		err = fmt.Errorf(stderrStr)
+	}
+	return strings.TrimSpace(stdout.String()), err
 }
 
 // Run the given git command using the same stdin, stdout, and stderr as the review tool.
@@ -596,21 +617,41 @@ func (repo *GitRepo) readTreeWithHash(ref, hash string) (*Tree, error) {
 }
 
 // CreateCommit creates a commit object and returns its hash.
-func (repo *GitRepo) CreateCommit(t *Tree, parents []string, message string) (string, error) {
+func (repo *GitRepo) CreateCommit(details *CommitDetails) (string, error) {
+	args := []string{"commit-tree", details.Tree, "-m", details.Summary}
+	for _, parent := range details.Parents {
+		args = append(args, "-p", parent)
+	}
+	var env []string
+	if details.Author != "" {
+		env = append(env, fmt.Sprintf("GIT_AUTHOR_NAME=%s", details.Author))
+	}
+	if details.AuthorEmail != "" {
+		env = append(env, fmt.Sprintf("GIT_AUTHOR_EMAIL=%s", details.AuthorEmail))
+	}
+	if details.AuthorTime != "" {
+		env = append(env, fmt.Sprintf("GIT_AUTHOR_DATE=%s", details.AuthorTime))
+	}
+	if details.Committer != "" {
+		env = append(env, fmt.Sprintf("GIT_COMMITTER_NAME=%s", details.Committer))
+	}
+	if details.CommitterEmail != "" {
+		env = append(env, fmt.Sprintf("GIT_COMMITTER_EMAIL=%s", details.CommitterEmail))
+	}
+	if details.Time != "" {
+		env = append(env, fmt.Sprintf("GIT_COMMITTER_DATE=%s", details.Time))
+	}
+	return repo.runGitCommandWithEnv(env, args...)
+}
+
+// CreateCommitWithTree creates a commit object with the given tree and returns its hash.
+func (repo *GitRepo) CreateCommitWithTree(details *CommitDetails, t *Tree) (string, error) {
 	treeHash, err := repo.StoreTree(t)
 	if err != nil {
 		return "", fmt.Errorf("failure storing a tree: %v", err)
 	}
-	return repo.CreateCommitFromTreeHash(treeHash, parents, message)
-}
-
-// CreateCommitFromTreeHash creates a commit object and returns its hash.
-func (repo *GitRepo) CreateCommitFromTreeHash(treeHash string, parents []string, message string) (string, error) {
-	args := []string{"commit-tree", treeHash, "-m", message}
-	for _, parent := range parents {
-		args = append(args, "-p", parent)
-	}
-	return repo.runGitCommand(args...)
+	details.Tree = treeHash
+	return repo.CreateCommit(details)
 }
 
 // SetRef sets the commit pointed to by the specified ref to `newCommitHash`,
