@@ -794,7 +794,7 @@ func (r *Review) RebaseAndSign(archivePrevious bool) error {
 	return r.Repo.AppendNote(request.Ref, r.Revision, newNote)
 }
 
-func wellKnownCommitForPath(repo repository.Repo, path string) (string, error) {
+func wellKnownCommitForPath(repo repository.Repo, path string, archive bool) (string, error) {
 	commitDetails := &repository.CommitDetails{
 		Author:         "nobody",
 		AuthorEmail:    "nobody",
@@ -804,12 +804,22 @@ func wellKnownCommitForPath(repo repository.Repo, path string) (string, error) {
 		Time:           "100000000 +0000",
 		Summary:        path,
 	}
-	return repo.CreateCommitWithTree(commitDetails, emptyTree)
+	commitHash, err := repo.CreateCommitWithTree(commitDetails, emptyTree)
+	if err != nil {
+		return "", err
+	}
+	if !archive {
+		return commitHash, nil
+	}
+	if err := repo.ArchiveRef(commitHash, archiveRef); err != nil {
+		return "", err
+	}
+	return commitHash, nil
 }
 
 func AddDetachedComment(repo repository.Repo, c *comment.Comment) error {
 	path := c.Location.Path
-	wellKnownCommit, err := wellKnownCommitForPath(repo, path)
+	wellKnownCommit, err := wellKnownCommitForPath(repo, path, true)
 	if err != nil {
 		return fmt.Errorf("Failure finding the well-known commit for detached comments on %q: %v", path, err)
 	}
@@ -821,7 +831,7 @@ func AddDetachedComment(repo repository.Repo, c *comment.Comment) error {
 }
 
 func GetDetachedComments(repo repository.Repo, path string) ([]CommentThread, error) {
-	wellKnownCommit, err := wellKnownCommitForPath(repo, path)
+	wellKnownCommit, err := wellKnownCommitForPath(repo, path, false)
 	if err != nil {
 		return nil, fmt.Errorf("Failure finding the well-known commit for detached comments on %q: %v", path, err)
 	}
