@@ -210,6 +210,16 @@ func PrintDetails(r *review.Review) error {
 	return nil
 }
 
+// PrintCommentsJSON pretty prints the given review in JSON format.
+func PrintCommentsJSON(c []review.CommentThread) error {
+	json, err := review.GetCommentsJSON(c)
+	if err != nil {
+		return err
+	}
+	fmt.Println(json)
+	return nil
+}
+
 // PrintJSON pretty prints the given review in JSON format.
 func PrintJSON(r *review.Review) error {
 	json, err := r.GetJSON()

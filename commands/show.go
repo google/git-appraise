@@ -52,8 +52,7 @@ func showDetachedComments(repo repository.Repo, args []string) error {
 		return fmt.Errorf("Failed to load the comments for %q: %v\n", path, err)
 	}
 	if *showJSONOutput {
-		return errors.New("Not yet implemented")
-		//return output.PrintJSON(r)
+		return output.PrintCommentsJSON(comments)
 	}
 	return output.PrintComments(repo, comments)
 }

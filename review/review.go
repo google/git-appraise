@@ -536,6 +536,15 @@ func prettyPrintJSON(jsonBytes []byte) (string, error) {
 	return prettyBytes.String(), nil
 }
 
+// GetCommentsJSON returns the pretty printed JSON for a slice of comment threads.
+func GetCommentsJSON(cs []CommentThread) (string, error) {
+	jsonBytes, err := json.Marshal(cs)
+	if err != nil {
+		return "", err
+	}
+	return prettyPrintJSON(jsonBytes)
+}
+
 // GetJSON returns the pretty printed JSON for a review summary.
 func (r *Summary) GetJSON() (string, error) {
 	jsonBytes, err := json.Marshal(*r)
