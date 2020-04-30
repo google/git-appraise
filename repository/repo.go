@@ -34,6 +34,7 @@ func (n Note) Hash() string {
 type CommitDetails struct {
 	Author         string   `json:"author,omitempty"`
 	AuthorEmail    string   `json:"authorEmail,omitempty"`
+	AuthorTime     string   `json:"authorTime,omitempty"`
 	Committer      string   `json:"committer,omitempty"`
 	CommitterEmail string   `json:"committerEmail,omitempty"`
 	Tree           string   `json:"tree,omitempty"`
@@ -234,10 +235,10 @@ type Repo interface {
 	ReadTree(ref string) (*Tree, error)
 
 	// CreateCommit creates a commit object and returns its hash.
-	CreateCommit(t *Tree, parents []string, message string) (string, error)
+	CreateCommit(details *CommitDetails) (string, error)
 
-	// CreateCommitFromTreeHash creates a commit object and returns its hash.
-	CreateCommitFromTreeHash(treeHash string, parents []string, message string) (string, error)
+	// CreateCommitWithTree creates a commit object with the given tree and returns its hash.
+	CreateCommitWithTree(details *CommitDetails, t *Tree) (string, error)
 
 	// SetRef sets the commit pointed to by the specified ref to `newCommitHash`,
 	// iff the ref currently points `previousCommitHash`.

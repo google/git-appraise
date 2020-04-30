@@ -540,12 +540,12 @@ func (r *mockRepoForTest) ReadTree(ref string) (*Tree, error) {
 }
 
 // CreateCommit creates a commit object and returns its hash.
-func (r *mockRepoForTest) CreateCommit(t *Tree, parents []string, message string) (string, error) {
+func (r *mockRepoForTest) CreateCommit(details *CommitDetails) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-// CreateCommitFromTreeHash creates a commit object and returns its hash.
-func (r *mockRepoForTest) CreateCommitFromTreeHash(treeHash string, parents []string, message string) (string, error) {
+// CreateCommitWithTree creates a commit object with the given tree and returns its hash.
+func (r *mockRepoForTest) CreateCommitWithTree(details *CommitDetails, t *Tree) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
