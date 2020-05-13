@@ -13,9 +13,10 @@ jobs:
         with:
           go-version: 1.14
 
-      - name: Setup git-appraise and the pr mirror
+      - name: Setup go modules
         run: |
-          export GO111MODULE=on 
+          export GO111MODULE=on
+          go mod init workflow || true 
           go get github.com/google/git-appraise/git-appraise
           go get github.com/google/git-pull-request-mirror/batch
 
