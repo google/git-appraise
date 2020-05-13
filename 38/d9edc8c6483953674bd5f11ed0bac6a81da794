@@ -7,3 +7,5 @@
 {"timestamp":"1588719787","author":"KoopaKing","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":966}},"description":"Nit: maybe `fetchSpecs` should be renamed `refspec` to better align with the git CLI, or if it is intended to be something different, than maybe it should be more opinionated than `[]string` (although I think this is just refspec...)"}
 
 {"timestamp":"1588720058","author":"KoopaKing","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":1025}},"description":"formatting seems a little strange on the string concats of the second param here."}
+
+{"timestamp":"1588720114","author":"KoopaKing","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":1021}},"description":"I notice some of these ref prefixes are used in multiple places, maybe you should make them constants instead of inlining them?"}
