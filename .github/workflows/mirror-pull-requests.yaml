@@ -15,6 +15,7 @@ jobs:
 
       - name: Setup git-appraise and the pr mirror
         run: |
+          export GO111MODULE=on 
           go get github.com/google/git-appraise/git-appraise
           go get github.com/google/git-pull-request-mirror/batch
 
