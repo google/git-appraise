@@ -1,0 +1,1 @@
+{"timestamp":"1588631863","author":"KoopaKing","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":269}},"description":"You don't need to fix this here, but the lambda closure of `err` is a bit sketchy for this `show` function with it being selectively checked."}
