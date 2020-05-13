@@ -11,3 +11,5 @@
 {"timestamp":"1588720114","author":"KoopaKing","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":1021}},"description":"I notice some of these ref prefixes are used in multiple places, maybe you should make them constants instead of inlining them?"}
 
 {"timestamp":"1588720362","author":"KoopaKing","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":1062}},"description":"It's not super obvious to me why this wouldn't use a similar ref pattern to notes... like `refs/devtools/remotes/$remote/$relativeRef`\r\n\r\n"}
+
+{"timestamp":"1588720720","author":"KoopaKing","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":1067}},"description":"`return devtoolsRefPrefix + relativeRef`"}
