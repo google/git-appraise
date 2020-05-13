@@ -1,0 +1,1 @@
+{"timestamp":"1588992018","reviewRef":"refs/pull/99/head","targetRef":"refs/heads/master","requester":"ajzaff","description":"Add `git appraise web` subcommand\n\nAs a convenience, this subcommand will start a new git-appraise-web\r\nserver in the current directory on the given port, which defaults to\r\n12345.","baseCommit":"45703e83847b4cd2c40bb7f21b3cc5461594c1e3"}
