@@ -985,3 +985,12 @@ func (repo *GitRepo) FetchAndReturnNewReviewHashes(remote, notesRefPattern,
 	}
 	return updatedReviews, nil
 }
+
+func (repo *GitRepo) GetColorBool(name string) (bool, error) {
+	err := repo.runGitCommandInline("config", "--get-colorbool", name)
+	return (err == nil), nil
+}
+
+func (repo *GitRepo) GetColor(name, defaultValue string) (string, error) {
+	return repo.runGitCommand("config", "--get-color", name, defaultValue)
+}

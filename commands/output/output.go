@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 )
 
@@ -52,6 +53,15 @@ status: %s
 	// Number of lines of context to print for inline comments
 	contextLineCount = 5
 )
+var defaultColors = map[string]string{
+	"tbr": "red white bold blink",
+	"pending": "cyan",
+	"submitted": "yellow",
+	"accepted": "green",
+	"danger": "yellow red bold blink",
+	"abandon": "magenta",
+	"rejected": "yellow red bold strike",
+}
 
 // getStatusString returns a human friendly string encapsulating both the review's
 // resolved status, and its submitted status.
@@ -77,11 +87,44 @@ func getStatusString(r *review.Summary) string {
 	return "rejected"
 }
 
+func getColorStatusString(repo repository.Repo, statusString string) string {
+	useColor, err := repo.GetColorBool("color.appraise")
+	if err != nil || !useColor {
+		return statusString
+	}
+
+	var colorOn string
+	var colorOff string
+
+	defaultColor, _ := defaultColors[statusString]
+	colorOn, err = repo.GetColor(
+		fmt.Sprintf("color.appraise.%s", statusString),
+		defaultColor,
+	)
+	if err != nil {
+		return statusString
+	}
+
+	colorOff, err = repo.GetColor("", "reset")
+
+	if err != nil {
+		return statusString
+	}
+
+	return fmt.Sprintf("%s%s%s", colorOn, statusString, colorOff)
+}
+
 // PrintSummary prints a single-line summary of a review.
 func PrintSummary(r *review.Summary) {
 	statusString := getStatusString(r)
 	indentedDescription := strings.Replace(r.Request.Description, "\n", "\n  ", -1)
-	fmt.Printf(reviewSummaryTemplate, statusString, r.Revision, indentedDescription)
+
+	fmt.Printf(
+		reviewSummaryTemplate,
+		getColorStatusString(r.Repo, statusString),
+		r.Revision,
+		indentedDescription,
+	)
 }
 
 // reformatTimestamp takes a timestamp string of the form "0123456789" and changes it

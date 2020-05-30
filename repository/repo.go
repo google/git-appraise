@@ -51,6 +51,12 @@ type Repo interface {
 	// GetSubmitStrategy returns the way in which a review is submitted
 	GetSubmitStrategy() (string, error)
 
+	// GetColorBool returns color setting for "name" (e.g. color.diff).
+	GetColorBool(name string) (bool, error)
+
+	// GetColor returns color configured for "name" (e.g. color.diff.new).
+	GetColor(name, defaultValue string) (string, error)
+
 	// HasUncommittedChanges returns true if there are local, uncommitted changes.
 	HasUncommittedChanges() (bool, error)
 
