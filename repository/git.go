@@ -123,6 +123,20 @@ func (repo *GitRepo) HasRef(ref string) (bool, error) {
 	return false, err
 }
 
+// HasObject returns whether or not the repo contains an object with the given hash.
+func (repo *GitRepo) HasObject(hash string) (bool, error) {
+	_, err := repo.runGitCommand("cat-file", "-e", hash)
+	if err == nil {
+		// We verified the object exists
+		return true, nil
+	}
+	if _, ok := err.(*exec.ExitError); ok {
+		return false, nil
+	}
+	// Got an unexpected error
+	return false, err
+}
+
 // GetPath returns the path to the repo.
 func (repo *GitRepo) GetPath() string {
 	return repo.Path
@@ -512,14 +526,8 @@ func (repo *GitRepo) ListCommitsBetween(from, to string) ([]string, error) {
 }
 
 // StoreBlob writes the given file to the repository and returns its hash.
-func (repo *GitRepo) StoreBlob(b *Blob) (string, error) {
-	if b.savedHash != "" {
-		if _, existsErr := repo.runGitCommand("cat-file", "-e", b.savedHash); existsErr == nil {
-			// We verified the blob already exists
-			return b.savedHash, nil
-		}
-	}
-	stdin := strings.NewReader(b.Contents)
+func (repo *GitRepo) StoreBlob(contents string) (string, error) {
+	stdin := strings.NewReader(contents)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	args := []string{"hash-object", "-w", "-t", "blob", "--stdin"}
@@ -532,15 +540,9 @@ func (repo *GitRepo) StoreBlob(b *Blob) (string, error) {
 }
 
 // StoreTree writes the given file tree to the repository and returns its hash.
-func (repo *GitRepo) StoreTree(t *Tree) (string, error) {
-	if t.savedHash != "" {
-		if _, existsErr := repo.runGitCommand("cat-file", "-e", t.savedHash); existsErr == nil {
-			// We verified the tree already exists
-			return t.savedHash, nil
-		}
-	}
+func (repo *GitRepo) StoreTree(contents map[string]TreeChild) (string, error) {
 	var lines []string
-	for path, obj := range t.contents {
+	for path, obj := range contents {
 		objHash, err := obj.Store(repo)
 		if err != nil {
 			return "", err
@@ -569,7 +571,7 @@ func (repo *GitRepo) readBlob(objHash string) (*Blob, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failure reading the file contents of %q: %v", objHash, err)
 	}
-	return &Blob{Contents: out, savedHash: objHash}, nil
+	return &Blob{contents: out, savedHashes: map[Repo]string{repo: objHash}}, nil
 }
 
 func (repo *GitRepo) ReadTree(ref string) (*Tree, error) {
@@ -581,12 +583,11 @@ func (repo *GitRepo) readTreeWithHash(ref, hash string) (*Tree, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failure listing the file contents of %q: %v", ref, err)
 	}
-	t := NewTree()
+	contents := make(map[string]TreeChild)
 	if len(out) == 0 {
 		// This is possible if the tree is empty
-		return t, nil
+		return NewTree(contents), nil
 	}
-	contents := t.Contents()
 	for _, line := range strings.Split(out, "\n") {
 		lineParts := strings.Split(line, "\t")
 		if len(lineParts) != 2 {
@@ -612,7 +613,8 @@ func (repo *GitRepo) readTreeWithHash(ref, hash string) (*Tree, error) {
 		}
 		contents[path] = child
 	}
-	t.savedHash = hash
+	t := NewTree(contents)
+	t.savedHashes[repo] = hash
 	return t, nil
 }
 
@@ -646,7 +648,7 @@ func (repo *GitRepo) CreateCommit(details *CommitDetails) (string, error) {
 
 // CreateCommitWithTree creates a commit object with the given tree and returns its hash.
 func (repo *GitRepo) CreateCommitWithTree(details *CommitDetails, t *Tree) (string, error) {
-	treeHash, err := repo.StoreTree(t)
+	treeHash, err := repo.StoreTree(t.Contents())
 	if err != nil {
 		return "", fmt.Errorf("failure storing a tree: %v", err)
 	}
