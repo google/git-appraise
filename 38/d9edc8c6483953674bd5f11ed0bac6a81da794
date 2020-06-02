@@ -19,3 +19,5 @@
 {"timestamp":"1588721064","author":"KoopaKing","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":1113}},"description":"Nit: should this be using the above defined `Fetch` function?"}
 
 {"timestamp":"1591126188","author":"ojarjur","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":516}},"description":"Done"}
+
+{"timestamp":"1591126216","author":"ojarjur","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":269}},"description":"Ack"}
