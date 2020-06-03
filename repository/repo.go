@@ -313,7 +313,7 @@ type Repo interface {
 	Remotes() ([]string, error)
 
 	// Fetch fetches from the given remote using the supplied refspecs.
-	Fetch(remote string, fetchSpecs []string) error
+	Fetch(remote string, refspecs ...string) error
 
 	// PushNotes pushes git notes to a remote repo.
 	PushNotes(remote, notesRefPattern string) error

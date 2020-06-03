@@ -32,8 +32,10 @@ import (
 )
 
 const (
-	branchRefPrefix   = "refs/heads/"
-	devtoolsRefPrefix = "refs/devtools/"
+	branchRefPrefix         = "refs/heads/"
+	notesRefPrefix          = "refs/notes/"
+	devtoolsRefPrefix       = "refs/devtools/"
+	remoteDevtoolsRefPrefix = "refs/remoteDevtools/"
 )
 
 // GitRepo represents an instance of a (local) git repository.
@@ -964,11 +966,10 @@ func (repo *GitRepo) Remotes() ([]string, error) {
 }
 
 // Fetch fetches from the given remote using the supplied refspecs.
-func (repo *GitRepo) Fetch(remote string, fetchSpecs []string) error {
+func (repo *GitRepo) Fetch(remote string, refspecs ...string) error {
 	args := []string{"fetch", remote}
-	args = append(args, fetchSpecs...)
-	_, err := repo.runGitCommand(args...)
-	return err
+	args = append(args, refspecs...)
+	return repo.runGitCommandInline(args...)
 }
 
 // PushNotes pushes git notes to a remote repo.
@@ -1018,13 +1019,22 @@ func (repo *GitRepo) getRefHashes(refPattern string) (map[string]string, error) 
 }
 
 func getRemoteNotesRef(remote, localNotesRef string) string {
-	relativeNotesRef := strings.TrimPrefix(localNotesRef, "refs/notes/")
-	return "refs/notes/remotes/" + remote + "/" + relativeNotesRef
+	// Note: The pattern for remote notes deviates from that of remote heads and devtools,
+	// because the git command line tool requires all notes refs to be located under the
+	// "refs/notes/" prefix.
+	//
+	// Because of that, we make the remote refs a subset of the local refs instead of
+	// a parallel tree, which is the pattern used for heads and devtools.
+	//
+	// E.G. ("refs/notes/..." -> "refs/notes/remotes/<remote>/...")
+	//   versus ("refs/heads/..." -> "refs/remotes/<remote>/...")
+	relativeNotesRef := strings.TrimPrefix(localNotesRef, notesRefPrefix)
+	return notesRefPrefix + "remotes/" + remote + "/" + relativeNotesRef
 }
 
 func getLocalNotesRef(remote, remoteNotesRef string) string {
-	relativeNotesRef := strings.TrimPrefix(remoteNotesRef, "refs/notes/remotes/"+remote+"/")
-	return "refs/notes/" + relativeNotesRef
+	relativeNotesRef := strings.TrimPrefix(remoteNotesRef, notesRefPrefix+"remotes/"+remote+"/")
+	return notesRefPrefix + relativeNotesRef
 }
 
 // MergeNotes merges in the remote's state of the notes reference into the
@@ -1050,7 +1060,7 @@ func (repo *GitRepo) MergeNotes(remote, notesRefPattern string) error {
 func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
 	fetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
-	err := repo.runGitCommandInline("fetch", remote, fetchRefSpec)
+	err := repo.Fetch(remote, fetchRefSpec)
 	if err != nil {
 		return err
 	}
@@ -1059,13 +1069,13 @@ func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 }
 
 func getRemoteDevtoolsRef(remote, devtoolsRefPattern string) string {
-	relativeRef := strings.TrimPrefix(devtoolsRefPattern, "refs/devtools/")
-	return "refs/remoteDevtools/" + remote + "/" + relativeRef
+	relativeRef := strings.TrimPrefix(devtoolsRefPattern, devtoolsRefPrefix)
+	return remoteDevtoolsRefPrefix + remote + "/" + relativeRef
 }
 
 func getLocalDevtoolsRef(remote, remoteDevtoolsRef string) string {
-	relativeRef := strings.TrimPrefix(remoteDevtoolsRef, "refs/remoteDevtools/"+remote+"/")
-	return "refs/devtools/" + relativeRef
+	relativeRef := strings.TrimPrefix(remoteDevtoolsRef, remoteDevtoolsRefPrefix+remote+"/")
+	return devtoolsRefPrefix + relativeRef
 }
 
 // MergeArchives merges in the remote's state of the archives reference into
@@ -1111,7 +1121,7 @@ func (repo *GitRepo) FetchAndReturnNewReviewHashes(remote, notesRefPattern strin
 		return nil, fmt.Errorf("failure reading the existing ref hashes for the remote %q: %v", remote, err)
 	}
 
-	if err := repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, devtoolsFetchRefSpec); err != nil {
+	if err := repo.Fetch(remote, notesFetchRefSpec, devtoolsFetchRefSpec); err != nil {
 		return nil, fmt.Errorf("failure fetching from the remote %q: %v", remote, err)
 	}
 
