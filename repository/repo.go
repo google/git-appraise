@@ -17,17 +17,123 @@ limitations under the License.
 // Package repository contains helper methods for working with a Git repo.
 package repository
 
+import (
+	"crypto/sha1"
+	"fmt"
+)
+
 // Note represents the contents of a git-note
 type Note []byte
 
+// Hash returns a hash of the given note
+func (n Note) Hash() string {
+	return fmt.Sprintf("%x", sha1.Sum([]byte(n)))
+}
+
 // CommitDetails represents the contents of a commit.
 type CommitDetails struct {
-	Author      string   `json:"author,omitempty"`
-	AuthorEmail string   `json:"authorEmail,omitempty"`
-	Tree        string   `json:"tree,omitempty"`
-	Time        string   `json:"time,omitempty"`
-	Parents     []string `json:"parents,omitempty"`
-	Summary     string   `json:"summary,omitempty"`
+	Author         string   `json:"author,omitempty"`
+	AuthorEmail    string   `json:"authorEmail,omitempty"`
+	AuthorTime     string   `json:"authorTime,omitempty"`
+	Committer      string   `json:"committer,omitempty"`
+	CommitterEmail string   `json:"committerEmail,omitempty"`
+	Tree           string   `json:"tree,omitempty"`
+	Time           string   `json:"time,omitempty"`
+	Parents        []string `json:"parents,omitempty"`
+	Summary        string   `json:"summary,omitempty"`
+}
+
+type TreeChild interface {
+	// Type returns the type of the child object (e.g. "blob" vs. "tree").
+	Type() string
+
+	// Store writes the object to the repository and returns its hash.
+	Store(repo Repo) (string, error)
+}
+
+// Blob represents a (non-directory) file stored in a repository.
+//
+// Blob objects are immutable.
+type Blob struct {
+	savedHashes map[Repo]string
+	contents    string
+}
+
+// NewBlob returns a new *Blob object tied to the given repo with the given contents.
+func NewBlob(contents string) *Blob {
+	savedHashes := make(map[Repo]string)
+	return &Blob{
+		savedHashes: savedHashes,
+		contents:    contents,
+	}
+}
+
+func (b *Blob) Type() string {
+	return "blob"
+}
+
+func (b *Blob) Store(repo Repo) (string, error) {
+	if savedHash := b.savedHashes[repo]; savedHash != "" {
+		return savedHash, nil
+	}
+	savedHash, err := repo.StoreBlob(b.Contents())
+	if err == nil && savedHash != "" {
+		b.savedHashes[repo] = savedHash
+	}
+	return savedHash, nil
+}
+
+// Contents returns the contents of the blob
+func (b *Blob) Contents() string {
+	return b.contents
+}
+
+// Tree represents a directory stored in a repository.
+//
+// Tree objects are immutable.
+type Tree struct {
+	savedHashes map[Repo]string
+	contents    map[string]TreeChild
+}
+
+// NewTree constructs a new *Tree object tied to the given repo with the given contents.
+func NewTree(contents map[string]TreeChild) *Tree {
+	immutableContents := make(map[string]TreeChild)
+	for k, v := range contents {
+		immutableContents[k] = v
+	}
+	savedHashes := make(map[Repo]string)
+	return &Tree{
+		savedHashes: savedHashes,
+		contents:    immutableContents,
+	}
+}
+
+func (t *Tree) Type() string {
+	return "tree"
+}
+
+func (t *Tree) Store(repo Repo) (string, error) {
+	if savedHash := t.savedHashes[repo]; savedHash != "" {
+		return savedHash, nil
+	}
+	savedHash, err := repo.StoreTree(t.Contents())
+	if err == nil && savedHash != "" {
+		t.savedHashes[repo] = savedHash
+	}
+	return savedHash, nil
+}
+
+// Contents returns a map of the child elements of the tree.
+//
+// The returned map is mutable, but changes made to it have no
+// effect on the underly Tree object.
+func (t *Tree) Contents() map[string]TreeChild {
+	result := make(map[string]TreeChild)
+	for k, v := range t.contents {
+		result[k] = v
+	}
+	return result
 }
 
 // Repo represents a source code repository.
@@ -53,6 +159,12 @@ type Repo interface {
 
 	// HasUncommittedChanges returns true if there are local, uncommitted changes.
 	HasUncommittedChanges() (bool, error)
+
+	// HasRef checks whether the specified ref exists in the repo.
+	HasRef(ref string) (bool, error)
+
+	// HasObject returns whether or not the repo contains an object with the given hash.
+	HasObject(hash string) (bool, error)
 
 	// VerifyCommit verifies that the supplied hash points to a known commit.
 	VerifyCommit(hash string) error
@@ -162,6 +274,25 @@ type Repo interface {
 	// The generated list is in chronological order (with the oldest commit first).
 	ListCommitsBetween(from, to string) ([]string, error)
 
+	// StoreBlob writes the given file contents to the repository and returns its hash.
+	StoreBlob(contents string) (string, error)
+
+	// StoreTree writes the given file tree contents to the repository and returns its hash.
+	StoreTree(contents map[string]TreeChild) (string, error)
+
+	// ReadTree reads the file tree pointed to by the given ref or hash from the repository.
+	ReadTree(ref string) (*Tree, error)
+
+	// CreateCommit creates a commit object and returns its hash.
+	CreateCommit(details *CommitDetails) (string, error)
+
+	// CreateCommitWithTree creates a commit object with the given tree and returns its hash.
+	CreateCommitWithTree(details *CommitDetails, t *Tree) (string, error)
+
+	// SetRef sets the commit pointed to by the specified ref to `newCommitHash`,
+	// iff the ref currently points `previousCommitHash`.
+	SetRef(ref, newCommitHash, previousCommitHash string) error
+
 	// GetNotes reads the notes from the given ref that annotate the given revision.
 	GetNotes(notesRef, revision string) []Note
 
@@ -177,6 +308,12 @@ type Repo interface {
 
 	// ListNotedRevisions returns the collection of revisions that are annotated by notes in the given ref.
 	ListNotedRevisions(notesRef string) []string
+
+	// Remotes returns a list of the remotes.
+	Remotes() ([]string, error)
+
+	// Fetch fetches from the given remote using the supplied refspecs.
+	Fetch(remote string, refspecs ...string) error
 
 	// PushNotes pushes git notes to a remote repo.
 	PushNotes(remote, notesRefPattern string) error
@@ -206,6 +343,7 @@ type Repo interface {
 	// MergeNotes merges in the remote's state of the archives reference into
 	// the local repository's.
 	MergeNotes(remote, notesRefPattern string) error
+
 	// MergeArchives merges in the remote's state of the archives reference
 	// into the local repository's.
 	MergeArchives(remote, archiveRefPattern string) error
@@ -217,5 +355,8 @@ type Repo interface {
 	// This is accomplished by determining which files in the notes tree have
 	// changed because the _names_ of these files correspond to the revisions
 	// they point to.
-	FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern string) ([]string, error)
+	FetchAndReturnNewReviewHashes(remote, notesRefPattern string, devtoolsRefPatterns ...string) ([]string, error)
+
+	// Push pushes the given refs to a remote repo.
+	Push(remote string, refPattern ...string) error
 }
