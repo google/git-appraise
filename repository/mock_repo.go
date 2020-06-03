@@ -19,6 +19,7 @@ package repository
 import (
 	"crypto/sha1"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -228,6 +229,11 @@ func (r *mockRepoForTest) HasRef(ref string) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+// HasObject reports whether or not the repo contains an object with the given hash
+func (r *mockRepoForTest) HasObject(hash string) (bool, error) {
+	return false, errors.New("Not implemented")
 }
 
 // VerifyCommit verifies that the supplied hash points to a known commit.
@@ -525,12 +531,12 @@ func (r *mockRepoForTest) ListCommitsBetween(from, to string) ([]string, error) 
 }
 
 // StoreBlob writes the given file to the repository and returns its hash.
-func (r *mockRepoForTest) StoreBlob(b *Blob) (string, error) {
+func (r *mockRepoForTest) StoreBlob(contents string) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
 // StoreTree writes the given file tree to the repository and returns its hash.
-func (r *mockRepoForTest) StoreTree(t *Tree) (string, error) {
+func (r *mockRepoForTest) StoreTree(contents map[string]TreeChild) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
@@ -603,7 +609,7 @@ func (r *mockRepoForTest) Remotes() ([]string, error) {
 }
 
 // Fetch fetches from the given remote using the supplied refspecs.
-func (r *mockRepoForTest) Fetch(remote string, fetchSpecs []string) error { return nil }
+func (r *mockRepoForTest) Fetch(remote string, refspecs ...string) error { return nil }
 
 // PushNotes pushes git notes to a remote repo.
 func (r *mockRepoForTest) PushNotes(remote, notesRefPattern string) error { return nil }

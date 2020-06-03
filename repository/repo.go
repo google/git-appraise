@@ -47,15 +47,25 @@ type TreeChild interface {
 	// Type returns the type of the child object (e.g. "blob" vs. "tree").
 	Type() string
 
-	// Store writes the object to the given repository and returns its hash.
+	// Store writes the object to the repository and returns its hash.
 	Store(repo Repo) (string, error)
 }
 
 // Blob represents a (non-directory) file stored in a repository.
+//
+// Blob objects are immutable.
 type Blob struct {
-	Contents string
+	savedHashes map[Repo]string
+	contents    string
+}
 
-	savedHash string
+// NewBlob returns a new *Blob object tied to the given repo with the given contents.
+func NewBlob(contents string) *Blob {
+	savedHashes := make(map[Repo]string)
+	return &Blob{
+		savedHashes: savedHashes,
+		contents:    contents,
+	}
 }
 
 func (b *Blob) Type() string {
@@ -63,17 +73,40 @@ func (b *Blob) Type() string {
 }
 
 func (b *Blob) Store(repo Repo) (string, error) {
-	return repo.StoreBlob(b)
+	if savedHash := b.savedHashes[repo]; savedHash != "" {
+		return savedHash, nil
+	}
+	savedHash, err := repo.StoreBlob(b.Contents())
+	if err == nil && savedHash != "" {
+		b.savedHashes[repo] = savedHash
+	}
+	return savedHash, nil
+}
+
+// Contents returns the contents of the blob
+func (b *Blob) Contents() string {
+	return b.contents
 }
 
 // Tree represents a directory stored in a repository.
+//
+// Tree objects are immutable.
 type Tree struct {
-	contents  map[string]TreeChild
-	savedHash string
+	savedHashes map[Repo]string
+	contents    map[string]TreeChild
 }
 
-func NewTree() *Tree {
-	return &Tree{contents: make(map[string]TreeChild)}
+// NewTree constructs a new *Tree object tied to the given repo with the given contents.
+func NewTree(contents map[string]TreeChild) *Tree {
+	immutableContents := make(map[string]TreeChild)
+	for k, v := range contents {
+		immutableContents[k] = v
+	}
+	savedHashes := make(map[Repo]string)
+	return &Tree{
+		savedHashes: savedHashes,
+		contents:    immutableContents,
+	}
 }
 
 func (t *Tree) Type() string {
@@ -81,13 +114,26 @@ func (t *Tree) Type() string {
 }
 
 func (t *Tree) Store(repo Repo) (string, error) {
-	return repo.StoreTree(t)
+	if savedHash := t.savedHashes[repo]; savedHash != "" {
+		return savedHash, nil
+	}
+	savedHash, err := repo.StoreTree(t.Contents())
+	if err == nil && savedHash != "" {
+		t.savedHashes[repo] = savedHash
+	}
+	return savedHash, nil
 }
 
+// Contents returns a map of the child elements of the tree.
+//
+// The returned map is mutable, but changes made to it have no
+// effect on the underly Tree object.
 func (t *Tree) Contents() map[string]TreeChild {
-	// Since the returned contents are mutable, we have to assume the hash could change.
-	t.savedHash = ""
-	return t.contents
+	result := make(map[string]TreeChild)
+	for k, v := range t.contents {
+		result[k] = v
+	}
+	return result
 }
 
 // Repo represents a source code repository.
@@ -116,6 +162,9 @@ type Repo interface {
 
 	// HasRef checks whether the specified ref exists in the repo.
 	HasRef(ref string) (bool, error)
+
+	// HasObject returns whether or not the repo contains an object with the given hash.
+	HasObject(hash string) (bool, error)
 
 	// VerifyCommit verifies that the supplied hash points to a known commit.
 	VerifyCommit(hash string) error
@@ -225,11 +274,11 @@ type Repo interface {
 	// The generated list is in chronological order (with the oldest commit first).
 	ListCommitsBetween(from, to string) ([]string, error)
 
-	// StoreBlob writes the given file to the repository and returns its hash.
-	StoreBlob(b *Blob) (string, error)
+	// StoreBlob writes the given file contents to the repository and returns its hash.
+	StoreBlob(contents string) (string, error)
 
-	// StoreTree writes the given file tree to the repository and returns its hash.
-	StoreTree(t *Tree) (string, error)
+	// StoreTree writes the given file tree contents to the repository and returns its hash.
+	StoreTree(contents map[string]TreeChild) (string, error)
 
 	// ReadTree reads the file tree pointed to by the given ref or hash from the repository.
 	ReadTree(ref string) (*Tree, error)
@@ -264,7 +313,7 @@ type Repo interface {
 	Remotes() ([]string, error)
 
 	// Fetch fetches from the given remote using the supplied refspecs.
-	Fetch(remote string, fetchSpecs []string) error
+	Fetch(remote string, refspecs ...string) error
 
 	// PushNotes pushes git notes to a remote repo.
 	PushNotes(remote, notesRefPattern string) error
