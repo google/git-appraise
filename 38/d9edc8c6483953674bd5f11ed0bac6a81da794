@@ -25,3 +25,5 @@
 {"timestamp":"1591142703","author":"ojarjur","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":1025}},"description":"If you mean the lack of spaces between values, that is because it is a method argument. The formatting is automatic and performed by `gofmt`"}
 
 {"timestamp":"1591143549","author":"ojarjur","location":{"commit":"07aa6b7df882e58da3ab315578fc8524c8d87a7a","path":"repository/git.go","range":{"startLine":1062}},"description":"Added comments explaining it. It's actually the notes refs that are the exception. The \"refs/devtools/\"-\u003e\"refs/remoteDevtools/\" naming follows the same pattern of \"refs/heads/\"-\u003e\"refs/remotes/\"."}
+
+{"timestamp":"1591162373","author":"KoopaKing","location":{"commit":"534d89119017144b04334b4e3e60afdd3de1be60","path":"repository/mock_repo.go","range":{"startLine":237}},"description":"nit: Kinda strange using the mix of `fmt.errorf` without params and `errors.New`. Is there a difference I'm unaware of?"}
