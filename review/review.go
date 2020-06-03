@@ -259,13 +259,8 @@ func buildCommentThreads(commentsByHash map[string]comment.Comment) []CommentThr
 	return threads
 }
 
-// loadComments reads in the log-structured sequence of comments for a review,
+// getCommentsFromNotes parsess in the log-structured sequence of comments for a commit,
 // and then builds the corresponding tree-structured comment threads.
-func (r *Summary) loadComments(commentNotes []repository.Note) []CommentThread {
-	commentsByHash := comment.ParseAllValid(commentNotes)
-	return buildCommentThreads(commentsByHash)
-}
-
 func getCommentsFromNotes(repo repository.Repo, revision string, commentNotes []repository.Note) ([]CommentThread, *bool) {
 	commentsByHash := comment.ParseAllValid(commentNotes)
 	comments := buildCommentThreads(commentsByHash)
