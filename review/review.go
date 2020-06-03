@@ -33,7 +33,7 @@ import (
 
 const archiveRef = "refs/devtools/archives/reviews"
 
-var emptyTree = repository.NewTree()
+var emptyTree = repository.NewTree(map[string]repository.TreeChild{})
 
 // CommentThread represents the tree-based hierarchy of comments.
 //
