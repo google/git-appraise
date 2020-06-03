@@ -29,3 +29,5 @@
 {"timestamp":"1591162373","author":"KoopaKing","location":{"commit":"534d89119017144b04334b4e3e60afdd3de1be60","path":"repository/mock_repo.go","range":{"startLine":237}},"description":"nit: Kinda strange using the mix of `fmt.errorf` without params and `errors.New`. Is there a difference I'm unaware of?"}
 
 {"timestamp":"1591166462","author":"ojarjur","location":{"commit":"534d89119017144b04334b4e3e60afdd3de1be60","path":"repository/mock_repo.go","range":{"startLine":237}},"description":"Using `fmt.Errorf` in those cases is wrong. In fact, `fmt.Errorf` will simply wind up calling `errors.New` in those cases.\r\n\r\nI would say that I should go through and fix all of the instances of `fmt.Errorf(\"not implemented\")` to use `errors.New` instead, but what I should really do is just implement them and tests that use them."}
+
+{"timestamp":"1591166600","author":"ojarjur@google.com","location":{"commit":"fa61c7e7ea1bdcfa76bb103e8d6a7a9bab6e5edb"},"resolved":true}
