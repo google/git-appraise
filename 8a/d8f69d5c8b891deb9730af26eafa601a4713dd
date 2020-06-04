@@ -1,3 +1,5 @@
 {"timestamp":"1591246273","author":"KoopaKing","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":55}},"description":"Any reason for the change in capitalization from the surrounding code?"}
 
 {"timestamp":"1591246830","author":"KoopaKing","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":197}},"description":"I'd just inline that."}
+
+{"timestamp":"1591247200","author":"KoopaKing","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":191}},"description":"Why no indent here? Seems like a strange choice.\r\n\r\nWill that make the output something like this? If so seems strange.\r\n```interactive\r\nComments: (1 threads):\r\ncomment: xxxxxxx\r\nauthor: xxxxxxx\r\ntime:   xxxxxx\r\nstatus: xxxxxxx\r\n```\r\n"}
