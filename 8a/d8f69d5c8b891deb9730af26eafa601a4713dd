@@ -1,1 +1,3 @@
 {"timestamp":"1591246273","author":"KoopaKing","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":55}},"description":"Any reason for the change in capitalization from the surrounding code?"}
+
+{"timestamp":"1591246830","author":"KoopaKing","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":197}},"description":"I'd just inline that."}
