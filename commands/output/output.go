@@ -28,6 +28,15 @@ import (
 )
 
 const (
+	// Template for printing the summary of a list of reviews.
+	reviewListTemplate = `Loaded %d reviews:
+`
+	// Template for printing the summary of a list of open reviews.
+	openReviewListTemplate = `Loaded %d open reviews:
+`
+	// Template for printing the summary of a list of comment threads.
+	commentListTemplate = `Loaded %d comment threads:
+`
 	// Template for printing the summary of a code review.
 	reviewSummaryTemplate = `[%s] %.12s
   %s
@@ -49,9 +58,6 @@ status: %s
 %s`
 	// Template for displaying the summary of the comment threads for a review
 	commentSummaryTemplate = `  comments (%d threads):
-`
-	// Template for displaying the summary of the detached comment threads for a path
-	detachedCommentSummaryTemplate = `Comments (%d threads):
 `
 	// Number of lines of context to print for inline comments
 	contextLineCount = 5
@@ -79,6 +85,18 @@ func getStatusString(r *review.Summary) string {
 		return "abandon"
 	}
 	return "rejected"
+}
+
+// PrintSummaries prints single-line summaries of a slice of reviews.
+func PrintSummaries(reviews []review.Summary, listAll bool) {
+	if listAll {
+		fmt.Printf(reviewListTemplate, len(reviews))
+	} else {
+		fmt.Printf(openReviewListTemplate, len(reviews))
+	}
+	for _, r := range reviews {
+		PrintSummary(&r)
+	}
 }
 
 // PrintSummary prints a single-line summary of a review.
@@ -186,15 +204,14 @@ func printCommentsWithIndent(repo repository.Repo, c []review.CommentThread, ind
 
 // PrintComments prints all of the given comment threads.
 func PrintComments(repo repository.Repo, c []review.CommentThread) error {
-	fmt.Printf(detachedCommentSummaryTemplate, len(c))
-	return printCommentsWithIndent(repo, c, "")
+	fmt.Printf(commentListTemplate, len(c))
+	return printCommentsWithIndent(repo, c, "  ")
 }
 
 // printComments prints all of the comments for the review, with snippets of the preceding source code.
 func printComments(r *review.Review) error {
 	fmt.Printf(commentSummaryTemplate, len(r.Comments))
-	indent := "    "
-	return printCommentsWithIndent(r.Repo, r.Comments, indent)
+	return printCommentsWithIndent(r.Repo, r.Comments, "    ")
 }
 
 // PrintDetails prints a multi-line overview of a review, including all comments.
