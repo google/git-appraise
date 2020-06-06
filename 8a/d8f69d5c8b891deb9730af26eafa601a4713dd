@@ -1,15 +1,8 @@
 {"timestamp":"1591246273","author":"KoopaKing","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":55}},"description":"Any reason for the change in capitalization from the surrounding code?"}
-
 {"timestamp":"1591246830","author":"KoopaKing","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":197}},"description":"I'd just inline that."}
-
 {"timestamp":"1591247200","author":"KoopaKing","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":191}},"description":"Why no indent here? Seems like a strange choice.\r\n\r\nWill that make the output something like this? If so seems strange.\r\n```interactive\r\nComments: (1 threads):\r\ncomment: xxxxxxx\r\nauthor: xxxxxxx\r\ntime:   xxxxxx\r\nstatus: xxxxxxx\r\n```\r\n"}
-
 {"timestamp":"1591248929","author":"KoopaKing","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"review/review.go","range":{"startLine":263}},"description":"*parses\r\n\r\nAlso I think you should drop the \"in\" after parses."}
-
 {"timestamp":"1591403464","author":"ojarjur","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"review/review.go","range":{"startLine":263}},"description":"Thanks, good catch!\r\n\r\nDone."}
-
 {"timestamp":"1591405340","author":"ojarjur","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":197}},"description":"Done"}
-
 {"timestamp":"1591405358","author":"ojarjur","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":191}},"description":"Good point; there should be an indent of at least a couple spaces.\r\n\r\nDone"}
-
 {"timestamp":"1591405439","author":"ojarjur","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":55}},"description":"I was trying to make the output for a list of comments consistent with the output for a list of reviews.\r\n\r\nHowever, looking at this, it seems that the logic for the output of a list of reviews was not in the `output` package.\r\n\r\nI've now fixed that and also changed the wording for the two different list outputs so that they are more consistent."}
