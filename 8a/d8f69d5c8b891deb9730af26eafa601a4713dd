@@ -9,3 +9,5 @@
 {"timestamp":"1591403464","author":"ojarjur","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"review/review.go","range":{"startLine":263}},"description":"Thanks, good catch!\r\n\r\nDone."}
 
 {"timestamp":"1591405340","author":"ojarjur","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":197}},"description":"Done"}
+
+{"timestamp":"1591405358","author":"ojarjur","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":191}},"description":"Good point; there should be an indent of at least a couple spaces.\r\n\r\nDone"}
