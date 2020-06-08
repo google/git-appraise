@@ -410,6 +410,12 @@ func (repo *GitRepo) ArchiveRef(ref, archive string) error {
 	if err != nil {
 		archiveHash = ""
 	} else {
+		if isAncestor, err := repo.IsAncestor(refHash, archiveHash); err != nil {
+			return err
+		} else if isAncestor {
+			// The ref has already been archived, so we have nothing to do
+			return nil
+		}
 		commitTreeArgs = append(commitTreeArgs, "-p", archiveHash)
 	}
 	commitTreeArgs = append(commitTreeArgs, "-p", refHash, "-m", fmt.Sprintf("Archive %s", refHash), refDetails.Tree)

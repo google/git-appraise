@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+
 	"github.com/google/git-appraise/commands/output"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
@@ -39,14 +40,8 @@ func listReviews(repo repository.Repo, args []string) error {
 	var reviews []review.Summary
 	if *listAll {
 		reviews = review.ListAll(repo)
-		if !*listJSONOutput {
-			fmt.Printf("Loaded %d reviews:\n", len(reviews))
-		}
 	} else {
 		reviews = review.ListOpen(repo)
-		if !*listJSONOutput {
-			fmt.Printf("Loaded %d open reviews:\n", len(reviews))
-		}
 	}
 	if *listJSONOutput {
 		b, err := json.MarshalIndent(reviews, "", "  ")
@@ -56,9 +51,7 @@ func listReviews(repo repository.Repo, args []string) error {
 		fmt.Println(string(b))
 		return nil
 	}
-	for _, r := range reviews {
-		output.PrintSummary(&r)
-	}
+	output.PrintSummaries(reviews, *listAll)
 	return nil
 }
 

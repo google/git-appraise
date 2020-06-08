@@ -33,6 +33,8 @@ import (
 
 const archiveRef = "refs/devtools/archives/reviews"
 
+var emptyTree = repository.NewTree(map[string]repository.TreeChild{})
+
 // CommentThread represents the tree-based hierarchy of comments.
 //
 // The Resolved field represents the aggregate status of the entire thread. If
@@ -257,11 +259,13 @@ func buildCommentThreads(commentsByHash map[string]comment.Comment) []CommentThr
 	return threads
 }
 
-// loadComments reads in the log-structured sequence of comments for a review,
+// getCommentsFromNotes parses the log-structured sequence of comments for a commit,
 // and then builds the corresponding tree-structured comment threads.
-func (r *Summary) loadComments(commentNotes []repository.Note) []CommentThread {
+func getCommentsFromNotes(repo repository.Repo, revision string, commentNotes []repository.Note) ([]CommentThread, *bool) {
 	commentsByHash := comment.ParseAllValid(commentNotes)
-	return buildCommentThreads(commentsByHash)
+	comments := buildCommentThreads(commentsByHash)
+	resolved := updateThreadsStatus(comments)
+	return comments, resolved
 }
 
 func getSummaryFromNotes(repo repository.Repo, revision string, requestNotes, commentNotes []repository.Note) (*Summary, error) {
@@ -276,18 +280,23 @@ func getSummaryFromNotes(repo repository.Repo, revision string, requestNotes, co
 		Request:     requests[len(requests)-1],
 		AllRequests: requests,
 	}
-	reviewSummary.Comments = reviewSummary.loadComments(commentNotes)
-	reviewSummary.Resolved = updateThreadsStatus(reviewSummary.Comments)
+	comments, resolved := getCommentsFromNotes(repo, revision, commentNotes)
+	reviewSummary.Comments = comments
+	reviewSummary.Resolved = resolved
 	return &reviewSummary, nil
+}
+
+func GetComments(repo repository.Repo, revision string) ([]CommentThread, error) {
+	commentNotes := repo.GetNotes(comment.Ref, revision)
+	c, _ := getCommentsFromNotes(repo, revision, commentNotes)
+	return c, nil
 }
 
 // GetSummary returns the summary of the code review specified by its revision
 // and the references which contain that reviews summary and comments.
 //
 // If no review request exists, the returned review summary is nil.
-func GetSummaryViaRefs(repo repository.Repo, requestRef, commentRef,
-	revision string) (*Summary, error) {
-
+func GetSummaryViaRefs(repo repository.Repo, requestRef, commentRef, revision string) (*Summary, error) {
 	if err := repo.VerifyCommit(revision); err != nil {
 		return nil, fmt.Errorf("Could not find a commit named %q", revision)
 	}
@@ -520,6 +529,15 @@ func prettyPrintJSON(jsonBytes []byte) (string, error) {
 		return "", err
 	}
 	return prettyBytes.String(), nil
+}
+
+// GetCommentsJSON returns the pretty printed JSON for a slice of comment threads.
+func GetCommentsJSON(cs []CommentThread) (string, error) {
+	jsonBytes, err := json.Marshal(cs)
+	if err != nil {
+		return "", err
+	}
+	return prettyPrintJSON(jsonBytes)
 }
 
 // GetJSON returns the pretty printed JSON for a review summary.
@@ -769,4 +787,48 @@ func (r *Review) RebaseAndSign(archivePrevious bool) error {
 		return err
 	}
 	return r.Repo.AppendNote(request.Ref, r.Revision, newNote)
+}
+
+func wellKnownCommitForPath(repo repository.Repo, path string, archive bool) (string, error) {
+	commitDetails := &repository.CommitDetails{
+		Author:         "nobody",
+		AuthorEmail:    "nobody",
+		AuthorTime:     "100000000 +0000",
+		Committer:      "nobody",
+		CommitterEmail: "nobody",
+		Time:           "100000000 +0000",
+		Summary:        path,
+	}
+	commitHash, err := repo.CreateCommitWithTree(commitDetails, emptyTree)
+	if err != nil {
+		return "", err
+	}
+	if !archive {
+		return commitHash, nil
+	}
+	if err := repo.ArchiveRef(commitHash, archiveRef); err != nil {
+		return "", err
+	}
+	return commitHash, nil
+}
+
+func AddDetachedComment(repo repository.Repo, c *comment.Comment) error {
+	path := c.Location.Path
+	wellKnownCommit, err := wellKnownCommitForPath(repo, path, true)
+	if err != nil {
+		return fmt.Errorf("Failure finding the well-known commit for detached comments on %q: %v", path, err)
+	}
+	commentNote, err := c.Write()
+	if err != nil {
+		return err
+	}
+	return repo.AppendNote(comment.Ref, wellKnownCommit, commentNote)
+}
+
+func GetDetachedComments(repo repository.Repo, path string) ([]CommentThread, error) {
+	wellKnownCommit, err := wellKnownCommitForPath(repo, path, false)
+	if err != nil {
+		return nil, fmt.Errorf("Failure finding the well-known commit for detached comments on %q: %v", path, err)
+	}
+	return GetComments(repo, wellKnownCommit)
 }
