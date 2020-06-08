@@ -24,10 +24,20 @@ import (
 	"time"
 
 	"github.com/google/git-appraise/fork"
+	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 )
 
 const (
+	// Template for printing the summary of a list of reviews.
+	reviewListTemplate = `Loaded %d reviews:
+`
+	// Template for printing the summary of a list of open reviews.
+	openReviewListTemplate = `Loaded %d open reviews:
+`
+	// Template for printing the summary of a list of comment threads.
+	commentListTemplate = `Loaded %d comment threads:
+`
 	// Template for printing the summary of a code review.
 	reviewSummaryTemplate = `[%s] %.12s
   %s
@@ -86,6 +96,18 @@ func getStatusString(r *review.Summary) string {
 	return "rejected"
 }
 
+// PrintSummaries prints single-line summaries of a slice of reviews.
+func PrintSummaries(reviews []review.Summary, listAll bool) {
+	if listAll {
+		fmt.Printf(reviewListTemplate, len(reviews))
+	} else {
+		fmt.Printf(openReviewListTemplate, len(reviews))
+	}
+	for _, r := range reviews {
+		PrintSummary(&r)
+	}
+}
+
 // PrintSummary prints a single-line summary of a review.
 func PrintSummary(r *review.Summary) {
 	statusString := getStatusString(r)
@@ -108,16 +130,15 @@ func reformatTimestamp(timestamp string) string {
 }
 
 // showThread prints the detailed output for an entire comment thread.
-func showThread(r *review.Review, thread review.CommentThread) error {
+func showThread(repo repository.Repo, thread review.CommentThread, indent string) error {
 	comment := thread.Comment
-	indent := "    "
 	if comment.Location != nil && comment.Location.Path != "" && comment.Location.Range != nil && comment.Location.Range.StartLine > 0 {
-		contents, err := r.Repo.Show(comment.Location.Commit, comment.Location.Path)
+		contents, err := repo.Show(comment.Location.Commit, comment.Location.Path)
 		if err != nil {
 			return err
 		}
 		lines := strings.Split(contents, "\n")
-		err = comment.Location.Check(r.Repo)
+		err = comment.Location.Check(repo)
 		if err != nil {
 			return err
 		}
@@ -145,11 +166,11 @@ func showThread(r *review.Review, thread review.CommentThread) error {
 			fmt.Println(indent + "|" + strings.Join(lines[firstLine-1:lastLine], "\n"+indent+"|"))
 		}
 	}
-	return showSubThread(r, thread, indent)
+	return showSubThread(repo, thread, indent)
 }
 
 // showSubThread prints the given comment (sub)thread, indented by the given prefix string.
-func showSubThread(r *review.Review, thread review.CommentThread, indent string) error {
+func showSubThread(repo repository.Repo, thread review.CommentThread, indent string) error {
 	statusString := "fyi"
 	if thread.Resolved != nil {
 		if *thread.Resolved {
@@ -166,7 +187,7 @@ func showSubThread(r *review.Review, thread review.CommentThread, indent string)
 	indentedSummary := strings.Replace(commentSummary, "\n", "\n"+indent, -1)
 	fmt.Println(indentedSummary)
 	for _, child := range thread.Children {
-		err := showSubThread(r, child, indent)
+		err := showSubThread(repo, child, indent)
 		if err != nil {
 			return err
 		}
@@ -179,16 +200,27 @@ func printAnalyses(r *review.Review) {
 	fmt.Println("  analyses: ", r.GetAnalysesMessage())
 }
 
-// printComments prints all of the comments for the review, with snippets of the preceding source code.
-func printComments(r *review.Review) error {
-	fmt.Printf(commentSummaryTemplate, len(r.Comments))
-	for _, thread := range r.Comments {
-		err := showThread(r, thread)
+// printCommentsWithIndent prints all of the comment threads with the given indent before each line.
+func printCommentsWithIndent(repo repository.Repo, c []review.CommentThread, indent string) error {
+	for _, thread := range c {
+		err := showThread(repo, thread, indent)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// PrintComments prints all of the given comment threads.
+func PrintComments(repo repository.Repo, c []review.CommentThread) error {
+	fmt.Printf(commentListTemplate, len(c))
+	return printCommentsWithIndent(repo, c, "  ")
+}
+
+// printComments prints all of the comments for the review, with snippets of the preceding source code.
+func printComments(r *review.Review) error {
+	fmt.Printf(commentSummaryTemplate, len(r.Comments))
+	return printCommentsWithIndent(r.Repo, r.Comments, "    ")
 }
 
 // PrintDetails prints a multi-line overview of a review, including all comments.
@@ -201,6 +233,16 @@ func PrintDetails(r *review.Review) error {
 	if err := printComments(r); err != nil {
 		return err
 	}
+	return nil
+}
+
+// PrintCommentsJSON pretty prints the given review in JSON format.
+func PrintCommentsJSON(c []review.CommentThread) error {
+	json, err := review.GetCommentsJSON(c)
+	if err != nil {
+		return err
+	}
+	fmt.Println(json)
 	return nil
 }
 

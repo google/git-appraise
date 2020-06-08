@@ -33,8 +33,10 @@ import (
 )
 
 const (
-	branchRefPrefix   = "refs/heads/"
-	devtoolsRefPrefix = "refs/devtools/"
+	branchRefPrefix         = "refs/heads/"
+	notesRefPrefix          = "refs/notes/"
+	devtoolsRefPrefix       = "refs/devtools/"
+	remoteDevtoolsRefPrefix = "refs/remoteDevtools/"
 )
 
 // GitRepo represents an instance of a (local) git repository.
@@ -42,14 +44,20 @@ type GitRepo struct {
 	Path string
 }
 
-// Run the given git command with the given I/O reader/writers, returning an error if it fails.
-func (repo *GitRepo) runGitCommandWithIO(stdin io.Reader, stdout, stderr io.Writer, args ...string) error {
+// Run the given git command with the given I/O reader/writers and environment, returning an error if it fails.
+func (repo *GitRepo) runGitCommandWithIOAndEnv(stdin io.Reader, stdout, stderr io.Writer, env []string, args ...string) error {
 	cmd := exec.Command("git", args...)
 	cmd.Dir = repo.Path
 	cmd.Stdin = stdin
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
+	cmd.Env = env
 	return cmd.Run()
+}
+
+// Run the given git command with the given I/O reader/writers, returning an error if it fails.
+func (repo *GitRepo) runGitCommandWithIO(stdin io.Reader, stdout, stderr io.Writer, args ...string) error {
+	return repo.runGitCommandWithIOAndEnv(stdin, stdout, stderr, nil, args...)
 }
 
 // Run the given git command and return its stdout, or an error if the command fails.
@@ -70,6 +78,21 @@ func (repo *GitRepo) runGitCommand(args ...string) (string, error) {
 		err = fmt.Errorf(stderr)
 	}
 	return stdout, err
+}
+
+// Run the given git command and return its stdout, or an error if the command fails.
+func (repo *GitRepo) runGitCommandWithEnv(env []string, args ...string) (string, error) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	err := repo.runGitCommandWithIOAndEnv(nil, &stdout, &stderr, env, args...)
+	if err != nil {
+		stderrStr := strings.TrimSpace(stderr.String())
+		if stderrStr == "" {
+			stderrStr = "Error running git command: " + strings.Join(args, " ")
+		}
+		err = fmt.Errorf(stderrStr)
+	}
+	return strings.TrimSpace(stdout.String()), err
 }
 
 // Run the given git command using the same stdin, stdout, and stderr as the review tool.
@@ -94,6 +117,20 @@ func NewGitRepo(path string) (*GitRepo, error) {
 func (repo *GitRepo) HasRef(ref string) (bool, error) {
 	_, _, err := repo.runGitCommandRaw("show-ref", "--verify", "--quiet", ref)
 	if err == nil {
+		return true, nil
+	}
+	if _, ok := err.(*exec.ExitError); ok {
+		return false, nil
+	}
+	// Got an unexpected error
+	return false, err
+}
+
+// HasObject returns whether or not the repo contains an object with the given hash.
+func (repo *GitRepo) HasObject(hash string) (bool, error) {
+	_, err := repo.runGitCommand("cat-file", "-e", hash)
+	if err == nil {
+		// We verified the object exists
 		return true, nil
 	}
 	if _, ok := err.(*exec.ExitError); ok {
@@ -374,6 +411,12 @@ func (repo *GitRepo) ArchiveRef(ref, archive string) error {
 	if err != nil {
 		archiveHash = ""
 	} else {
+		if isAncestor, err := repo.IsAncestor(refHash, archiveHash); err != nil {
+			return err
+		} else if isAncestor {
+			// The ref has already been archived, so we have nothing to do
+			return nil
+		}
 		commitTreeArgs = append(commitTreeArgs, "-p", archiveHash)
 	}
 	commitTreeArgs = append(commitTreeArgs, "-p", refHash, "-m", fmt.Sprintf("Archive %s", refHash), refDetails.Tree)
@@ -492,14 +535,8 @@ func (repo *GitRepo) ListCommitsBetween(from, to string) ([]string, error) {
 }
 
 // StoreBlob writes the given file to the repository and returns its hash.
-func (repo *GitRepo) StoreBlob(b *Blob) (string, error) {
-	if b.savedHash != "" {
-		if _, existsErr := repo.runGitCommand("cat-file", "-e", b.savedHash); existsErr == nil {
-			// We verified the blob already exists
-			return b.savedHash, nil
-		}
-	}
-	stdin := strings.NewReader(b.Contents)
+func (repo *GitRepo) StoreBlob(contents string) (string, error) {
+	stdin := strings.NewReader(contents)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	args := []string{"hash-object", "-w", "-t", "blob", "--stdin"}
@@ -512,15 +549,9 @@ func (repo *GitRepo) StoreBlob(b *Blob) (string, error) {
 }
 
 // StoreTree writes the given file tree to the repository and returns its hash.
-func (repo *GitRepo) StoreTree(t *Tree) (string, error) {
-	if t.savedHash != "" {
-		if _, existsErr := repo.runGitCommand("cat-file", "-e", t.savedHash); existsErr == nil {
-			// We verified the tree already exists
-			return t.savedHash, nil
-		}
-	}
+func (repo *GitRepo) StoreTree(contents map[string]TreeChild) (string, error) {
 	var lines []string
-	for path, obj := range t.contents {
+	for path, obj := range contents {
 		objHash, err := obj.Store(repo)
 		if err != nil {
 			return "", err
@@ -549,7 +580,7 @@ func (repo *GitRepo) readBlob(objHash string) (*Blob, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failure reading the file contents of %q: %v", objHash, err)
 	}
-	return &Blob{Contents: out, savedHash: objHash}, nil
+	return &Blob{contents: out, savedHashes: map[Repo]string{repo: objHash}}, nil
 }
 
 func (repo *GitRepo) ReadTree(ref string) (*Tree, error) {
@@ -561,12 +592,11 @@ func (repo *GitRepo) readTreeWithHash(ref, hash string) (*Tree, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failure listing the file contents of %q: %v", ref, err)
 	}
-	t := NewTree()
+	contents := make(map[string]TreeChild)
 	if len(out) == 0 {
 		// This is possible if the tree is empty
-		return t, nil
+		return NewTree(contents), nil
 	}
-	contents := t.Contents()
 	for _, line := range strings.Split(out, "\n") {
 		lineParts := strings.Split(line, "\t")
 		if len(lineParts) != 2 {
@@ -592,26 +622,47 @@ func (repo *GitRepo) readTreeWithHash(ref, hash string) (*Tree, error) {
 		}
 		contents[path] = child
 	}
-	t.savedHash = hash
+	t := NewTree(contents)
+	t.savedHashes[repo] = hash
 	return t, nil
 }
 
 // CreateCommit creates a commit object and returns its hash.
-func (repo *GitRepo) CreateCommit(t *Tree, parents []string, message string) (string, error) {
-	treeHash, err := repo.StoreTree(t)
+func (repo *GitRepo) CreateCommit(details *CommitDetails) (string, error) {
+	args := []string{"commit-tree", details.Tree, "-m", details.Summary}
+	for _, parent := range details.Parents {
+		args = append(args, "-p", parent)
+	}
+	var env []string
+	if details.Author != "" {
+		env = append(env, fmt.Sprintf("GIT_AUTHOR_NAME=%s", details.Author))
+	}
+	if details.AuthorEmail != "" {
+		env = append(env, fmt.Sprintf("GIT_AUTHOR_EMAIL=%s", details.AuthorEmail))
+	}
+	if details.AuthorTime != "" {
+		env = append(env, fmt.Sprintf("GIT_AUTHOR_DATE=%s", details.AuthorTime))
+	}
+	if details.Committer != "" {
+		env = append(env, fmt.Sprintf("GIT_COMMITTER_NAME=%s", details.Committer))
+	}
+	if details.CommitterEmail != "" {
+		env = append(env, fmt.Sprintf("GIT_COMMITTER_EMAIL=%s", details.CommitterEmail))
+	}
+	if details.Time != "" {
+		env = append(env, fmt.Sprintf("GIT_COMMITTER_DATE=%s", details.Time))
+	}
+	return repo.runGitCommandWithEnv(env, args...)
+}
+
+// CreateCommitWithTree creates a commit object with the given tree and returns its hash.
+func (repo *GitRepo) CreateCommitWithTree(details *CommitDetails, t *Tree) (string, error) {
+	treeHash, err := repo.StoreTree(t.Contents())
 	if err != nil {
 		return "", fmt.Errorf("failure storing a tree: %v", err)
 	}
-	return repo.CreateCommitFromTreeHash(treeHash, parents, message)
-}
-
-// CreateCommitFromTreeHash creates a commit object and returns its hash.
-func (repo *GitRepo) CreateCommitFromTreeHash(treeHash string, parents []string, message string) (string, error) {
-	args := []string{"commit-tree", treeHash, "-m", message}
-	for _, parent := range parents {
-		args = append(args, "-p", parent)
-	}
-	return repo.runGitCommand(args...)
+	details.Tree = treeHash
+	return repo.CreateCommit(details)
 }
 
 // SetRef sets the commit pointed to by the specified ref to `newCommitHash`,
@@ -922,11 +973,10 @@ func (repo *GitRepo) Remotes() ([]string, error) {
 }
 
 // Fetch fetches from the given remote using the supplied refspecs.
-func (repo *GitRepo) Fetch(remote string, fetchSpecs []string) error {
+func (repo *GitRepo) Fetch(remote string, refspecs ...string) error {
 	args := []string{"fetch", remote}
-	args = append(args, fetchSpecs...)
-	_, err := repo.runGitCommand(args...)
-	return err
+	args = append(args, refspecs...)
+	return repo.runGitCommandInline(args...)
 }
 
 // PushNotes pushes git notes to a remote repo.
@@ -976,13 +1026,22 @@ func (repo *GitRepo) getRefHashes(refPattern string) (map[string]string, error) 
 }
 
 func getRemoteNotesRef(remote, localNotesRef string) string {
-	relativeNotesRef := strings.TrimPrefix(localNotesRef, "refs/notes/")
-	return "refs/notes/remotes/" + remote + "/" + relativeNotesRef
+	// Note: The pattern for remote notes deviates from that of remote heads and devtools,
+	// because the git command line tool requires all notes refs to be located under the
+	// "refs/notes/" prefix.
+	//
+	// Because of that, we make the remote refs a subset of the local refs instead of
+	// a parallel tree, which is the pattern used for heads and devtools.
+	//
+	// E.G. ("refs/notes/..." -> "refs/notes/remotes/<remote>/...")
+	//   versus ("refs/heads/..." -> "refs/remotes/<remote>/...")
+	relativeNotesRef := strings.TrimPrefix(localNotesRef, notesRefPrefix)
+	return notesRefPrefix + "remotes/" + remote + "/" + relativeNotesRef
 }
 
 func getLocalNotesRef(remote, remoteNotesRef string) string {
-	relativeNotesRef := strings.TrimPrefix(remoteNotesRef, "refs/notes/remotes/"+remote+"/")
-	return "refs/notes/" + relativeNotesRef
+	relativeNotesRef := strings.TrimPrefix(remoteNotesRef, notesRefPrefix+"remotes/"+remote+"/")
+	return notesRefPrefix + relativeNotesRef
 }
 
 // MergeNotes merges in the remote's state of the notes reference into the
@@ -1008,7 +1067,7 @@ func (repo *GitRepo) MergeNotes(remote, notesRefPattern string) error {
 func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 	remoteNotesRefPattern := getRemoteNotesRef(remote, notesRefPattern)
 	fetchRefSpec := fmt.Sprintf("+%s:%s", notesRefPattern, remoteNotesRefPattern)
-	err := repo.runGitCommandInline("fetch", remote, fetchRefSpec)
+	err := repo.Fetch(remote, fetchRefSpec)
 	if err != nil {
 		return err
 	}
@@ -1017,13 +1076,13 @@ func (repo *GitRepo) PullNotes(remote, notesRefPattern string) error {
 }
 
 func getRemoteDevtoolsRef(remote, devtoolsRefPattern string) string {
-	relativeRef := strings.TrimPrefix(devtoolsRefPattern, "refs/devtools/")
-	return "refs/remoteDevtools/" + remote + "/" + relativeRef
+	relativeRef := strings.TrimPrefix(devtoolsRefPattern, devtoolsRefPrefix)
+	return remoteDevtoolsRefPrefix + remote + "/" + relativeRef
 }
 
 func getLocalDevtoolsRef(remote, remoteDevtoolsRef string) string {
-	relativeRef := strings.TrimPrefix(remoteDevtoolsRef, "refs/remoteDevtools/"+remote+"/")
-	return "refs/devtools/" + relativeRef
+	relativeRef := strings.TrimPrefix(remoteDevtoolsRef, remoteDevtoolsRefPrefix+remote+"/")
+	return devtoolsRefPrefix + relativeRef
 }
 
 // MergeArchives merges in the remote's state of the archives reference into
@@ -1069,7 +1128,7 @@ func (repo *GitRepo) FetchAndReturnNewReviewHashes(remote, notesRefPattern strin
 		return nil, fmt.Errorf("failure reading the existing ref hashes for the remote %q: %v", remote, err)
 	}
 
-	if err := repo.runGitCommandInline("fetch", remote, notesFetchRefSpec, devtoolsFetchRefSpec); err != nil {
+	if err := repo.Fetch(remote, notesFetchRefSpec, devtoolsFetchRefSpec); err != nil {
 		return nil, fmt.Errorf("failure fetching from the remote %q: %v", remote, err)
 	}
 

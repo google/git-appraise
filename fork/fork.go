@@ -99,32 +99,62 @@ func forkPath(fork *Fork) []string {
 }
 
 func encodeListAsHashedFiles(items []string) *repository.Tree {
-	t := repository.NewTree()
-	contents := t.Contents()
+	contents := make(map[string]repository.TreeChild)
 	for _, item := range items {
-		blob := &repository.Blob{Contents: item}
+		blob := repository.NewBlob(item)
 		path := fmt.Sprintf("%x", sha1.Sum([]byte(item)))
 		contents[path] = blob
 	}
-	return t
+	return repository.NewTree(contents)
+}
+
+func addNestedTree(parent *repository.Tree, descendant repository.TreeChild, path []string) *repository.Tree {
+	if len(path) == 0 {
+		return parent
+	}
+	var contents map[string]repository.TreeChild
+	if parent == nil {
+		contents = make(map[string]repository.TreeChild)
+	} else {
+		contents = parent.Contents()
+	}
+
+	if len(path) == 1 {
+		contents[path[0]] = descendant
+		return repository.NewTree(contents)
+	}
+
+	childName := path[0]
+	childPath := path[0:1]
+	nestedPath := path[1:]
+	var childTree *repository.Tree
+	childObj, ok := contents[childName]
+	if ok {
+		childTree, ok = childObj.(*repository.Tree)
+		if !ok {
+			// One of the intermediary path components points
+			// at a BLOB, so we are overwriting it.
+			childTree = nil
+		}
+	}
+	childTree = addNestedTree(childTree, descendant, nestedPath)
+	return addNestedTree(parent, childTree, childPath)
 }
 
 // Add adds the given fork to the repository, replacing any existing forks with the same name.
 func Add(repo repository.Repo, fork *Fork) error {
-	t := repository.NewTree()
-	contents := t.Contents()
-	contents[nameFilePath] = &repository.Blob{Contents: fork.Name}
+	contents := make(map[string]repository.TreeChild)
+	contents[nameFilePath] = repository.NewBlob(fork.Name)
 	contents[urlsDirPath] = encodeListAsHashedFiles(fork.URLS)
 	contents[ownersDirPath] = encodeListAsHashedFiles(fork.Owners)
 	contents[refsDirPath] = encodeListAsHashedFiles(fork.Refs)
+	newForkTree := repository.NewTree(contents)
 
 	var previousCommitHash string
 	var forksTree *repository.Tree
-	hasRef, err := repo.HasRef(Ref)
-	if err != nil {
+	if hasRef, err := repo.HasRef(Ref); err != nil {
 		return fmt.Errorf("failure checking the existence of the forks ref: %v", err)
-	}
-	if hasRef {
+	} else if hasRef {
 		previousCommitHash, err = repo.GetCommitHash(Ref)
 		if err != nil {
 			return fmt.Errorf("failure reading the forks ref commit: %v", err)
@@ -133,32 +163,19 @@ func Add(repo repository.Repo, fork *Fork) error {
 		if err != nil {
 			return fmt.Errorf("failure reading the forks ref: %v", err)
 		}
-	} else {
-		forksTree = repository.NewTree()
 	}
 
-	currentLevel := forksTree
 	path := forkPath(fork)
-	for len(path) > 1 {
-		childName := path[0]
-		path = path[1:]
-		var childTree *repository.Tree
-		childObj, ok := currentLevel.Contents()[childName]
-		if ok {
-			childTree, ok = childObj.(*repository.Tree)
-		}
-		if !ok {
-			childTree = repository.NewTree()
-			currentLevel.Contents()[childName] = childTree
-		}
-		currentLevel = childTree
-	}
-	currentLevel.Contents()[path[0]] = t
+	forksTree = addNestedTree(forksTree, newForkTree, path)
 	var commitParents []string
 	if previousCommitHash != "" {
 		commitParents = append(commitParents, previousCommitHash)
 	}
-	commitHash, err := repo.CreateCommit(forksTree, commitParents, fmt.Sprintf("Adding the fork: %q", fork.Name))
+	commitDetails := &repository.CommitDetails{
+		Summary: fmt.Sprintf("Adding the fork: %q", fork.Name),
+		Parents: commitParents,
+	}
+	commitHash, err := repo.CreateCommitWithTree(commitDetails, forksTree)
 	if err != nil {
 		return fmt.Errorf("failure creating a commit to add the fork %q", fork.Name)
 	}
@@ -197,8 +214,11 @@ func Delete(repo repository.Repo, name string) error {
 		currentLevel = childTree
 	}
 	delete(currentLevel.Contents(), path[0])
-	commitHash, err := repo.CreateCommit(forksTree, []string{previousCommitHash},
-		fmt.Sprintf("Deleting the fork: %q", name))
+	commitDetails := &repository.CommitDetails{
+		Summary: fmt.Sprintf("Deleting the fork: %q", name),
+		Parents: []string{previousCommitHash},
+	}
+	commitHash, err := repo.CreateCommitWithTree(commitDetails, forksTree)
 	if err != nil {
 		return fmt.Errorf("failure creating a commit to delete the fork %q", name)
 	}
@@ -213,7 +233,7 @@ func readHashedFiles(t *repository.Tree) []string {
 			// we are not interested in subdirectories
 			continue
 		}
-		contents := blob.Contents
+		contents := blob.Contents()
 		hash := fmt.Sprintf("%x", sha1.Sum([]byte(contents)))
 		if path != hash {
 			// we are not interested in non-hash-named files
@@ -259,7 +279,7 @@ func parseForkTree(t *repository.Tree) (*Fork, error) {
 		return nil, fmt.Errorf("fork URLS subdirectory is not actually a directory")
 	}
 	fork := &Fork{
-		Name:   nameBlob.Contents,
+		Name:   nameBlob.Contents(),
 		Owners: readHashedFiles(ownersDir),
 		Refs:   readHashedFiles(refsDir),
 		URLS:   readHashedFiles(urlsDir),
@@ -336,7 +356,12 @@ func createMergeCommit(repo repository.Repo, ref, message string, commitsToMerge
 		return fmt.Errorf("failure reading the commit %q: %v", refCommit, err)
 	}
 	parents := append([]string{refCommit}, commitsToMerge...)
-	mergeCommit, err := repo.CreateCommitFromTreeHash(refDetails.Tree, parents, message)
+	commitDetails := &repository.CommitDetails{
+		Parents: parents,
+		Summary: message,
+		Tree:    refDetails.Tree,
+	}
+	mergeCommit, err := repo.CreateCommit(commitDetails)
 	if err != nil {
 		return fmt.Errorf("failure creating a merge commit for %q: %v", ref, err)
 	}
@@ -540,7 +565,7 @@ func (fork *Fork) Fetch(repo repository.Repo, verifySignatures bool) (bool, erro
 			refSpec := fmt.Sprintf("+%s:%s", ref, localRef)
 			refSpecs = append(refSpecs, refSpec)
 		}
-		if err := repo.Fetch(url, refSpecs); err != nil {
+		if err := repo.Fetch(url, refSpecs...); err != nil {
 			return false, fmt.Errorf("failure fetching from the fork: %v", err)
 		}
 		if updatedHash, err := repo.GetRepoStateHash(); err != nil {

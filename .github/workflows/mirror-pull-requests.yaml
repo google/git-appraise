@@ -13,8 +13,10 @@ jobs:
         with:
           go-version: 1.14
 
-      - name: Setup git-appraise and the pr mirror
+      - name: Setup go modules
         run: |
+          export GO111MODULE=on
+          go mod init workflow || true 
           go get github.com/google/git-appraise/git-appraise
           go get github.com/google/git-pull-request-mirror/batch
 
@@ -25,9 +27,12 @@ jobs:
 
       - name: Fetch upstream refs
         run: |
+          git fetch origin --unshallow
           git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+          git fetch origin '+refs/heads/master:refs/heads/master' || git pull
           git fetch origin '+refs/tags/*:refs/tags/*'
           git fetch origin '+refs/pull/*:refs/pull/*'
+          git fetch origin '+refs/devtools/*:refs/devtools/*'
 
       - name: Pull existing reviews
         run: go run github.com/google/git-appraise/git-appraise pull

@@ -20,24 +20,45 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"strings"
+
 	"github.com/google/git-appraise/commands/output"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
-	"strings"
 )
 
 var showFlagSet = flag.NewFlagSet("show", flag.ExitOnError)
 
 var (
+	showDetached    = showFlagSet.Bool("d", false, "Show the detached comments for the given path")
 	showJSONOutput  = showFlagSet.Bool("json", false, "Format the output as JSON")
 	showDiffOutput  = showFlagSet.Bool("diff", false, "Show the current diff for the review")
 	showDiffOptions = showFlagSet.String("diff-opts", "", "Options to pass to the diff tool; can only be used with the --diff option")
 )
 
+// showDetachedComments prints the current code review.
+func showDetachedComments(repo repository.Repo, args []string) error {
+	if *showDiffOptions != "" || *showDiffOutput {
+		return errors.New("The --diff and --diff-opts flags can not be combined with the -d flag.")
+	}
+	if len(args) > 1 {
+		return errors.New("Only showing comments for a single path is supported.")
+	} else if len(args) == 0 {
+		return errors.New("You must specify a path whose comments are to be shown.")
+	}
+	path := args[0]
+	comments, err := review.GetDetachedComments(repo, path)
+	if err != nil {
+		return fmt.Errorf("Failed to load the comments for %q: %v\n", path, err)
+	}
+	if *showJSONOutput {
+		return output.PrintCommentsJSON(comments)
+	}
+	return output.PrintComments(repo, comments)
+}
+
 // showReview prints the current code review.
 func showReview(repo repository.Repo, args []string) error {
-	showFlagSet.Parse(args)
-	args = showFlagSet.Args()
 	if *showDiffOptions != "" && !*showDiffOutput {
 		return errors.New("The --diff-opts flag can only be used if the --diff flag is set.")
 	}
@@ -80,6 +101,11 @@ var showCmd = &Command{
 		showFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {
+		showFlagSet.Parse(args)
+		args = showFlagSet.Args()
+		if *showDetached {
+			return showDetachedComments(repo, args)
+		}
 		return showReview(repo, args)
 	},
 }
