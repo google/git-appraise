@@ -6,3 +6,5 @@
 {"timestamp":"1591405340","author":"ojarjur","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":197}},"description":"Done"}
 {"timestamp":"1591405358","author":"ojarjur","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":191}},"description":"Good point; there should be an indent of at least a couple spaces.\r\n\r\nDone"}
 {"timestamp":"1591405439","author":"ojarjur","location":{"commit":"635d23ae954a98744faa38ecbedba116e3460b8a","path":"commands/output/output.go","range":{"startLine":55}},"description":"I was trying to make the output for a list of comments consistent with the output for a list of reviews.\r\n\r\nHowever, looking at this, it seems that the logic for the output of a list of reviews was not in the `output` package.\r\n\r\nI've now fixed that and also changed the wording for the two different list outputs so that they are more consistent."}
+
+{"timestamp":"1591638395","author":"ojarjur@google.com","location":{"commit":"cb2747150520e8d4f8c8632309fbc8bac40c8017"},"resolved":true}
