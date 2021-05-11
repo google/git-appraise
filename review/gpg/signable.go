@@ -8,7 +8,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
+
+	exec "golang.org/x/sys/execabs"
 )
 
 const placeholder = "gpgsig"
