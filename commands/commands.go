@@ -52,4 +52,5 @@ var CommandMap = map[string]*Command{
 	"request": requestCmd,
 	"show":    showCmd,
 	"submit":  submitCmd,
+	"web":     webCmd,
 }
