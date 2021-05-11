@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/analyses"
@@ -609,6 +610,57 @@ func (r *Summary) getStartingCommit() string {
 	return r.Revision
 }
 
+// LocalReviewRef finds the local ref that most closely matches the review ref.
+//
+// For refs outside of refs/heads/ (i.e. non-branches), the local ref has to
+// match the review ref exactly.
+//
+// For branches, the following are checked in order:
+// 1. An exact match in the local branches.
+// 2. A matching branch in the `origin` remote.
+// 3. A matching branch in one of the other remotes, checked in alphabetical order.
+// 4. A matching branch in a matching fork (e.g. if the branch starts with "somefork/", then look under "refs/forks/somefork/refs/heads/somefork/...").
+func (r *Review) LocalReviewRef() (string, error) {
+	if !strings.HasPrefix(r.Request.ReviewRef, "refs/heads/") {
+		return r.Request.ReviewRef, nil
+	}
+	if hasRef, err := r.Repo.HasRef(r.Request.ReviewRef); err != nil {
+		return "", err
+	} else if hasRef {
+		return r.Request.ReviewRef, nil
+	}
+	branchName := strings.TrimPrefix(r.Request.ReviewRef, "refs/heads/")
+	originBranch := "refs/remotes/origin/" + branchName
+	if hasRef, err := r.Repo.HasRef(originBranch); err != nil {
+		return "", err
+	} else if hasRef {
+		return originBranch, nil
+	}
+	remotes, err := r.Repo.Remotes()
+	if err != nil {
+		return "", err
+	}
+	for _, remote := range remotes {
+		remoteBranch := "refs/remotes/" + remote + "/" + branchName
+		if hasRef, err := r.Repo.HasRef(remoteBranch); err != nil {
+			return "", err
+		} else if hasRef {
+			return remoteBranch, nil
+		}
+	}
+	if strings.Index(branchName, "/") <= 0 {
+		return r.Request.ReviewRef, nil
+	}
+	forkName := branchName[0:strings.Index(branchName, "/")]
+	forkBranch := "refs/forks/" + forkName + "/refs/heads/" + branchName
+	if hasRef, err := r.Repo.HasRef(forkBranch); err != nil {
+		return "", err
+	} else if hasRef {
+		return forkBranch, nil
+	}
+	return r.Request.ReviewRef, nil
+}
+
 // GetHeadCommit returns the latest commit in a review.
 func (r *Review) GetHeadCommit() (string, error) {
 	currentCommit := r.getStartingCommit()
@@ -625,12 +677,16 @@ func (r *Review) GetHeadCommit() (string, error) {
 	// It is possible that the review ref is no longer an ancestor of the starting
 	// commit (e.g. if a rebase left us in a detached head), in which case we have to
 	// find the head commit without using it.
-	useReviewRef, err := r.Repo.IsAncestor(currentCommit, r.Request.ReviewRef)
+	reviewRef, err := r.LocalReviewRef()
+	if err != nil {
+		return "", err
+	}
+	useReviewRef, err := r.Repo.IsAncestor(currentCommit, reviewRef)
 	if err != nil {
 		return "", err
 	}
 	if useReviewRef {
-		return r.Repo.ResolveRefCommit(r.Request.ReviewRef)
+		return r.Repo.ResolveRefCommit(reviewRef)
 	}
 
 	return r.findLastCommit(currentCommit, currentCommit, r.Comments), nil

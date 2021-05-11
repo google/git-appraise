@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	exec "golang.org/x/sys/execabs"
 	"sort"
@@ -1193,6 +1194,90 @@ func (repo *GitRepo) PullNotesAndArchive(remote, notesRefPattern, archiveRefPatt
 		return fmt.Errorf("failure merging notes from the remote %q: %v", remote, err)
 	}
 	return nil
+}
+
+// MergeForks merges in the remote's state of the forks reference
+// into the local repository's.
+func (repo *GitRepo) MergeForks(remote, forksRef string) error {
+	remoteRef := getRemoteDevtoolsRef(remote, forksRef)
+	hasRemote, err := repo.HasRef(remoteRef)
+	if err != nil {
+		return err
+	}
+	if !hasRemote {
+		// There are no remote forks to merge
+		return nil
+	}
+	hasLocal, err := repo.HasRef(forksRef)
+	if err != nil {
+		return err
+	}
+	if !hasLocal {
+		// The local forks commit does not exist, so we merely need to set it
+		_, err := repo.runGitCommand("update-ref", forksRef, remoteRef)
+		return err
+	}
+
+	dir, err := ioutil.TempDir("", "merge-forks-dir")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+	if _, err := repo.runGitCommand("worktree", "add", dir, forksRef); err != nil {
+		return err
+	}
+	defer func() {
+		repo.runGitCommand("worktree", "remove", "--force", dir)
+	}()
+
+	workTreeRepo := &GitRepo{
+		Path: dir,
+	}
+	if _, err := workTreeRepo.runGitCommand("merge", "--commit", "--allow-unrelated-histories", "--no-edit", "-s", "recursive", "-X", "ours", remoteRef); err != nil {
+		return err
+	}
+	if _, err := workTreeRepo.runGitCommand("update-ref", forksRef, "HEAD"); err != nil {
+		return err
+	}
+	return nil
+}
+
+// PullNotesForksAndArchive fetches the contents of the notes, forks, and archives
+// refs from  a remote repo, and merges them with the corresponding local refs.
+//
+// For notes refs, we assume that every note can be automatically merged using
+// the 'cat_sort_uniq' strategy (the git-appraise schemas fit that requirement),
+// so we automatically merge the remote notes into the local notes.
+//
+// For the forks ref, we assume that we can merge using the recursive, `ours`,
+// merge strategy.
+//
+// For "archive" refs, they are expected to be used solely for maintaining
+// reachability of commits that are part of the history of any reviews,
+// so we do not maintain any consistency with their tree objects. Instead,
+// we merely ensure that their history graph includes every commit that we
+// intend to keep.
+//
+// The returned slice contains a list of all objects for which new notes were
+// fetched from the remote.
+func (repo *GitRepo) PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) ([]string, error) {
+	if !strings.HasPrefix(forksRef, devtoolsRefPrefix) {
+		return nil, fmt.Errorf("Unsupported forks ref: %q", forksRef)
+	}
+	reviews, err := repo.FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern)
+	if err != nil {
+		return nil, fmt.Errorf("failure fetching from the remote %q: %v", remote, err)
+	}
+	if err := repo.MergeArchives(remote, archiveRefPattern); err != nil {
+		return nil, fmt.Errorf("failure merging archives from the remote %q: %v", remote, err)
+	}
+	if err := repo.MergeNotes(remote, notesRefPattern); err != nil {
+		return nil, fmt.Errorf("failure merging notes from the remote %q: %v", remote, err)
+	}
+	if err := repo.MergeForks(remote, forksRef); err != nil {
+		return nil, fmt.Errorf("failure merging forks from the remote %q, %v", remote, err)
+	}
+	return reviews, nil
 }
 
 // Push pushes the given refs to a remote repo.

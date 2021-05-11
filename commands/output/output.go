@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/git-appraise/fork"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 )
@@ -61,6 +62,14 @@ status: %s
 `
 	// Number of lines of context to print for inline comments
 	contextLineCount = 5
+	// Template for printing the summary of the forks.
+	forksSummaryTemplate = `%d forks
+`
+	// Template for printing the summary of a code review.
+	forkTemplate = `%q
+  owners: %q
+  urls: %q
+`
 )
 
 // getStatusString returns a human friendly string encapsulating both the review's
@@ -255,4 +264,12 @@ func PrintDiff(r *review.Review, diffArgs ...string) error {
 	}
 	fmt.Println(diff)
 	return nil
+}
+
+// PrintForks prints the list of forks.
+func PrintForks(forks []*fork.Fork) {
+	fmt.Printf(forksSummaryTemplate, len(forks))
+	for _, f := range forks {
+		fmt.Printf(forkTemplate, f.Name, f.Owners, f.URLS)
+	}
 }

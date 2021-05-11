@@ -348,6 +348,10 @@ type Repo interface {
 	// into the local repository's.
 	MergeArchives(remote, archiveRefPattern string) error
 
+	// MergeForks merges in the remote's state of the forks reference
+	// into the local repository's.
+	MergeForks(remote, forksRef string) error
+
 	// FetchAndReturnNewReviewHashes fetches the notes "branches" and then
 	// susses out the IDs (the revision the review points to) of any new
 	// reviews, then returns that list of IDs.
@@ -356,6 +360,26 @@ type Repo interface {
 	// changed because the _names_ of these files correspond to the revisions
 	// they point to.
 	FetchAndReturnNewReviewHashes(remote, notesRefPattern string, devtoolsRefPatterns ...string) ([]string, error)
+
+	// PullNotesForksAndArchive fetches the contents of the notes, forks, and archives
+	// refs from  a remote repo, and merges them with the corresponding local refs.
+	//
+	// For notes refs, we assume that every note can be automatically merged using
+	// the 'cat_sort_uniq' strategy (the git-appraise schemas fit that requirement),
+	// so we automatically merge the remote notes into the local notes.
+	//
+	// For the forks ref, we assume that we can merge using the recursive, `ours`,
+	// merge strategy.
+	//
+	// For "archive" refs, they are expected to be used solely for maintaining
+	// reachability of commits that are part of the history of any reviews,
+	// so we do not maintain any consistency with their tree objects. Instead,
+	// we merely ensure that their history graph includes every commit that we
+	// intend to keep.
+	//
+	// The returned slice contains a list of all objects for which new notes were
+	// fetched from the remote.
+	PullNotesForksAndArchive(remote, notesRefPattern, forksRef, archiveRefPattern string) ([]string, error)
 
 	// Push pushes the given refs to a remote repo.
 	Push(remote string, refPattern ...string) error
