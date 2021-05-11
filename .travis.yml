@@ -5,3 +5,5 @@ before_install:
   - git fetch --unshallow
   - git fetch origin +refs/notes/devtools/*:refs/notes/devtools/*
   - git fetch origin +refs/heads/master:refs/heads/master
+before_script:
+  - if grep "os/exec" `find ./ -name '*.go'`; then echo "Use the execabs package instead of exec" && exit 1; fi
