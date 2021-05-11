@@ -13,7 +13,7 @@ you get started.
 Since you're using a code review tool, we'll assume that you have a URL that
 you can push to and pull from in order to collaborate with the rest of your team.
 
-First we'll create our local clone of the repository:
+First we will create our local clone of the repository:
 ```shell
 git clone ${URL} example-repo
 cd example-repo
@@ -110,7 +110,8 @@ index 08fde78..85c4208 100644
 
 Before a teammate can review our change, we have to make it available to them.
 This involves pushing both our commits, and our code review data to the remote
-repository:
+repository: 
+
 ```shell
 git push
 git appraise pull
@@ -183,7 +184,7 @@ index 08fde78..85c4208 100644
 +This is an example repository used for coming up to speed
 ```
 
-Comments can be added either for the entire review, or on individual lines:
+#### Comments can be added either for the entire review, or on individual lines:
 ```shell
 git appraise comment -f README.md -l 2 -m "Ah, so that's what this is" 1e6eb14c8014
 ```
@@ -220,7 +221,7 @@ git appraise pull
 git appraise push
 ```
 
-When the change is ready to be merged, you indicate that by accepting the
+#### When the change is ready to be merged, you indicate that by accepting the
 review:
 
 ```shell
@@ -367,7 +368,7 @@ Date:   Wed Dec 16 17:10:06 2015 -0800
 ...
 ```
 
-Here you see a linear view of the reviews that have been submitted, but if we
+#### Here you see a linear view of the reviews that have been submitted, but if we
 run the command `git log --oneline --graph`, then we can see that the full
 history of each individual review is also available:
 
