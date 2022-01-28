@@ -126,9 +126,16 @@ type Comment struct {
 // New returns a new comment with the given description message.
 //
 // The Timestamp and Author fields are automatically filled in with the current time and user.
-func New(author string, description string) Comment {
+func New(author string, description string, date *time.Time) Comment {
+	var timestamp string
+	if date != nil {
+		timestamp = strconv.FormatInt(date.Unix(), 10)
+	} else {
+		timestamp = strconv.FormatInt(time.Now().Unix(), 10)
+	}
+
 	return Comment{
-		Timestamp:   strconv.FormatInt(time.Now().Unix(), 10),
+		Timestamp:   timestamp,
 		Author:      author,
 		Description: description,
 	}

@@ -40,6 +40,7 @@ var (
 	commentLgtm        = commentFlagSet.Bool("lgtm", false, "'Looks Good To Me'. Set this to express your approval. This cannot be combined with nmw")
 	commentNmw         = commentFlagSet.Bool("nmw", false, "'Needs More Work'. Set this to express your disapproval. This cannot be combined with lgtm")
 	commentSign        = commentFlagSet.Bool("S", false, "Sign the contents of the comment")
+	commentDate        = commentFlagSet.String("date", "", "comment date")
 )
 
 func init() {
@@ -109,7 +110,12 @@ func buildCommentFromFlags(repo repository.Repo, commentedUponCommit string) (*c
 	if err != nil {
 		return nil, err
 	}
-	c := comment.New(userEmail, *commentMessage)
+
+	date, err := GetDate(*commentDate)
+	if err != nil {
+		return err
+	}
+	c := comment.New(userEmail, *commentMessage, date)
 	c.Location = &location
 	c.Parent = *commentParent
 	if *commentLgtm || *commentNmw {

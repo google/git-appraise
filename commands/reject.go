@@ -91,7 +91,7 @@ func rejectReview(repo repository.Repo, args []string) error {
 	if err != nil {
 		return err
 	}
-	c := comment.New(userEmail, *rejectMessage)
+	c := comment.New(userEmail, *rejectMessage, nil)
 	c.Location = &location
 	c.Resolved = &resolved
 	if *rejectSign {

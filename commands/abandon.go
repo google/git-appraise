@@ -88,7 +88,7 @@ func abandonReview(repo repository.Repo, args []string) error {
 	if err != nil {
 		return err
 	}
-	c := comment.New(userEmail, *abandonMessage)
+	c := comment.New(userEmail, *abandonMessage, nil)
 	c.Location = &location
 	c.Resolved = &resolved
 

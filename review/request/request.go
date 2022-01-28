@@ -62,9 +62,16 @@ type Request struct {
 // New returns a new request.
 //
 // The Timestamp and Requester fields are automatically filled in with the current time and user.
-func New(requester string, reviewers []string, reviewRef, targetRef, description string) Request {
+func New(requester string, reviewers []string, reviewRef, targetRef, description string, date *time.Time) Request {
+	var timestamp string
+	if date != nil {
+		timestamp = strconv.FormatInt(date.Unix(), 10)
+	} else {
+		timestamp = strconv.FormatInt(time.Now().Unix(), 10)
+	}
+
 	return Request{
-		Timestamp:   strconv.FormatInt(time.Now().Unix(), 10),
+		Timestamp:   timestamp,
 		Requester:   requester,
 		Reviewers:   reviewers,
 		ReviewRef:   reviewRef,
