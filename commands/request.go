@@ -21,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
@@ -70,8 +71,17 @@ func buildRequestFromFlags(requester string) (request.Request, error) {
 	if err != nil {
 		return request.Request{}, err
 	}
+	if date == nil {
+		now := time.Now()
+		date = &now
+	}
+	timestamp := FormatDate(date)
 
-	return request.New(requester, reviewers, *requestSource, *requestTarget, *requestMessage, date), nil
+	req := request.New(requester, reviewers, *requestSource, *requestTarget, *requestMessage)
+	if len(timestamp) > 0 {
+		req.Timestamp = timestamp
+	}
+	return req, nil
 }
 
 // Get the commit at which the review request should be anchored.

@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"time"
 
 	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
@@ -86,10 +87,18 @@ func acceptReview(repo repository.Repo, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	c := comment.New(userEmail, *acceptMessage, date)
+	if date == nil {
+		now := time.Now()
+		date = &now
+	}
+	timestamp := FormatDate(date)
+	c := comment.New(userEmail, *acceptMessage)
 	c.Location = &location
 	c.Resolved = &resolved
+	if len(timestamp) > 0 {
+		c.Timestamp = timestamp
+	}
+
 	if *acceptSign {
 		key, err := repo.GetUserSigningKey()
 		if err != nil {

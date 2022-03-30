@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"time"
 
 	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
@@ -115,9 +116,17 @@ func buildCommentFromFlags(repo repository.Repo, commentedUponCommit string) (*c
 	if err != nil {
 		return err
 	}
+	if date == nil {
+		now := time.Now()
+		date = &now
+	}
+	timestamp := FormatDate(date)
 	c := comment.New(userEmail, *commentMessage, date)
 	c.Location = &location
 	c.Parent = *commentParent
+	if len(timestamp) > 0 {
+		c.Timestamp = timestamp
+	}
 	if *commentLgtm || *commentNmw {
 		resolved := *commentLgtm
 		c.Resolved = &resolved

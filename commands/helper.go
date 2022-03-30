@@ -36,3 +36,10 @@ func GetDate(timestamp string) (*time.Time, error) {
 	}
 	return nil, nil
 }
+
+func FormatDate(date *time.Time) string {
+	if date == nil {
+		return ""
+	}
+	return strconv.FormatInt(date.Unix(), 10)
+}

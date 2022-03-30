@@ -19,8 +19,6 @@ package request
 
 import (
 	"encoding/json"
-	"strconv"
-	"time"
 
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/gpg"
@@ -62,16 +60,8 @@ type Request struct {
 // New returns a new request.
 //
 // The Timestamp and Requester fields are automatically filled in with the current time and user.
-func New(requester string, reviewers []string, reviewRef, targetRef, description string, date *time.Time) Request {
-	var timestamp string
-	if date != nil {
-		timestamp = strconv.FormatInt(date.Unix(), 10)
-	} else {
-		timestamp = strconv.FormatInt(time.Now().Unix(), 10)
-	}
-
+func New(requester string, reviewers []string, reviewRef, targetRef, description string) Request {
 	return Request{
-		Timestamp:   timestamp,
 		Requester:   requester,
 		Reviewers:   reviewers,
 		ReviewRef:   reviewRef,
