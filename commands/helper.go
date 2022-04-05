@@ -4,26 +4,53 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
-	"unicode"
 )
 
 func GetDate(timestamp string) (*time.Time, error) {
 	gitAuthorDate := os.Getenv("GIT_AUTHOR_DATE")
 	gitCommiterDate := os.Getenv("GIT_COMMITTER_DATE")
+	layouts := [...]string{time.RFC1123Z, time.RFC3339,
+		"2006-01-02 15:04:05", "2006.01.02T15:04:05",
+		"2005.04.07 15:04:05", "01/02/2006T15:04:05",
+		"01/02/2006 15:04:05", "02.01.2006T15:04:05",
+		"02.01.2006 15:04:05",
+	}
 
 	realGetDate := func(timestampStr string) (*time.Time, error) {
-		for _, char := range timestampStr {
-			if !unicode.IsDigit(char) {
-				return nil, fmt.Errorf("Invalid timestamp: %s", timestampStr)
+		var date time.Time
+		var err error
+
+		// <unix timestamp> <time zone offset>
+		ary := strings.Split(timestampStr, " ")
+		if len(ary) == 2 {
+			unixTimestamp := ary[0]
+			intTimestamp, innerErr := strconv.ParseInt(unixTimestamp, 10, 64)
+			if innerErr == nil {
+				timeZoneOffset := ary[1]
+				var loc time.Time
+				loc, innerErr = time.Parse("-0700", timeZoneOffset)
+				if innerErr != nil {
+					return nil, fmt.Errorf("unsupported timestamp format: %s", timestampStr)
+				}
+				tmpDate := time.Unix(intTimestamp, 0)
+				date = tmpDate.In(loc.Location())
+				return &date, nil
 			}
 		}
 
-		intTimestamp, err := strconv.ParseInt(timestamp, 10, 64)
-		if err != nil {
-			return nil, err
+		for _, layout := range layouts {
+			date, err = time.Parse(layout, timestampStr)
+			if err == nil {
+				break
+			} else {
+				fmt.Println(err)
+			}
 		}
-		date := time.Unix(intTimestamp, 0)
+		if err != nil {
+			return nil, fmt.Errorf("unsupported timestamp format: %s", timestampStr)
+		}
 		return &date, nil
 	}
 

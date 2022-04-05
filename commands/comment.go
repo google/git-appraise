@@ -114,14 +114,14 @@ func buildCommentFromFlags(repo repository.Repo, commentedUponCommit string) (*c
 
 	date, err := GetDate(*commentDate)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if date == nil {
 		now := time.Now()
 		date = &now
 	}
 	timestamp := FormatDate(date)
-	c := comment.New(userEmail, *commentMessage, date)
+	c := comment.New(userEmail, *commentMessage)
 	c.Location = &location
 	c.Parent = *commentParent
 	if len(timestamp) > 0 {
