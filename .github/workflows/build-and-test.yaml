@@ -1,7 +1,5 @@
 on: [push, pull_request]
 name: Build and Test
-env:
-  GO111MODULE: "off"
 jobs:
   test:
     strategy:
