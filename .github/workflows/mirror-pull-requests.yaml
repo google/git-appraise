@@ -15,8 +15,6 @@ jobs:
 
       - name: Setup go modules
         run: |
-          export GO111MODULE=on
-          go mod init workflow || true 
           go get github.com/google/git-appraise/git-appraise
           go get github.com/google/git-pull-request-mirror/batch
 
