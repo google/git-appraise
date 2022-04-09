@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGetDate(t testing.T) {
+func TestGetDate(t *testing.T) {
 	_, err := GetDate("aaaa")
 	if err == nil {
 		t.Errorf("Expected error, got nil")
