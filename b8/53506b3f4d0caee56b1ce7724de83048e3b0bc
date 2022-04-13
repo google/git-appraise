@@ -17,3 +17,5 @@
 {"timestamp":"1649280989","author":"ojarjur","location":{"commit":"c33694795bb8aeb988f8f9f8d693fce46f796685","path":"commands/comment.go","range":{"startLine":118}},"description":"This doesn't build as-is.\r\n\r\nIt needs to return two values instead of one, so `return nil, err`"}
 
 {"timestamp":"1649815869","author":"fatelei","description":"Mirror pull requests into git-notes / Mirror (pull_request_review)  has failed"}
+
+{"timestamp":"1649456368","author":"ojarjur","location":{"commit":"b57152422cb58674c9912190fb742427bab49819","path":"commands/helper_test.go","range":{"startLine":9}},"description":"The test suite is failing because the type of `t` here is `testing.T` instead of `*testing.T`"}
