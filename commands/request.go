@@ -21,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
@@ -46,8 +47,8 @@ var (
 	requestTarget           = requestFlagSet.String("target", "refs/heads/master", "Revision against which to review")
 	requestQuiet            = requestFlagSet.Bool("quiet", false, "Suppress review summary output")
 	requestAllowUncommitted = requestFlagSet.Bool("allow-uncommitted", false, "Allow uncommitted local changes.")
-	requestSign             = requestFlagSet.Bool("S", false,
-		"GPG sign the content of the request")
+	requestSign             = requestFlagSet.Bool("S", false, "GPG sign the content of the request")
+	requestDate             = requestFlagSet.String("date", "", "request date")
 )
 
 // Build the template review request based solely on the parsed flag values.
@@ -66,7 +67,21 @@ func buildRequestFromFlags(requester string) (request.Request, error) {
 		}
 	}
 
-	return request.New(requester, reviewers, *requestSource, *requestTarget, *requestMessage), nil
+	date, err := GetDate(*requestDate)
+	if err != nil {
+		return request.Request{}, err
+	}
+	if date == nil {
+		now := time.Now()
+		date = &now
+	}
+	timestamp := FormatDate(date)
+
+	req := request.New(requester, reviewers, *requestSource, *requestTarget, *requestMessage)
+	if len(timestamp) > 0 {
+		req.Timestamp = timestamp
+	}
+	return req, nil
 }
 
 // Get the commit at which the review request should be anchored.

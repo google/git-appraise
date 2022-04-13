@@ -19,8 +19,6 @@ package request
 
 import (
 	"encoding/json"
-	"strconv"
-	"time"
 
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/gpg"
@@ -64,7 +62,6 @@ type Request struct {
 // The Timestamp and Requester fields are automatically filled in with the current time and user.
 func New(requester string, reviewers []string, reviewRef, targetRef, description string) Request {
 	return Request{
-		Timestamp:   strconv.FormatInt(time.Now().Unix(), 10),
 		Requester:   requester,
 		Reviewers:   reviewers,
 		ReviewRef:   reviewRef,

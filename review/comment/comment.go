@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review/gpg"
@@ -128,7 +127,6 @@ type Comment struct {
 // The Timestamp and Author fields are automatically filled in with the current time and user.
 func New(author string, description string) Comment {
 	return Comment{
-		Timestamp:   strconv.FormatInt(time.Now().Unix(), 10),
 		Author:      author,
 		Description: description,
 	}

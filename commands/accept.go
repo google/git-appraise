@@ -20,6 +20,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"time"
+
 	"github.com/google/git-appraise/commands/input"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
@@ -32,8 +34,8 @@ var acceptFlagSet = flag.NewFlagSet("accept", flag.ExitOnError)
 var (
 	acceptMessageFile = acceptFlagSet.String("F", "", "Take the comment from the given file. Use - to read the message from the standard input")
 	acceptMessage     = acceptFlagSet.String("m", "", "Message to attach to the review")
-
-	acceptSign = acceptFlagSet.Bool("S", false,
+	acceptDate        = acceptFlagSet.String("date", "", "Date to use for the review")
+	acceptSign        = acceptFlagSet.Bool("S", false,
 		"sign the contents of the acceptance")
 )
 
@@ -81,9 +83,22 @@ func acceptReview(repo repository.Repo, args []string) error {
 		}
 	}
 
+	date, err := GetDate(*acceptDate)
+	if err != nil {
+		return err
+	}
+	if date == nil {
+		now := time.Now()
+		date = &now
+	}
+	timestamp := FormatDate(date)
 	c := comment.New(userEmail, *acceptMessage)
 	c.Location = &location
 	c.Resolved = &resolved
+	if len(timestamp) > 0 {
+		c.Timestamp = timestamp
+	}
+
 	if *acceptSign {
 		key, err := repo.GetUserSigningKey()
 		if err != nil {
