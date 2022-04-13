@@ -19,3 +19,5 @@
 {"timestamp":"1649815869","author":"fatelei","description":"Mirror pull requests into git-notes / Mirror (pull_request_review)  has failed"}
 
 {"timestamp":"1649456368","author":"ojarjur","location":{"commit":"b57152422cb58674c9912190fb742427bab49819","path":"commands/helper_test.go","range":{"startLine":9}},"description":"The test suite is failing because the type of `t` here is `testing.T` instead of `*testing.T`"}
+
+{"timestamp":"1649826515","author":"ojarjur","description":"@fatelei Don't worry about the failed mirror action. That's not a presubmit check but rather just an export step to make sure the PR data is all in git notes.\r\n\r\nThis PR itself looks good and I'll merge it now. Thanks for all your work on this!"}
