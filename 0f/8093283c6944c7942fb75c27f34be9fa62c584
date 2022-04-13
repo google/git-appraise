@@ -1,1 +1,3 @@
 {"timestamp":"1649281445","reviewRef":"refs/pull/111/head","targetRef":"refs/heads/master","requester":"ojarjur","description":"Add a github action to build and test","baseCommit":"f552474f91c8c172ffb9834315e576d6071bc2f6"}
+
+{"timestamp":"1649282459","reviewRef":"refs/pull/111/head","targetRef":"refs/heads/master","requester":"ojarjur","description":"Add a github action to build and test\n\nThe new GitHub action replaces the old Travis CI-based build and test.\r\n\r\nThis also sets up the `go.mod` and `go.sum` files which was necessary to (easily) get the build/test working.\r\n\r\nFixes #104"}
