@@ -1,1 +1,3 @@
 {"timestamp":"1658336120","author":"google-cla[bot]","description":"Thanks for your pull request! It looks like this may be your first contribution to a Google open source project. Before we can look at your pull request, you'll need to sign a Contributor License Agreement (CLA).\n\nView this [failed invocation](https://github.com/google/git-appraise/pull/113/checks?check_run_id=7434132409) of the CLA check for more information.\n\nFor the most up to date status, view the checks section at the bottom of the pull request."}
+
+{"timestamp":"1658337811","author":"iveqy","description":"For some reason this mess up the git-appraise list view where submitted code reviews will still be shown as open. IT tells me that there's more to this than just this merge request."}
