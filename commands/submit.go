@@ -78,8 +78,8 @@ func submitReview(repo repository.Repo, args []string) error {
 	if err := repo.VerifyGitRef(target); err != nil {
 		return err
 	}
-	source, err := r.GetHeadCommit()
-	if err != nil {
+	source := r.Request.ReviewRef
+	if err := repo.VerifyGitRef(source); err != nil {
 		return err
 	}
 
