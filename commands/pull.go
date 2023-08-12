@@ -21,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/google/git-appraise/fork"
 	"github.com/google/git-appraise/repository"
 	"github.com/google/git-appraise/review"
 )
@@ -29,6 +30,7 @@ var (
 	pullFlagSet = flag.NewFlagSet("pull", flag.ExitOnError)
 	pullVerify  = pullFlagSet.Bool("verify-signatures", false,
 		"verify the signatures of pulled reviews")
+	pullIncludeForks = pullFlagSet.Bool("include-forks", true, "Also pull reviews and comments from forks.")
 )
 
 // pull updates the local git-notes used for reviews with those from a remote
@@ -38,26 +40,28 @@ func pull(repo repository.Repo, args []string) error {
 	pullArgs := pullFlagSet.Args()
 
 	if len(pullArgs) > 1 {
-		return errors.New(
-			"Only pulling from one remote at a time is supported.")
+		return errors.New("Only pulling from one remote at a time is supported.")
 	}
 
 	remote := "origin"
 	if len(pullArgs) == 1 {
 		remote = pullArgs[0]
 	}
-	// This is the easy case. We're not checking signatures so just go the
-	// normal route.
+
+	if !*pullVerify && !*pullIncludeForks {
+		return repo.PullNotesAndArchive(remote, notesRefPattern, archiveRefPattern)
+	}
 	if !*pullVerify {
-		return repo.PullNotesAndArchive(remote, notesRefPattern,
-			archiveRefPattern)
+		if _, err := repo.PullNotesForksAndArchive(remote, notesRefPattern, fork.Ref, archiveRefPattern); err != nil {
+			return fmt.Errorf("failure pulling review metadata from the remote %q: %v", remote, err)
+		}
+		return fork.Pull(repo, *pullVerify)
 	}
 
-	// Otherwise, we collect the fetched reviewed revisions (their hashes), get
+	// We collect the fetched reviewed revisions (their hashes), get
 	// their reviews, and then one by one, verify them. If we make it through
 	// the set, _then_ we merge the remote reference into the local branch.
-	revisions, err := repo.FetchAndReturnNewReviewHashes(remote,
-		notesRefPattern, archiveRefPattern)
+	revisions, err := repo.FetchAndReturnNewReviewHashes(remote, notesRefPattern, archiveRefPattern)
 	if err != nil {
 		return err
 	}
@@ -74,17 +78,24 @@ func pull(repo repository.Repo, args []string) error {
 		}
 		fmt.Println("verified review:", revision)
 	}
-
-	err = repo.MergeNotes(remote, notesRefPattern)
-	if err != nil {
+	if err := repo.MergeNotes(remote, notesRefPattern); err != nil {
 		return err
 	}
-	return repo.MergeArchives(remote, archiveRefPattern)
+	if err := repo.MergeArchives(remote, archiveRefPattern); err != nil {
+		return err
+	}
+	if !*pullIncludeForks {
+		return nil
+	}
+	if err := repo.MergeForks(remote, fork.Ref); err != nil {
+		return err
+	}
+	return fork.Pull(repo, *pullVerify)
 }
 
 var pullCmd = &Command{
 	Usage: func(arg0 string) {
-		fmt.Printf("Usage: %s pull [<option>] [<remote>]\n\nOptions:\n", arg0)
+		fmt.Printf("Usage: %s pull [<option>...] [<remote>]\n\nOptions:\n", arg0)
 		pullFlagSet.PrintDefaults()
 	},
 	RunMethod: func(repo repository.Repo, args []string) error {

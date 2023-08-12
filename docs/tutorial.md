@@ -402,3 +402,12 @@ Now that our feature branch has been merged into master, we can delete it:
 git branch -d ${USER}/getting-started
 git push origin --delete ${USER}/getting-started
 ```
+
+# Working with external contributors
+
+The simple workflow above shows how to use `git-appraise` in a single
+repository. However, in practice you do not want to share a single repository
+with every contributor.
+
+Instead, `git-appraise` supports the concept of "forks". Instructions on how to
+use `git-appraise` with multiple forks can be found [here](forks.md)

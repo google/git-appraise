@@ -18,12 +18,17 @@ limitations under the License.
 package commands
 
 import (
+	"fmt"
+
 	"github.com/google/git-appraise/repository"
 )
 
-const notesRefPattern = "refs/notes/devtools/*"
-const archiveRefPattern = "refs/devtools/archives/*"
-const commentFilename = "APPRAISE_COMMENT_EDITMSG"
+const (
+	notesRefPattern    = "refs/notes/devtools/*"
+	devtoolsRefPattern = "refs/devtools/*"
+	archiveRefPattern  = "refs/devtools/archives/*"
+	commentFilename    = "APPRAISE_COMMENT_EDITMSG"
+)
 
 // Command represents the definition of a single command.
 type Command struct {
@@ -41,15 +46,41 @@ func (cmd *Command) Run(repo repository.Repo, args []string) error {
 
 // CommandMap defines all of the available (sub)commands.
 var CommandMap = map[string]*Command{
-	"abandon": abandonCmd,
-	"accept":  acceptCmd,
-	"comment": commentCmd,
-	"list":    listCmd,
-	"pull":    pullCmd,
-	"push":    pushCmd,
-	"rebase":  rebaseCmd,
-	"reject":  rejectCmd,
-	"request": requestCmd,
-	"show":    showCmd,
-	"submit":  submitCmd,
+	"abandon":     abandonCmd,
+	"accept":      acceptCmd,
+	"comment":     commentCmd,
+	"fork add":    addForkCmd,
+	"fork list":   listForksCmd,
+	"fork remove": removeForkCmd,
+	"list":        listCmd,
+	"pull":        pullCmd,
+	"push":        pushCmd,
+	"rebase":      rebaseCmd,
+	"reject":      rejectCmd,
+	"request":     requestCmd,
+	"show":        showCmd,
+	"submit":      submitCmd,
+}
+
+// FindSubcommand parses the subcommand from the list of arguments.
+//
+// The args parameter is the list of command line args after the program name.
+//
+// The return result are the matching command (if found), whether or not the
+// command was found, and the list of remaining command line arguments that
+// followed the subcommand.
+func FindSubcommand(args []string) (*Command, bool, []string) {
+	if len(args) < 1 {
+		subcommand, ok := CommandMap["list"]
+		return subcommand, ok, []string{}
+	}
+	subcommand, ok := CommandMap[args[0]]
+	if ok {
+		return subcommand, ok, args[1:]
+	}
+	if len(args) > 1 {
+		subcommand, ok := CommandMap[fmt.Sprintf("%s %s", args[0], args[1])]
+		return subcommand, ok, args[2:]
+	}
+	return nil, false, []string{}
 }
